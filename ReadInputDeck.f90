@@ -67,11 +67,13 @@
 
 		IMPLICIT NONE
 
-		INTEGER   :: I,FH,FHT
+		INTEGER   :: I,FH,FHT, Q
 		LOGICAL   :: IFGAS,IFAQ,IFSOLID
 		CHARACTER(len=512) :: Token
 		CHARACTER(len=512)::CurrLine,StoreLine
 		REAL*8    :: T,P,II, RH, BRH, Num, Wind, length, width
+                REAL*8  :: lights_on_time, lights_off_time
+                INTEGER :: lightswitch_flag
 
 		FHT = GetFileHandle()
 		FH  = GetFileHandle()
@@ -399,23 +401,27 @@
 
 	        !!Cond Test?
 		Token = GetLine(FH)
+                write(*,*) Token
 		IF (.NOT.IsInteger(Token)) &
-	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if a Condensation Test is to be run. Received "//StripToken(Token))	
 		I = STR2INT(Token)
+                write(*,*) I
 		IF (I < 0 .OR. I > 1) &
-			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if a Condensation Test is to be run. Received "//StripToken(Token))	             
                 CALL SetCondTest(I)
  
                 !!Subroutine Model?
 		Token = GetLine(FH)
+                write(*,*) Token
 		IF (.NOT.IsInteger(Token)) &
-	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if ASP is to be run as a subroutine. Received "//StripToken(Token))	
 		I = STR2INT(Token)
-		IF (I < 0 .OR. I > 1) &
-			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+                write(*,*) I
+		IF (I .LT. 0 .OR. I .GT. 1) &
+			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if ASP is to be run as a subroutine. Received "//StripToken(Token))	             
                 CALL SetSubroutineModel(I)
 
@@ -680,6 +686,40 @@
                         
                         Call SetEulerianBox(wind,length,width, II)
 		END IF
+
+                !!Add in lightswitch flag for chamber esperiments
+                Token = GetLine(FH)
+		IF (.NOT.IsInteger(Token)) &
+	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+			"if ASP is to be run for a lights on-off chamber experiment. Received "//StripToken(Token))	
+		I = STR2INT(Token)
+		IF (I < 0 .OR. I > 1) &
+			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+			"if ASP is to be run a lights on-off chamber experiment. Received "//StripToken(Token))
+
+                lightswitch_flag = I
+
+                Token = GetLine(FH)
+		!! If not a real, give error
+		IF (.NOT.IsReal(Token)) THEN
+			CALL ERROR("In ASPInputDeck.in, You tried to load a non-real time to turn on the lights.")
+		ELSE
+			II = STR2REAL(Token)
+                        lights_on_time = II
+
+		END IF
+
+                Token = GetLine(FH)
+		!! If not a real, give error
+		IF (.NOT.IsReal(Token)) THEN
+			CALL ERROR("In ASPInputDeck.in, You tried to load a non-real time to turn off the lights.")
+		ELSE
+			II = STR2REAL(Token)
+                        lights_off_time = II
+
+		END IF
+
+                CALL LightSwitchParams(lightswitch_flag, lights_on_time, lights_off_time)
 	
                 !print *, 'CMB: END MAIN INPUT DECK'
 	END SUBROUTINE ReadMainInputDeck

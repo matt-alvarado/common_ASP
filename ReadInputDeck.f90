@@ -67,7 +67,7 @@
 
 		IMPLICIT NONE
 
-		INTEGER   :: I,FH,FHT
+		INTEGER   :: I,FH,FHT, Q
 		LOGICAL   :: IFGAS,IFAQ,IFSOLID
 		CHARACTER(len=512) :: Token
 		CHARACTER(len=512)::CurrLine,StoreLine
@@ -401,23 +401,27 @@
 
 	        !!Cond Test?
 		Token = GetLine(FH)
+                write(*,*) Token
 		IF (.NOT.IsInteger(Token)) &
-	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if a Condensation Test is to be run. Received "//StripToken(Token))	
 		I = STR2INT(Token)
+                write(*,*) I
 		IF (I < 0 .OR. I > 1) &
-			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if a Condensation Test is to be run. Received "//StripToken(Token))	             
                 CALL SetCondTest(I)
  
                 !!Subroutine Model?
 		Token = GetLine(FH)
+                write(*,*) Token
 		IF (.NOT.IsInteger(Token)) &
-	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if ASP is to be run as a subroutine. Received "//StripToken(Token))	
 		I = STR2INT(Token)
-		IF (I < 0 .OR. I > 1) &
-			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
+                write(*,*) I
+		IF (I .LT. 0 .OR. I .GT. 1) &
+			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate "//&
 			"if ASP is to be run as a subroutine. Received "//StripToken(Token))	             
                 CALL SetSubroutineModel(I)
 
@@ -687,11 +691,11 @@
                 Token = GetLine(FH)
 		IF (.NOT.IsInteger(Token)) &
 	                CALL ERROR ("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
-			"if ASP is to be run as a subroutine. Received "//StripToken(Token))	
+			"if ASP is to be run for a lights on-off chamber experiment. Received "//StripToken(Token))	
 		I = STR2INT(Token)
 		IF (I < 0 .OR. I > 1) &
 			CALL ERROR("Must Supply either a 0 or 1 ASPInputDeck.in to indicate"//&
-			"if ASP is to be run as a subroutine. Received "//StripToken(Token))
+			"if ASP is to be run a lights on-off chamber experiment. Received "//StripToken(Token))
 
                 lightswitch_flag = I
 

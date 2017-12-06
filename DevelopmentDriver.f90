@@ -443,7 +443,7 @@ PROGRAM ASP
 		!11.00 !Otavi Initial Universal Time in hours
 		!8.75 !Timbavati Initial Universal Time in hours
 	
-                CALL RecalculatePhotoRates (ut, .TRUE.)
+                CALL RecalculatePhotoRates (ut, t, .TRUE.)
       
 		ALLOCATE(Chem(HowManyGasChems), STAT=status)
                 IF (status > 0) THEN
@@ -495,7 +495,7 @@ PROGRAM ASP
                    !after this step, or those rates will be set to 0!
 			
                    !Recalculate Photolysis Rates
-                   CALL RecalculatePhotoRates(ut, .FALSE.)
+                   CALL RecalculatePhotoRates(ut, t, .FALSE.)
                         
                    !Recalculate Heterogeneous Rates
                    CALL RecalculateHeteroRates (HeteroRadii, HeteroNumberConc, HeteroBins, .FALSE.)
@@ -573,7 +573,7 @@ PROGRAM ASP
 		!Calculate Initial Photolysis Rates
 		ut = UTCStartTime !Timbavati Initial Universal Time in hours
 		!11.00 !Otavi Initial Universal Time in hours
-		CALL RecalculatePhotoRates (ut, .TRUE.)
+		CALL RecalculatePhotoRates (ut, t, .TRUE.)
 
 		ALLOCATE(Chem(HowManyGasChems), STAT=status)
                 IF (status > 0) THEN
@@ -761,7 +761,7 @@ PROGRAM ASP
 		
 		!Calculate Heterogeneous rates from size dist. info
 		CALL RecalculateHeteroRates (HeteroRadii, HeteroNumberConc, HeteroBins, .TRUE.)
-		CALL RecalculatePhotoRates(ut, .TRUE.)
+		CALL RecalculatePhotoRates(ut, t, .TRUE.)
 		WRITE(*,*) "After Photo Rates"			
 		TEMP = GetTemp()
 		Mgas = GetM   ()
@@ -845,7 +845,7 @@ PROGRAM ASP
                    !after this step, or those rates will be set to 0!
 			
                    !Recalculate Photolysis Rates
-                   CALL RecalculatePhotoRates(ut, .FALSE.)
+                   CALL RecalculatePhotoRates(ut, t, .FALSE.)
                    WRITE(*,*) "Photo Okay"
 
                    !Step Dilution of bulk "particles" for heterogeneous chemistry
@@ -1393,7 +1393,7 @@ PROGRAM ASP
            !Calculate Initial Photolysis Rates
            ut = 8.75 !Timbavati Initial Universal Time in hours
            !11.00 !Otavi Initial Universal Time in hours
-           CALL RecalculatePhotoRates (ut, .TRUE.)
+           CALL RecalculatePhotoRates (ut, t, .TRUE.)
 
            ALLOCATE(Chem(HowManyGasChems), STAT = status)
            IF (status > 0) THEN
@@ -1470,7 +1470,7 @@ PROGRAM ASP
 				
            !Calculate Heterogeneous rates from size dist. info
            CALL RecalculateHeteroRates (HeteroRadii, HeteroNumberConc, HeteroBins, .TRUE.)
-           CALL RecalculatePhotoRates(ut, .TRUE.)
+           CALL RecalculatePhotoRates(ut, t, .TRUE.)
 					
            TEMP = GetTemp()
            Mgas = GetM   ()
@@ -1615,7 +1615,7 @@ PROGRAM ASP
            !Convert Inversion Height from km to cm
            InvHgt = InversionHeight!*1.0e5
 
-           IF(NOT(IncludeAerosols)) THEN !Gas Chemistry Only
+           IF(.NOT.(IncludeAerosols)) THEN !Gas Chemistry Only
 	        CALL TRANSCRIPT("")
 	        CALL TRANSCRIPT("Gas Chemistry Only Selected.")
 		! INITIALIZE the CHEMISTRY 

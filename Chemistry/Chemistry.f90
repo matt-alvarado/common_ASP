@@ -944,46 +944,46 @@ MODULE Chemistry
 
     end SUBROUTINE ResetPhotoRatesSZA
 
-	SUBROUTINE ResetPhotoRates(ReactionRates,ArraySize, ut, t, FirstTime)
+    SUBROUTINE ResetPhotoRates(ReactionRates,ArraySize, ut, t, FirstTime)
 	!!This subroutine looks for the appropriate value of the 
         !! photolysis rate constant
 	!!given the time in UT and the reaction rate index 
         !! (read from the gas chemical mechanism)	
 	!! Changed on 10/19/06 to include linear interpolation - Matt Alvarado
-		Use ModelParameters
-		USE InfrastructuralCode, ONLY : Transcript, ERROR, & 
-                                                Int2Str, Real2Str
-		USE GridPointFields,	 ONLY : GasPhaseChemicalRates
+	Use ModelParameters
+	USE InfrastructuralCode, ONLY : Transcript, ERROR, & 
+                                        Int2Str, Real2Str
+	USE GridPointFields,	 ONLY : GasPhaseChemicalRates
 
-		IMPLICIT NONE
+	IMPLICIT NONE
 
-		REAL*8,  INTENT(in) :: ReactionRates(:,:)
-		INTEGER, INTENT(in) :: ArraySize(2)
-		REAL*8,  INTENT(in) :: ut, t !ut in hr, t in seconds
-		LOGICAL, INTENT(in) :: FirstTime
+	REAL*8,  INTENT(in) :: ReactionRates(:,:)
+	INTEGER, INTENT(in) :: ArraySize(2)
+	REAL*8,  INTENT(in) :: ut, t !ut in hr, t in seconds
+	LOGICAL, INTENT(in) :: FirstTime
 		
-		INTEGER :: I,J,K,L, TimeIndex, RxnIndex
-		REAL*8 :: OldRate, y1, y2, ut1, ut2, A, ut_temp
-		REAL*8, PARAMETER :: Scale = 1.0
+	INTEGER :: I,J,K,L, TimeIndex, RxnIndex
+	REAL*8 :: OldRate, y1, y2, ut1, ut2, A, ut_temp
+	REAL*8, PARAMETER :: Scale = 1.0
 
 
-	        !! Loop over all reactions
-		DO L = 1, ArraySize(1)
-		    !print *, ''
-		    !print *, 'L = ', L
+        !! Loop over all reactions
+	DO L = 1, ArraySize(1)
+	        !print *, ''
+                !print *, 'L = ', L
 					
-			!! Only do photolysis reactions
-			IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
-                            INT(ReactionRates(L,3)) .EQ. 0.) THEN	
+		!! Only do photolysis reactions
+		IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
+                    INT(ReactionRates(L,3)) .EQ. 0.) THEN	
 								
-		            OldRate = GasPhaseChemicalRates(L)
+                    OldRate = GasPhaseChemicalRates(L)
 								
-			    !Find reaction index number
-			    RxnIndex = INT(ReactionRates(L,4))
+	            !Find reaction index number
+	            RxnIndex = INT(ReactionRates(L,4))
 
 !!Option 3 - If light_flag = 1, don't interpolate and turn lights on and off
                               
-                            IF (light_flag .EQ. 1) THEN
+                    IF (light_flag .EQ. 1) THEN
                                 !Find lower time index number
 		                ut1 = UTCStartTime	
 			        TimeIndex = INT(ut1*4 + 1.0)
@@ -996,9 +996,9 @@ MODULE Chemistry
                                      GasPhaseChemicalRates(L) = y1
                                 ENDIF
   
-                            ELSE
+                     ELSE
 !!Option 1 - if PhotoFlag = 0, find corresponding time in PhotoRates.in array
-                IF (.not. PhotoFlag) THEN	
+                                IF (.not. PhotoFlag) THEN	
                 							
 				    !Find lower time index number
 				    TimeIndex = INT(ut*4 + 1.0)
@@ -1055,7 +1055,8 @@ MODULE Chemistry
                                     CALL TRANSCRIPT("Photolysis Reaction #"//TRIM(INT2STR(L))//&
                                                     " Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
                                 endif        
-			END IF	
+		        ENDIF
+    	            ENDIF	
 		END DO
 
 	END SUBROUTINE ResetPhotoRates

@@ -320,6 +320,12 @@ MODULE ModelParameters
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         REAL*8  :: windspeed, boxlength, boxwidth, fire_co_emis    
 
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !!Set Lightswitch Parameters (MJA, 08/07/2017)                !!
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        REAL*8  :: lights_on, lights_off
+        INTEGER :: light_flag
+
 	!!!!!!! DEFINE SUBROUTINES !!!!!!!
 	CONTAINS
 
@@ -907,6 +913,19 @@ MODULE ModelParameters
 
 		PhotoEndTime = UTC
 	END SUBROUTINE SetPhotoEndTime
+
+        SUBROUTINE LightSwitchParams(lightswitch_flag, lights_on_time, lights_off_time)
+
+                IMPLICIT NONE
+
+                REAL*8  :: lights_on_time, lights_off_time
+                INTEGER :: lightswitch_flag
+                
+                light_flag = lightswitch_flag
+                lights_on = lights_on_time
+                lights_off = lights_off_time                
+
+        END SUBROUTINE LightSwitchParams
 
 end module ModelParameters
 

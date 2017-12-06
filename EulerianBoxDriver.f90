@@ -73,7 +73,8 @@ SUBROUTINE EulerianBox()
 	CALL RecalculateReactionRates(IFGAS,IFAQ)			
  	CALL ReadPhotolysisRates
 	ut = UTCStartTime
-	CALL RecalculatePhotoRates (ut, .TRUE.)
+        t = 0.0
+	CALL RecalculatePhotoRates (ut, t, .TRUE.)
 
 	ALLOCATE(CHEM(HowManyGasChems))
 	ALLOCATE(Gas_ER(HowManyGasChems)) !molecules gas q/molecules CO
@@ -449,7 +450,7 @@ SUBROUTINE EulerianBox()
 			!after this step, or those rates will be set to 0!
 			
 			!Recalculate Photolysis Rates
-			CALL RecalculatePhotoRates(ut, .FALSE.)
+			CALL RecalculatePhotoRates(ut, t, .FALSE.)
 			!WRITE(*,*) "Photo Okay"
 
 			!Get particle number conc. and radii for hetero. rate calculation

@@ -944,7 +944,7 @@ MODULE Chemistry
 
     end SUBROUTINE ResetPhotoRatesSZA
 
-	SUBROUTINE ResetPhotoRates(ReactionRates,ArraySize, ut, FirstTime)
+	SUBROUTINE ResetPhotoRates(ReactionRates,ArraySize, ut, t, FirstTime)
 	!!This subroutine looks for the appropriate value of the 
         !! photolysis rate constant
 	!!given the time in UT and the reaction rate index 
@@ -959,7 +959,7 @@ MODULE Chemistry
 
 		REAL*8,  INTENT(in) :: ReactionRates(:,:)
 		INTEGER, INTENT(in) :: ArraySize(2)
-		REAL*8,  INTENT(in) :: ut
+		REAL*8,  INTENT(in) :: ut, t !ut in hr, t in seconds
 		LOGICAL, INTENT(in) :: FirstTime
 		
 		INTEGER :: I,J,K,L, TimeIndex, RxnIndex
@@ -976,11 +976,27 @@ MODULE Chemistry
 			IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
                             INT(ReactionRates(L,3)) .EQ. 0.) THEN	
 								
-				OldRate = GasPhaseChemicalRates(L)
-				!print *, 'OldRate: ', oldrate				
-				!Find reaction index number
-				RxnIndex = INT(ReactionRates(L,4))
-                !print *, 'RxnIndex: ', RxnIndex
+		            OldRate = GasPhaseChemicalRates(L)
+								
+			    !Find reaction index number
+			    RxnIndex = INT(ReactionRates(L,4))
+
+!!Option 3 - If light_flag = 1, don't interpolate and turn lights on and off
+                              
+                            IF (light_flag .EQ. 1) THEN
+                                !Find lower time index number
+		                ut1 = UTCStartTime	
+			        TimeIndex = INT(ut1*4 + 1.0)
+			        !Early Value
+			        y1 = PhotoRates(TimeIndex, RxnIndex) 
+ 
+                                IF(t/60.0 .LE. lights_on .OR. t/60.0 .GE. lights_off) THEN
+                                     GasPhaseChemicalRates(L) = 0.0
+                                ELSE
+                                     GasPhaseChemicalRates(L) = y1
+                                ENDIF
+  
+                            ELSE
 !!Option 1 - if PhotoFlag = 0, find corresponding time in PhotoRates.in array
                 IF (.not. PhotoFlag) THEN	
                 							
@@ -1058,7 +1074,7 @@ MODULE Chemistry
 	end subroutine RecalculatePhotoRatesSZA
         ! end CB add
 
-	SUBROUTINE RecalculatePhotoRates(ut, FirstTime)
+	SUBROUTINE RecalculatePhotoRates(ut, t, FirstTime)
 		
 		!This subroutine just calls ResetPhotoRates, and must be called
 		!after every time RecalculateGasPhaseReactionRates is called. 
@@ -1067,10 +1083,10 @@ MODULE Chemistry
 		implicit none
 
 		!! Input Variables
-		REAL*8   :: ut
+		REAL*8   :: ut, t
 		LOGICAL  :: FirstTime
 
-		CALL ResetPhotoRates (GasPhaseReactionRates,GasPhaseReactionRateArraySize, ut, FirstTime)
+		CALL ResetPhotoRates (GasPhaseReactionRates,GasPhaseReactionRateArraySize, ut, t, FirstTime)
 	
 	END SUBROUTINE RecalculatePhotoRates
 

@@ -308,8 +308,8 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 		    !call flush(6)			
 					!print *, 'GridGasChem(599) at CondensationIntegrator.h line 281 = ', &
 					!						GridGasChem(599)
-					!print *, '---> Calling StepOrgCondensation if doing flux'
-					!call flush(6)
+					print *, '---> Calling StepOrgCondensation if doing flux'
+					call flush(6)
 				!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 				!write(288,*) 
 				!write(288,*) 'Calling StepOrgCondensation at line 311 of condensationintegrator.h'

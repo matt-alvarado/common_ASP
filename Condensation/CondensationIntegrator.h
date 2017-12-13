@@ -308,6 +308,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 		    !call flush(6)			
 					!print *, 'GridGasChem(599) at CondensationIntegrator.h line 281 = ', &
 					!						GridGasChem(599)
+					!!!!!!!! GITLAB DEBUG !!!!!!!!!!
 					!print *, '---> Calling StepOrgCondensation if doing flux'
 					!call flush(6)
 				!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then

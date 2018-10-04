@@ -994,17 +994,34 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!! SCSCSCSCSC
 	LOGICAL :: Scaffolding = .false. 
 
+        ReturnType = 2
+       
         !! If this is an empty section, we have no truck with it
 	!IF (InParticle%NumberOfParticles .EQ. 0 .OR. InParticle%Dry) RETURN
 	if (inparticle%numberofparticles .lt. 1e-12 .or. inparticle%dry) then
 		!print *, 'empty section, no truck'
 		return
 	endif
-	
-        ReturnType = 2
+
+	!! If all of the concentrations are zero, then equilibrium has effectively been established.
+	! CMB (AER, Inc): Adjust for floating-point inequality
+	!IF  (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
+	!	IF ((Molality (INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle) .EQ. 0) .AND.	 &
+    !		(CationMolality (INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle) .EQ. 0.  .OR.     &
+	!	 AnionMolality  (INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle) .EQ. 0.) )RETURN
+	!END IF
+	IF  (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
+		IF ((dabs(Molality(INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle)) .le. 1.0e-40) .AND.	 &
+				(dabs(CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle)) .le. 1.0e-40  .OR.     &
+				 dabs(AnionMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle)) &
+				 .le. 1.0e-40)) then
+			RETURN    
+	        END IF
+	END IF
+
+
         II = 0.0D0 
 	DRH = DeliquesenceRH (WhichEquilibriumRxn, InParticle)
-
 	RH = GetRelativeHumidity ()
 
 !!DRH and INFINITELY DISSOCIATING CHECK!!
@@ -1016,22 +1033,11 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 !
 ! CMB (AER, Inc): More floating-point equality checks...
 
-! 5 Oct 2016 CMB (AER): Fixing my own introduced bugs...
-!    if ((aqequilibrialist(whichequilibriumrxn, 9) .le. -0.99999 .and. &
-!    		aqequilibrialist(whichequilibriumrxn,9) .gt. -1.000001) .or. &
-!    		((aqequilibrialist(whichequilibriumrxn, 6) .gt. 0.99999999 .and. &
-!    				aqequilibrialist(whichequilibriumrxn, 6) .lt. 1.00000001) .and. &
-!    				RH .ge. DRH)) then
 	if ((dabs(AqEquilibriaList(WhichEquilibriumRxn, 9) + 1.) .lt. 0.000001) .or. &
 			((dabs(AqEquilibriaList(WhichEquilibriumRxn, 6) - 1.) .lt. 0.000001) .and. &
 					RH .ge. DRH)) then					
 !	IF (AqEquilibriaList(WhichEquilibriumRxn,9) .EQ. -1. .OR. &
 !		(AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 .AND. RH .GE. DRH)) THEN 
-
-! 5 Oct 2016 CMB (AER): Fixed my own bug
-!		if (aqequilibrialist(whichequilibriumrxn, 6) .gt. 0.99999999 .and. &
-!				aqequilibrialist(whichequilibriumrxn, 6) .lt. 1.00000001) return
-!		if (inparticle%aqchems(int(aqequilibrialist(whichequilibriumrxn,1))) .le. 1.0e-40) &
 !			return
 		if (dabs(AqEquilibriaList(WhichEquilibriumRxn, 1) + 1.) .lt. 0.000001) return
 		if (dabs(InParticle%AqChems(int(AqEquilibriaList(WhichEquilibriumRxn, 1)))) .le. 1.0e-40) &
@@ -1129,116 +1135,6 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		RETURN
 	END IF
 
-	!!Matt Alvarado added this to check for solid electrolyte reactions that are already in
-	!!Equilibrium, as the solid conc = 0.0 and the solution is subsaturated
-	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
-	! CMB: mod for floating-point inequality
-        if (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) &
-                .lt. 0.00001) then
-            if (EqRatio .lt. 1.0) then
-                if (InParticle%AqChems(nint(aqequilibrialist(&
-                        whichequilibriumrxn,1))) .lt. 1e-100) then
-                    return
-                endif
-            endif
-        endif
-	!if (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .lt. 0.00001 &
-	!!IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 & !A solid electrolyte
-	!    .AND. EqRatio .LT. 1.0 & !The solution is sub-saturated
-	!	.AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LT. 1e-100) THEN !There is no solid left (less than a molecule per particle)
-	!	RETURN
-	!END IF
-	
-	!!Matt Alvarado added this to skip carbonate equilibrium 
-	!!when CO3-- concentration approaches 0.
-	! cmb
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8) - 1.0) .lt. 0.00001 & !A hydrate reaction
-	!IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
-		.AND. AqAnionNames(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. "CO3--" & !CO2 equilibrium only
-	    .AND. EqRatio .GT. 1.0 & !The solution is super-saturated
-		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) &
-                    .LT. 1e-30) THEN !There is no anion left
-		!WRITE(*,*) EqRatio, WhichEquilibriumRxn, AqAnionNames(AqEquilibriaList(WhichEquilibriumRxn,3))
-		RETURN
-	END IF
-
-	!For levitocite equilibrium as SO4-- approaches 0 (acidic aerosol)
-	IF(AqEquilibriaList(WhichEquilibriumRxn,22) .GT. 0. & !levitocite
-		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
-		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) &
-                    .LT. 1e-28) THEN !Not enough SO4--
-		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)3H(SO4)2") THEN
-			RETURN
-		END IF
-	END IF
-
-	!For (NH4)2SO4 equilibrium as SO4-- approaches 0 (acidic aerosol)
-	! cmb
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .lt. 0.00001) THEN !A solid electrolyte
-	!IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0) THEN !A solid electrolyte
-		IF(EqRatio .GT. 1.0 & !The solution is supersaturated
-			.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
-                            INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN !Not enough SO4--
-			IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)2SO4") THEN
-				RETURN
-			END IF
-		END IF
-	END IF
-		
-	!For water equilibrium as OH- approaches 0. (very high pH)
-	IF(AqEquilibriaList(WhichEquilibriumRxn,1) .LT. 0.0 & !water (index is -1.0)
-		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
-		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(&
-                            WhichEquilibriumRxn,3))) .LT. 1e-40) THEN !Not enough OH-
-		!write(*,*) 'Not enough OH-'
-		RETURN
-	END IF
-		
-	!! Set the error tolerance according to the 
-	!! subroutine's optional input
-	!IF (PRESENT(OptErrorTolerance)) THEN
-		ErrorTolerance = OptErrorTolerance
-	!ELSE
-	!	ErrorTolerance = AqThermoEquilibriumError
-	!END IF
-
-	!! If all of the concentrations are zero, then equilibrium has effectively been established.
-	! CMB (AER, Inc): Adjust for floating-point inequality
-	!IF  (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
-	!	IF ((Molality (INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle) .EQ. 0) .AND.	 &
-    !		(CationMolality (INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle) .EQ. 0.  .OR.     &
-	!	 AnionMolality  (INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle) .EQ. 0.) )RETURN
-	!END IF
-	IF  (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
-		IF ((dabs(Molality(INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle)) .le. 1.0e-40) .AND.	 &
-				(dabs(CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle)) .le. 1.0e-40  .OR.     &
-				 dabs(AnionMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle)) &
-				 .le. 1.0e-40)) then
-			 !write(*,*) 'All Molalities are <= 1.0e-40; equilibrium has been established'
-			!call flush(6) 
-			RETURN
-	    else
-	    	!write(*,*) 'Molality = ', Molality(int(AqEquilibriaList(WhichEquilibriumRxn,1)),&
-	    	!		InParticle)
-			!write(*,*) 'CationMolality = ', CationMolality(INT(AqEquilibriaList(&
-			!		WhichEquilibriumRxn,2)), InParticle)
-			!write(*,*) 'AnionMolality = ', AnionMolality(INT(AqEquilibriaList(&
-			!		WhichEquilibriumRxn,2)), InParticle)		
-	    endif
-	END IF
-		
-	IF(SCAFFOLDING) WRITE(*,*) "Before Eq Ratio"
-	!! If equilibrium has been established, then it has been established...
-	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
-	IF(SCAFFOLDING) WRITE(*,*) "After Eq Ratio"
-
-	! CMB: mod for double precision
-	if (dabs(eqratio - 1) .lt. errortolerance) return
-	!IF (ABS(EqRatio-1) .LT. ErrorTolerance) RETURN
-
-	!IF (PRESENT(ReturnType)) ReturnType = 1
-        ReturnType = 1
-
 	!! NEUTRALIZE.
 	!! If the reaction produces either a proton or a hydroxy ion and there is a water 
 	!! reaction (as is proper), and there is an excess concentration of the other ion,
@@ -1316,9 +1212,6 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	IF(SCAFFOLDING) WRITE(*,*) "After Neutralize"
 
-	!! I counts the number of iterations
-	I = 1
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! This routine generally follows the Mass Flux Iteration method reviewed in !!
 !! Jacobson, 1999 (the textbook) and reviewed earlier in Jacobson et al. 1996!!
@@ -1373,6 +1266,96 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		WaterRxn = .TRUE.
 	END IF
 
+	!! Set the error tolerance according to the 
+	!! subroutine's optional input
+	!IF (PRESENT(OptErrorTolerance)) THEN
+		ErrorTolerance = OptErrorTolerance
+	!ELSE
+	!	ErrorTolerance = AqThermoEquilibriumError
+	!END IF
+		
+	IF(SCAFFOLDING) WRITE(*,*) "Before Eq Ratio"
+	!! If equilibrium has been established, then it has been established...
+	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
+	IF(SCAFFOLDING) WRITE(*,*) "After Eq Ratio"
+
+	! CMB: mod for double precision
+	if (dabs(eqratio - 1) .lt. errortolerance) return
+
+	!!Matt Alvarado added this to check for solid electrolyte reactions that are already in
+	!!Equilibrium, as the solid conc = 0.0 and the solution is subsaturated
+	! CMB: mod for floating-point inequality
+        if (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) &
+                .lt. 0.00001) then
+            if (EqRatio .lt. 1.0) then
+!                if (InParticle%AqChems(nint(aqequilibrialist(&
+!                        whichequilibriumrxn,1))) .lt. 1e-100) then
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                if ((Qnumer/(Qdenom+1.0e-60)) .GT. 1.0e6) then    !electrolyte (denom) small compared to ions (numer)
+                    return
+                endif
+            endif
+        endif
+	
+	!!Matt Alvarado added this to skip carbonate equilibrium 
+	!!when CO3-- concentration approaches 0.
+	! cmb
+	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8) - 1.0) .lt. 0.00001 & !A hydrate reaction
+	!IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
+		.AND. AqAnionNames(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. "CO3--" & !CO2 equilibrium only
+	    .AND. EqRatio .GT. 1.0 & !The solution is super-saturated
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+		.AND. ((Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e6)) then !Ions (numer) small compared to electrolyte (denom)
+		!.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) &
+                    !.LT. 1e-30) THEN !There is no anion left
+		!WRITE(*,*) EqRatio, WhichEquilibriumRxn, AqAnionNames(AqEquilibriaList(WhichEquilibriumRxn,3))
+		RETURN
+	END IF
+
+	!For levitocite equilibrium as SO4-- approaches 0 (acidic aerosol)
+	IF(AqEquilibriaList(WhichEquilibriumRxn,22) .GT. 0. & !levitocite
+		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
+		!       MJA 20181003 - try using ratio between limiting product and reactant instead
+		.AND. ((Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e6)) then !Ions (numer) small compared to electrolyte (denom)
+                !.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) &
+                !    .LT. 1e-28) THEN !Not enough SO4--
+		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)3H(SO4)2") THEN
+			RETURN
+		END IF
+	END IF
+
+	!For (NH4)2SO4 equilibrium as SO4-- approaches 0 (acidic aerosol)
+	! cmb
+	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .lt. 0.00001) THEN !A solid electrolyte
+	!IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0) THEN !A solid electrolyte
+		IF(EqRatio .GT. 1.0 & !The solution is supersaturated
+		!       MJA 20181003 - try using ratio between limiting product and reactant instead
+		.AND. ((Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e6)) then !Ions (numer) small compared to electrolyte (denom)
+			!.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
+                        !    INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN !Not enough SO4--
+			IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)2SO4") THEN
+				RETURN
+			END IF
+		END IF
+	END IF
+		
+	!For water equilibrium as OH- approaches 0. (very high pH)
+	IF(AqEquilibriaList(WhichEquilibriumRxn,1) .LT. 0.0 & !water (index is -1.0)
+		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
+	        .AND. ((Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e14)) then !Ions (numer) small compared to electrolyte (denom), special ratio for H2O reaction
+                !.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(&
+                !            WhichEquilibriumRxn,3))) .LT. 1e-40) THEN !Not enough OH-
+		!write(*,*) 'Not enough OH-'
+		RETURN
+	END IF
+		
+	!IF (ABS(EqRatio-1) .LT. ErrorTolerance) RETURN
+
+	!IF (PRESENT(ReturnType)) ReturnType = 1
+        ReturnType = 1
+
+	!! I counts the number of iterations
+	I = 1
 
 	!! STEP 2: Calculate the Mass Step Sizes by which to Correct Concentrations
 	Z  = (Qdenom + Qnumer) / 2.	
@@ -1543,17 +1526,63 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!	Z = Z/SQRT(ErrorTolerance)
 	!END IF
 
+        !Recalc Qdenom and Qnumer
+	IF (AqEquilibriaList(WhichEquilibriumRxn,22) .GT. 0) THEN
+		!Levitocite
+		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .NE. "(NH4)3H(SO4)2") THEN
+			CALL ERROR("Non-levitocite complex salt detected in EquilibrateAqueousDissociationReaction."//&
+                               " This is not allowed.")
+		END IF
+		Qnumer = MIN( InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))/	&
+				  AqEquilibriaList(WhichEquilibriumRxn,4),														&
+				  InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
+                                      INT(AqEquilibriaList(WhichEquilibriumRxn,3)))/&
+				  AqEquilibriaList(WhichEquilibriumRxn,5),														&
+				  InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
+                                      INT(AqEquilibriaList(WhichEquilibriumRxn,22)))/&
+				  AqEquilibriaList(WhichEquilibriumRxn,23))
+
+	ELSE
+		Qnumer = MIN( InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))&
+				  /AqEquilibriaList(WhichEquilibriumRxn,4),														&
+				  InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
+                                      INT(AqEquilibriaList(WhichEquilibriumRxn,3)))&
+				  /AqEquilibriaList(WhichEquilibriumRxn,5))
+	END IF
+	
+	!! If there is a non-water electrolyte, then water or the electrolyte may limit the reaction
+	IF (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
+		IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0) THEN
+			Qdenom = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))),	&
+				InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))
+		ELSE
+			Qdenom = InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))
+		END IF
+		WaterRxn = .FALSE.
+	ELSE
+		Qdenom   = InParticle%AqChems(1)*EqCoeff(WhichEquilibriumRxn, InParticle, 1)
+		WaterRxn = .TRUE.
+	END IF
+
 	!!Check to see if Electrolyte almost completely dissociated
 	IF (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
 		!For neutral Electrolytes
-		IF (AqEquilibriaList(WhichEquilibriumRxn,1) .LE. HowManyAqChems .AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LT. 1.0e-28) THEN !Much Less than a molecule per particle
+		IF ( AqEquilibriaList(WhichEquilibriumRxn,1) .LE. HowManyAqChems &
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                    .AND. (EqRatio .LT. 1.0) &
+                    .AND. (Qnumer/(Qdenom+1.0e-60)) .GT. 1.0e6) then    !electrolyte (denom) small compared to ions (numer)
+                        !.AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LT. 1.0e-28) THEN !Much Less than a molecule per particle
 			!WRITE(*,*) "Solid Electrolyte ", trim(AqPhaseChemicalNames(AqEquilibriaList(WhichEquilibriumRxn,1))), " is completely dissociated"
 			!InParticle%AqChems(AqEquilibriaList(WhichEquilibriumRxn,1)) = 0.0
 			RETURN
 		END IF
-		
+	
 		!For ionic Electrolytes that may also approach 0 (ex. HSO4-)
-		IF (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. HowManyAqChems .AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LT. 1.0e-28) THEN !Much Less than a molecule per particle
+		IF (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. HowManyAqChems &
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                    .AND. (EqRatio .LT. 1.0) &
+                    .AND. (Qnumer/(Qdenom+1.0e-60)) .GT. 1.0e6) then !electrolyte (denom) small compared to ions (numer)
+                        !.AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LT. 1.0e-28) THEN !Much Less than a molecule per particle
 			!WRITE(*,*) "Non-Solid Electrolyte ", trim(AqPhaseChemicalNames(AqEquilibriaList(WhichEquilibriumRxn,1))), " is completely dissociated"
 			!InParticle%AqChems(AqEquilibriaList(WhichEquilibriumRxn,1)) = 0.0
 			RETURN
@@ -1562,19 +1591,28 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		!For carbonate equilibrium as CO3-- approaches 0
 		IF(AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
 		    .AND. AqAnionNames(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. "CO3--" & !CO2 equilibrium only
-			.AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                    .AND. (EqRatio .GT. 1.0) &
+                    .AND. (Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e6) then !electrolyte (denom) large compared to ions (numer)			
+                        !.AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN
 			RETURN
 		END IF
 		
 		!For levitocite equilibrium as SO4-- approaches 0
 		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)3H(SO4)2" & !levitocite
-		    .AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) .LT. 1e-28) THEN
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                    .AND. (EqRatio .GT. 1.0) &
+                    .AND. (Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e6) then !electrolyte (denom) large compared to ions (numer)
+!		    .AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) .LT. 1e-28) THEN
 			RETURN
 		END IF
 
 		!For (NH4)2SO4 equilibrium as SO4-- approaches 0
 		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)2SO4" & 
-		    .AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                    .AND. (EqRatio .GT. 1.0) &
+                    .AND. (Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e6) then !electrolyte (denom) large compared to ions (numer)
+		    !.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN
 			RETURN
 		END IF
 
@@ -1582,7 +1620,10 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!For water equilibrium as OH- approaches 0. (very high pH)
 	IF(AqEquilibriaList(WhichEquilibriumRxn,1) .LT. 0. & !water has index -1.0
-		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-40 & !Not enough OH-
+!		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-40 & !Not enough OH-
+!       MJA 20181003 - try using ratio between limiting product and reactant instead
+                    .AND. (EqRatio .GT. 1.0) &
+                    .AND. (Qdenom/(Qnumer+1.0e-60)) .GT. 1.0e14 &!electrolyte (denom) large compared to ions (numer)
 		.AND. I .GT. AqThermoNumbAllowedIterations/2.) THEN !Made a good-faith effort
 		RETURN
 	END IF

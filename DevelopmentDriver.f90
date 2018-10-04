@@ -483,7 +483,7 @@ PROGRAM ASP
 		ChemTimestep = 1
 		MixTimestep = 1 !Always start as 1s for first 600 seconds, MJA 12-28-2012
 		DO r = 1, INT(600+((RunLength-10)*60/MixStep))+1
-		
+		   
                    !Write Gas Output to files 
                    IF (MOD(t,60.0)<=0.05) THEN
                       CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),t,.FALSE.,.FALSE.)
@@ -555,7 +555,7 @@ PROGRAM ASP
                       ChemTimestep = ChemStep
                       MixTimestep = MixStep    
                    ENDIF
-                   WRITE(*,*) t	
+                   WRITE(*,*) t, ut	
 		END DO !Time Loop
 
                 DEALLOCATE(HeteroNumberConc, HeteroRadii, Chem, OutFH, STAT=status)
@@ -1175,6 +1175,26 @@ PROGRAM ASP
            NewRH = 0.92
            DO J = 1, 36
               NewRH = NewRH - 0.02		
+              CALL SetRelativeHumidity (NewRH)
+              
+              WRITE(*,*) "Before Equilibrate"	, NewRH
+              CALL EquilibrateGridPoint(EquilibrateWater=.TRUE., &
+                   WaterOpenSystem=.TRUE., InorgOnly=.FALSE.)
+              WRITE(*,*) "Equilibrate Okay"
+
+              CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),NewRH,.FALSE.,.TRUE.)
+		
+              CALL AerosolOutput(current, OutFH(4), NewRH, .FALSE., .TRUE.)
+
+              !Spill Beans
+              CALL SpillBeans()
+ 
+              !Pause the code
+              !READ(*,*)
+           END DO
+
+           DO J = 1, 36
+              NewRH = NewRH + 0.02		
               CALL SetRelativeHumidity (NewRH)
               
               WRITE(*,*) "Before Equilibrate"	, NewRH

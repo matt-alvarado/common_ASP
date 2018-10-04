@@ -171,7 +171,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 	INTEGER :: NumTimeSteps
 
 	!! Internal Variables
-	INTEGER :: I
+	INTEGER :: I, ReturnType
 	REAL*8  :: InitialBurden(10), CondTime
 	REAL*4  :: etimearray(2)
 	LOGICAL :: EmptyGridCell
@@ -267,10 +267,12 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
                 
                 ! CMB (AER, Inc): We're doing to try skipping the inorganics
                 !                 until we figure out what is wrong 
-                IF(DoDissolutionFlag .OR. DoCondensationFlag) then
+                !IF(DoDissolutionFlag .OR. DoCondensationFlag) then
+                !MJA 20181004 Change to .AND.
+                IF(DoDissolutionFlag .AND. DoCondensationFlag) then
                     if ((tempK .gt. tempThresh) .and. (relativeHumidity .gt. &
                             rhThresh)) then
-                      !write(*,*) "---> Calling StepCondensation if doing flux"
+                      write(*,*) "---> Calling StepCondensation if doing flux"
 				
                       !stop
 					  !call spillbeans(tout_unit=567)
@@ -293,7 +295,17 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 						!call GasOutput(310, 311, 312, real(900), .true., .true.)
                     endif
                 else
-                	!write(*,*) 'DoDissolutionFlag and DoCondensationFlag are F'
+                    write(*,*) 'DoDissolutionFlag or DoCondensationFlag are F'
+                    write(*,*) 'Do opensystem water eq, no electrolyte eq'
+ 	            CurrentParticle => Particles%First
+
+	            DO WHILE (ASSOCIATED(CurrentParticle))
+		         if (currentparticle%numberofparticles .gt. filler_value) then
+                             Call EqAllWater(CurrentParticle, ReturnType, .TRUE.)
+                         endif
+                         CurrentParticle => CurrentParticle%Next			
+	            END DO
+   
                 endif
                     	
 
@@ -312,7 +324,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 					!call flush(6)
 				!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 				!write(288,*) 
-				!write(288,*) 'Calling StepOrgCondensation at line 311 of condensationintegrator.h'
+				write(*,*) 'Calling StepOrgCondensation at line 311 of condensationintegrator.h'
 				!call spillbeans(tout_unit=288)
 				!endif
                     CALL StepOrgCondensation (TimestepSize, 1)
@@ -349,7 +361,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
                     if ((tempK .gt. tempThresh) .and. (relativeHumidity .gt. &
                             rhThresh)) then
 							!call spillbeans(tout_unit=289)
-                        !print *, '---> Calling StepAqOrgCondensation if doing flux; temp = ', tempK, ' and RH = ', relativeHumidity
+                        print *, '---> Calling StepAqOrgCondensation if doing flux; temp = ', tempK, ' and RH = ', relativeHumidity
                         !stop
 						!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 						!				write(289,*) 
@@ -368,7 +380,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
                     endif
 
                  Else
-				 	 !write(*,*) 'DoHydrophilicDissolutionFlag is false'
+				 	 write(*,*) 'DoHydrophilicDissolutionFlag is false'
 				 endif
 				 
                  !WRITE(*,*) "StepDissolutionAll Check 3"

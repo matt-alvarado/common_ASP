@@ -223,7 +223,7 @@ MODULE ModelParameters
 								!! to convergence to return.  It's in a Kcalc / Ksupplied value.	 If 
 								!! it's too small, then no aq equilibrium reactions will be demoted and
 								!! conflicts may occur.
-	INTEGER, PARAMETER :: AqThermoNumbAllowedIterations = 100
+	INTEGER, PARAMETER :: AqThermoNumbAllowedIterations = 10
 	INTEGER, PARAMETER :: AqThermoNumbAllowedIterationsForHypLoop = 20
 	REAL*8, PARAMETER  :: AerosolWaterEquilibriumRHThreshold = 0.98 !! If RH is above this value, simply don't equilibrate the 
 									!! water.  Trust what is there
@@ -235,7 +235,7 @@ MODULE ModelParameters
 	!! If WaterContentPrecision number is too large, then equilibrium water content may oscillate grandly, 
 	!! preventing AqThermoEquilibriumError from being satisfied 
 
-	REAL*8 :: WaterContentPrecision = 0.0001   !! The Relative Humidity and Water Activity must be within this amount, or LSODES 
+	REAL*8 :: WaterContentPrecision = 0.001   !! The Relative Humidity and Water Activity must be within this amount, or LSODES 
 											   !! uses this as the error tolerance...
 	LOGICAL, PARAMETER :: OpenSystemForCondensation = .FALSE.
 	LOGICAL			   :: DissolutionEquilibriumOrFlux		! False is equilibrium, True is flux

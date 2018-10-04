@@ -1512,17 +1512,17 @@ SUBROUTINE GasOutput(FH1, FH2, FH3,t,First, Thermo)
 		WRITE(FH3,FMT='(ES16.5E2)', ADVANCE='NO') t
 
 		Mgas = GetM()
-                Print *,'time = ',t
+                !Print *,'time = ',t
 		DO q = 1, HowManyGasChems		
                    IF (q .LE. 70) THEN
                       WRITE(FH1,FMT='(ES16.5E2)', ADVANCE='NO') GridGasChem(q)*1.0e9/Mgas !from molec/cm3 to ppb
-                      Print *, GasPhaseChemicalNames(q),' = ', GridGasChem(q)*1.0e9/Mgas
+                      !Print *, GasPhaseChemicalNames(q),' = ', GridGasChem(q)*1.0e9/Mgas
                    ELSE IF (q .GT. 70 .AND. q .LE. 140) THEN
                       WRITE(FH2,FMT='(ES16.5E2)', ADVANCE='NO') GridGasChem(q)*1.0e9/Mgas
-                      Print *, GasPhaseChemicalNames(q),' = ', GridGasChem(q)*1.0e9/Mgas
+                      !Print *, GasPhaseChemicalNames(q),' = ', GridGasChem(q)*1.0e9/Mgas
                    ELSE 
                       WRITE(FH3,FMT='(ES16.5E2)', ADVANCE='NO') GridGasChem(q)*1.0e9/Mgas
-                      Print *, GasPhaseChemicalNames(q),' = ', GridGasChem(q)*1.0e9/Mgas
+                      !Print *, GasPhaseChemicalNames(q),' = ', GridGasChem(q)*1.0e9/Mgas
                    END IF
                 END DO
 		

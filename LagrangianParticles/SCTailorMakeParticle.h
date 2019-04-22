@@ -51,14 +51,16 @@ FUNCTION SCTailorMakeParticle(WhichPopulation, Radius)
 
 	USE InfrastructuralCode, ONLY : REAL2STR, Transcript, Warn, Error
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Input Variables
 	INTEGER :: WhichPopulation
-	REAL*8  :: Radius
+	TYPE (XPLEX)  :: Radius
 
 	!! Local Variables
-	REAL*8 :: II, JJ, KK
+	TYPE (XPLEX) :: II, JJ, KK
 	TYPE(Particle), POINTER :: SCTailorMakeParticle, CurrentParticle
 	INTEGER				    :: allocation_error, I,J
 	LOGICAL, PARAMETER		:: Scaffolding = .FALSE. !.TRUE.
@@ -106,9 +108,12 @@ FUNCTION SCTailorMakeParticle(WhichPopulation, Radius)
 	!! percentage of the terminal velocity, randomly apportioned	!!
 	!! between the three directions.				!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	CALL Random_Number(II)
-	CALL Random_Number(JJ)
-	CALL Random_Number(KK)
+	CALL Random_Number(II%r)
+	CALL Random_Number(JJ%r)
+	CALL Random_Number(KK%r)
+        II%i = 0.0
+        JJ%i = 0.0
+        KK%i = 0.0
 
 	!! Set initial velocity at half or more of terminal velocity
 	KK = (1.+KK)/2.  ! * TerminalVelocity(SCTailorMakeParticle%Radius)
@@ -118,9 +123,9 @@ FUNCTION SCTailorMakeParticle(WhichPopulation, Radius)
 	JJ = Pi*JJ-Pi/2. ! Azimuthal angle is out of 180 degrees
 
 	!! Change this into two random angles and then move to cosines and sines from there:
-	SCTailorMakeParticle%velocity(1) = KK*DCOS(II)*DCOS(JJ)
-	SCTailorMakeParticle%velocity(2) = KK*DSIN(II)*DCOS(JJ)
-	SCTailorMakeParticle%velocity(3) = KK*DSIN(JJ)
+	SCTailorMakeParticle%velocity(1) = KK*COS(II)*COS(JJ)
+	SCTailorMakeParticle%velocity(2) = KK*SIN(II)*COS(JJ)
+	SCTailorMakeParticle%velocity(3) = KK*SIN(JJ)
 
 	IF (SCAFFOLDING) CALL Transcript("Effective Radius          : ("//TRIM(REAL2STR(SCTailorMakeParticle%EffectiveRadius)))
 	IF (SCAFFOLDING) CALL Transcript("Velocity (X,Y,Z): ("//TRIM(REAL2STR(SCTailorMakeParticle%velocity(1)))//","//		&
@@ -181,14 +186,16 @@ FUNCTION SCTailorMakeWaterParticle(Radius)
 
 	USE InfrastructuralCode, ONLY : REAL2STR, Transcript, Warn, Error
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Input Variables
 	INTEGER :: WhichPopulation
-	REAL*8  :: Radius
+	TYPE (XPLEX)  :: Radius
 
 	!! Local Variables
-	REAL*8 :: II, JJ, KK
+	TYPE (XPLEX) :: II, JJ, KK
 	TYPE(Particle), POINTER :: SCTailorMakeWaterParticle, CurrentParticle
 	INTEGER				    :: allocation_error, I,J
 	LOGICAL, PARAMETER		:: Scaffolding = .FALSE. !.TRUE.
@@ -244,9 +251,12 @@ FUNCTION SCTailorMakeWaterParticle(Radius)
 	!! percentage of the terminal velocity, randomly apportioned	!!
 	!! between the three directions.				!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	CALL Random_Number(II)
-	CALL Random_Number(JJ)
-	CALL Random_Number(KK)
+	CALL Random_Number(II%r)
+	CALL Random_Number(JJ%r)
+	CALL Random_Number(KK%r)
+        II%i = 0.0
+        JJ%i = 0.0
+        KK%i = 0.0
 
 	!! Set initial velocity at half or more of terminal velocity
 	KK = (1.+KK)/2.  ! * TerminalVelocity(SCTailorMakeParticle%Radius)
@@ -256,9 +266,9 @@ FUNCTION SCTailorMakeWaterParticle(Radius)
 	JJ = Pi*JJ-Pi/2. ! Azimuthal angle is out of 180 degrees
 
 	!! Change this into two random angles and then move to cosines and sines from there:
-	SCTailorMakeWaterParticle%velocity(1) = KK*DCOS(II)*DCOS(JJ)
-	SCTailorMakeWaterParticle%velocity(2) = KK*DSIN(II)*DCOS(JJ)
-	SCTailorMakeWaterParticle%velocity(3) = KK*DSIN(JJ)
+	SCTailorMakeWaterParticle%velocity(1) = KK*COS(II)*COS(JJ)
+	SCTailorMakeWaterParticle%velocity(2) = KK*SIN(II)*COS(JJ)
+	SCTailorMakeWaterParticle%velocity(3) = KK*SIN(JJ)
 
 	IF (SCAFFOLDING) CALL Transcript("Effective Radius          : ("//TRIM(REAL2STR(SCTailorMakeWaterParticle%EffectiveRadius)))
 	IF (SCAFFOLDING) CALL Transcript("Velocity (X,Y,Z): ("//TRIM(REAL2STR(SCTailorMakeWaterParticle%velocity(1)))//","//   &

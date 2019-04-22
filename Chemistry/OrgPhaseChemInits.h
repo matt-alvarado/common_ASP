@@ -52,6 +52,8 @@ SUBROUTINE SetOrgPhaseChemistry ()
 				    AqChemScale, Atmospheres
 	USE InfrastructuralCode
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Local Infrastructural Variables
@@ -63,7 +65,7 @@ SUBROUTINE SetOrgPhaseChemistry ()
 
 	!! These Local Variables Arrive From the Input Deck
 	INTEGER			:: NumbChems
-	REAL*8, ALLOCATABLE	:: TempMassStorage(:)
+	TYPE (XPLEX), ALLOCATABLE	:: TempMassStorage(:)
 	CHARACTER(len=512), ALLOCATABLE  :: TempNameStorage(:)
 
 	!! Transcribe?  Use Scaffolding Code?
@@ -271,6 +273,8 @@ SUBROUTINE SetHydrophilicOrgPhaseChemistry ()
 				    AqChemScale, Atmospheres
 	USE InfrastructuralCode
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Local Infrastructural Variables
@@ -282,7 +286,7 @@ SUBROUTINE SetHydrophilicOrgPhaseChemistry ()
 
 	!! These Local Variables Arrive From the Input Deck
 	INTEGER			:: NumbChems
-	REAL*8, ALLOCATABLE	:: TempMassStorage(:)
+	TYPE (XPLEX), ALLOCATABLE	:: TempMassStorage(:)
 	CHARACTER(len=512), ALLOCATABLE  :: TempNameStorage(:)
 
 	!! Transcribe?  Use Scaffolding Code?

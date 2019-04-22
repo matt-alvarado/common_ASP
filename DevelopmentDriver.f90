@@ -139,6 +139,8 @@ PROGRAM ASP
 
 	USE Coagulation,          ONLY : StepSectionalCoagulationJacobson
 	
+	USE XPLEXIFY
+        USE MYTYPE
 	IMPLICIT NONE
 
 	!! Define the local variables
@@ -151,19 +153,19 @@ PROGRAM ASP
                    ReturnType, Hi, NumModes, clock, BCi, status, &
                    NaHSO4i, Na2SO4i, NH4HSO4i, NH42SO4i, &
                    SO4i, HSO4i,  LEVi, FH1, EnhFH, NH3i, NH4i, NH4NO3i, &
-                   NH4Cli, NO2i, ETHEi, HCHOi, Aceti, NOi, Gas_Index
+                   NH4Cli, NO2i, ETHEi, HCHOi, Aceti, NOi, Gas_Index, O3i
 
-	REAL*8  :: ii, T_mix, Tau_Dep, slope, b, ChemTimestep, MixTimestep, &
+	TYPE (XPLEX)  :: ii, T_mix, Tau_Dep, slope, b, ChemTimestep, MixTimestep, &
 		   CoagTimeStep, CondTimeStep, t, Mgas, Temp, &
                    NewRH, HNO3Conc, NH3Conc, ut, &
                    Potassium, HClConc, TotalNumber, TotalVolume, &
                    TotalPotassiumMass, RH, &
                    K2SO4Mass, Kmass, TotalMass, TimeStepSize, PressEq, &
-                   P1, EnvMass, InitialMass, NewMass, ChemPercentage, sum, &
+                   P1, EnvMass, InitialMass, NewMass, ChemPercentage, Newsum, &
                    Total, Yield, Store_H2O, Store_Dens,InvHgt, BC, Sulf, &
                    OA, TotalNH4, TermV, DeltaMass
 
-	REAL*4  :: etimearray(2), etime
+	TYPE (XPLEX)  :: etimearray(2), etime
 	
 	TYPE(Particle),    POINTER :: Current, Env
 	
@@ -171,15 +173,20 @@ PROGRAM ASP
 
 	INTEGER :: time(8)
 
-	REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym, BackScatCoeff, SubExtCoeff, SubSingScat
-	REAL*8	:: Term(250)
+	TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym, BackScatCoeff, SubExtCoeff, SubSingScat
+	TYPE (XPLEX)	:: Term(250)
 
         INTEGER, ALLOCATABLE :: outFH(:)
-	REAL*8, ALLOCATABLE  :: Chem(:), NumConc(:), &
+	TYPE (XPLEX), ALLOCATABLE  :: Chem(:), NumConc(:), &
 				HeteroNumberConc(:), HeteroRadii(:), &
                                 InitNumConc(:), EnvNumConc(:)
+        TYPE (XPLEX) :: XplexZero, HighBin, LowBin
 
 	
+        write(*,*) "Hello World!"
+        XplexZero%r = 0.0
+        XplexZero%i = 0.0
+        write(*,*) "Hello World!"
 	!! Initialize the random number generator 
 	CALL Random_Seed()
 
@@ -245,7 +252,7 @@ PROGRAM ASP
              InputFlagRatioOrMass = 1
              Call PopulateParticlesSectionsRightAway(.FALSE.)
 	     !Output size distribution
-	     CALL SizeDistOutput(0.0,"SizeDist_Opt_Mono.txt")
+	     CALL SizeDistOutput(XplexZero,"SizeDist_Opt_Mono.txt")
              
              ii = etime(etimearray)
 	     CALL TRANSCRIPT("")
@@ -279,7 +286,7 @@ PROGRAM ASP
              Monodisperse = .FALSE.
              Particles%First => Null()
              DO I = 1, NumModes
-               CALL SetInitialDens(Store_Dens)
+               CALL SetInitialDens(Store_Dens%r)
 
                IF (.NOT.(GADS)) THEN
                   AerosolModes(I,4) = Store_H2O 
@@ -290,20 +297,24 @@ PROGRAM ASP
                !WRITE(*,*) "Store_H2O: ", Store_H2O
                !!Renormalize mass fractions including water
                ChemPercentage = 0
-               Sum = 0
+               Newsum = 0
                DO J = 4, NumAqChems+NumOrgChems+3
 			!WRITE(*,*) J, AerosolModes(I,J)
                         ChemPercentage = AerosolModes(I,J) + ChemPercentage
                END DO
                DO J = 4, NumAqChems+NumOrgChems+3
 			AerosolModes(I,J) = AerosolModes(I,J)/ChemPercentage
-                        Sum = Sum + AerosolModes(I,J)
+                        Newsum = Newsum + AerosolModes(I,J)
                END DO
-               !WRITE(*,*) "After Renorm: ", Sum, I, AerosolModes(I,4), ChemPercentage
+               !WRITE(*,*) "After Renorm: ", Newsum, I, AerosolModes(I,4), ChemPercentage
              ENDDO
 
              !!Reset Sectional Parameters, currently hardwired distribution
-             CALL SetSectionalParameters (10.0*micron,0.005*micron,40,.FALSE.)
+             HighBin%r = 10.0*micron
+             HighBin%i = 0.0
+             LowBin%r = 0.005*micron
+             LowBin%i = 0.0
+             CALL SetSectionalParameters (HighBin,LowBin,40,.FALSE.)
              !CALL SetSectionalParameters (20.0*micron,0.005*micron,100,.FALSE.)
  
              !!CALL ReadDistributionsOrganic()
@@ -312,12 +323,12 @@ PROGRAM ASP
              ii = etime(etimearray)
 	     CALL TRANSCRIPT("")
 	     CALL TRANSCRIPT("CPU time after sectional particle initialization "//trim(real2str(ii)))
-             CALL SizeDistOutput(0.0,"SizeDist_Opt_Sect_init.txt")
+             CALL SizeDistOutput(XplexZero,"SizeDist_Opt_Sect_init.txt")
 
              CALL EquilibrateInternallyAtGridPoint(EquilibrateWater = .TRUE., WaterOpenSystem = .TRUE.)
              CALL SpillBeans()
 	     !Output size distribution
-	     CALL SizeDistOutput(0.0,"SizeDist_Opt_Sect.txt")
+	     CALL SizeDistOutput(XplexZero,"SizeDist_Opt_Sect.txt")
 
              ii = etime(etimearray)
 	     CALL TRANSCRIPT("")
@@ -399,6 +410,7 @@ PROGRAM ASP
 
            !Convert Inversion Height from km to cm
            InvHgt = InversionHeight*1.0e5
+           InvHgt%i = 0.0e-20
 
            IF(.NOT.(IncludeAerosols)) THEN !Gas Chemistry Only
 	        CALL TRANSCRIPT("")
@@ -468,7 +480,7 @@ PROGRAM ASP
 		OPEN(UNIT=OutFH(2), FILE=TRIM(OutputDeckSubDir)//"GasOut2.txt", STATUS="REPLACE")
 		OPEN(UNIT=OutFH(3), FILE=TRIM(OutputDeckSubDir)//"GasOut3.txt", STATUS="REPLACE")
 
-                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),0.0,.TRUE.,.FALSE.)	
+                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),XplexZero,.TRUE.,.FALSE.)	
 	
 		!MJA, 12-28-2012
                 !New output file for enhancement ratios
@@ -477,7 +489,7 @@ PROGRAM ASP
 	        OPEN(UNIT=OutFH(4), & 
                      FILE=TRIM(OutputDeckSubDir)//"EnhanceRatios.txt", &
                      STATUS="REPLACE")
-                CALL GasEnhanceOutput(OutFH(4),0.0,.TRUE.)
+                CALL GasEnhanceOutput(OutFH(4),XplexZero,.TRUE.)
 
 		t=0
 		ChemTimestep = 1
@@ -505,6 +517,7 @@ PROGRAM ASP
 
                    Slope = 2.00
                    b=b_mix
+                   b%i = 1.0e-20
                    !15  !Yokelson Williams Fire fast 
                    !106.87357 !Yokelson Williams Fire (California, Nov. 17 2009) 
                                !estimated from curvefit of CO data
@@ -780,7 +793,7 @@ PROGRAM ASP
 		OPEN(UNIT = OutFH(2), FILE=TRIM(OutputDeckSubDir)//"GasOut2.txt", STATUS="REPLACE")
 		OPEN(UNIT = OutFH(3), FILE=TRIM(OutputDeckSubDir)//"GasOut3.txt", STATUS="REPLACE")
 
-                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),0.0,.TRUE.,.FALSE.)	
+                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),XplexZero,.TRUE.,.FALSE.)	
 
 		!MJA, 12-28-2012
                 !New output file for enhancement ratios
@@ -789,14 +802,14 @@ PROGRAM ASP
 	        OPEN(UNIT=EnhFH, & 
                      FILE=TRIM(OutputDeckSubDir)//"EnhanceRatios.txt", &
                      STATUS="REPLACE")
-                CALL GasEnhanceOutput(EnhFH,0.0,.TRUE.)
+                CALL GasEnhanceOutput(EnhFH,XplexZero,.TRUE.)
 
 		WRITE(*,*) "After GasOutput1"		
 		current => particles%first
 		DO I = 4, 3 + NumBins
                    OPEN(UNIT = OutFH(I), FILE=TRIM(OutputDeckSubDir)//"Aerosol"//TRIM(INT2STR(I-3))&
                         //".txt", STATUS="REPLACE")
-                   CALL AerosolOutput(current, OutFH(I), 0.0, .TRUE.,.FALSE.)
+                   CALL AerosolOutput(current, OutFH(I), XplexZero, .TRUE.,.FALSE.)
                    IF (associated(current%next)) THEN
                       current => current%next
                    ELSE
@@ -1081,6 +1094,10 @@ PROGRAM ASP
 
 	    END IF !Aerosol Tests
                 
+            O3i = FindChem("O3", 0)
+            write (*,*) real(GridGasChem(O3i)%i)/1.0e-20 !molec/cm3/(Tmix s)
+            !write(*,*) "Ozone Senistivity (ppb/cm inversion height): ", Chem(O3i)%i
+
             DEALLOCATE(NumConc, InitNumConc, EnvNumConc, HeteroNumberConc, HeteroRadii, &
                        Chem, OutFH, STAT=status)
 
@@ -1157,7 +1174,7 @@ PROGRAM ASP
            OPEN(UNIT = OutFH(1), FILE=TRIM(OutputDeckSubDir)//"GasOutThermo1.txt", STATUS="REPLACE")
            OPEN(UNIT = OutFH(2), FILE=TRIM(OutputDeckSubDir)//"GasOutThermo2.txt", STATUS="REPLACE")
            OPEN(UNIT = OutFH(3), FILE=TRIM(OutputDeckSubDir)//"GasOutThermo3.txt", STATUS="REPLACE")
-           CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),0.0,First=.TRUE.,Thermo=.TRUE.)
+           CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),XplexZero,First=.TRUE.,Thermo=.TRUE.)
 
                 
            IF (NumBins .GT. 1) CALL ERROR("This model assummes a bulk aerosol - " &
@@ -1165,7 +1182,7 @@ PROGRAM ASP
 
            OPEN(UNIT = OutFH(4), FILE=TRIM(OutputDeckSubDir)//"AerosolOutThermo.txt", STATUS="REPLACE")
            current => particles%first
-           CALL AerosolOutput(current, OutFH(4), 0.0, First=.TRUE., Thermo=.TRUE.)
+           CALL AerosolOutput(current, OutFH(4), XplexZero, First=.TRUE., Thermo=.TRUE.)
 
            !Spill Beans
            CALL SpillBeans()
@@ -1508,14 +1525,14 @@ PROGRAM ASP
            OPEN(UNIT = OutFH(2), FILE=TRIM(OutputDeckSubDir)//"GasOut2.txt", STATUS="REPLACE")
            OPEN(UNIT = OutFH(3), FILE=TRIM(OutputDeckSubDir)//"GasOut3.txt", STATUS="REPLACE")
 
-           CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),0.0,.TRUE.,.FALSE.)
+           CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),XplexZero,.TRUE.,.FALSE.)
            
            current => particles%first
            DO I = 4, 3 + NumBins
               OPEN(UNIT = OutFH(I), FILE=TRIM(OutputDeckSubDir)//"Aerosol"//TRIM(INT2STR(I-3))//".txt", &
                    STATUS="REPLACE")
               current => particles%first
-              CALL AerosolOutput(current, OutFH(I), 0.0, .TRUE., .FALSE.)
+              CALL AerosolOutput(current, OutFH(I), XplexZero, .TRUE., .FALSE.)
               IF (associated(current%next)) THEN
                  current => current%next
               ELSE
@@ -1704,7 +1721,7 @@ PROGRAM ASP
 		OPEN(UNIT=OutFH(2), FILE=TRIM(OutputDeckSubDir)//"GasOut2.txt", STATUS="REPLACE")
 		OPEN(UNIT=OutFH(3), FILE=TRIM(OutputDeckSubDir)//"GasOut3.txt", STATUS="REPLACE")
 
-                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),0.0,.TRUE.,.FALSE.)	
+                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),XplexZero,.TRUE.,.FALSE.)	
 	
 		!MJA, 12-28-2012
                 !New output file for enhancement ratios
@@ -1713,7 +1730,7 @@ PROGRAM ASP
 	        OPEN(UNIT=OutFH(4), & 
                      FILE=TRIM(OutputDeckSubDir)//"EnhanceRatios.txt", &
                      STATUS="REPLACE")
-                CALL GasEnhanceOutput(OutFH(4),0.0,.TRUE.)
+                CALL GasEnhanceOutput(OutFH(4),XplexZero,.TRUE.)
 
 		t=0
 		ChemTimestep = 1
@@ -2016,7 +2033,7 @@ PROGRAM ASP
 		OPEN(UNIT = OutFH(2), FILE=TRIM(OutputDeckSubDir)//"GasOut2.txt", STATUS="REPLACE")
 		OPEN(UNIT = OutFH(3), FILE=TRIM(OutputDeckSubDir)//"GasOut3.txt", STATUS="REPLACE")
 
-                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),0.0,.TRUE.,.FALSE.)	
+                CALL GasOutput(OutFH(1),OutFH(2),OutFH(3),XplexZero,.TRUE.,.FALSE.)	
 
 		!MJA, 12-28-2012
                 !New output file for enhancement ratios
@@ -2025,14 +2042,14 @@ PROGRAM ASP
 	        OPEN(UNIT=EnhFH, & 
                      FILE=TRIM(OutputDeckSubDir)//"EnhanceRatios.txt", &
                      STATUS="REPLACE")
-                CALL GasEnhanceOutput(EnhFH,0.0,.TRUE.)
+                CALL GasEnhanceOutput(EnhFH,XplexZero,.TRUE.)
 
 		WRITE(*,*) "After GasOutput1"		
 		current => particles%first
 		DO I = 4, 3 + NumBins
                    OPEN(UNIT = OutFH(I), FILE=TRIM(OutputDeckSubDir)//"Aerosol"//TRIM(INT2STR(I-3))&
                         //".txt", STATUS="REPLACE")
-                   CALL AerosolOutput(current, OutFH(I), 0.0, .TRUE.,.FALSE.)
+                   CALL AerosolOutput(current, OutFH(I), XplexZero, .TRUE.,.FALSE.)
                    IF (associated(current%next)) THEN
                       current => current%next
                    ELSE

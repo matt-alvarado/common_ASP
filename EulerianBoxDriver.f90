@@ -11,7 +11,8 @@ SUBROUTINE EulerianBox()
 	USE Condensation
 	USE OutputRoutines
 	USE Coagulation
-	
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Define the local variables
@@ -23,21 +24,21 @@ SUBROUTINE EulerianBox()
 				NH3i, NH4i, NH4NO3i, NH4Cli, NH4HSO4i, NH42SO4i, &
 				Cli, NO3i, SO4i, HSO4i, K2SO4i,LevAeroIndex, AmSulfAeroIndex, H2SO4AeroIndex, N, HNO3Index, &
 				NH3Gas, HNO3Gas, HClGas, H2SO4Gas, NumAqOrgChems, ReturnType
-	real*8  :: ii, jj, kk, y(200), Dum1
-	real*8  :: T_mix, Tau_Dep, slope, b, ChemTimestep, MixTimestep, &
+	TYPE (XPLEX)  :: ii, jj, kk, y(200), Dum1
+	TYPE (XPLEX)  :: T_mix, Tau_Dep, slope, b, ChemTimestep, MixTimestep, &
 				CoagTimeStep, CondTimeStep, t, Mgas, Temp, &
 				X(3), NewRH, HNO3Conc, NH3Conc, ut, &
 				Potassium, HClConc, TotalNumber, TotalVolume, TotalSulfateMass, TotalPotassiumMass, SOA2Conc, &
 				TotalPOA, TotalSOA, TotalK, TotalNa, TotalNH4, TotalCl, TotalNO3, TotalSO4, &
-				NucRate, MolsinNucParticle, GridTotalSOA, RH, tiny, x1, x2, x3, f1, f2, f3, chg, xs, molalbin, &
+				NucRate, MolsinNucParticle, GridTotalSOA, RH, x1, x2, x3, f1, f2, f3, chg, xs, molalbin, &
 				K2SO4Mass, Kmass, TotalMass, TimeStepSize, PressEq, P1, EnvMass, InitialMass, NewMass, &
 				Xlength, Ylength, Height, FireCO, FluxCO, DeltaCO, spinup
 
-	REAL*4  :: etimearray(2)
-	REAL*8, ALLOCATABLE	::	XPASS(:), GAMMA(:), Chem(:), NumConc(:), &
+	TYPE (XPLEX)  :: etimearray(2)
+	TYPE (XPLEX), ALLOCATABLE	::	XPASS(:), GAMMA(:), Chem(:), NumConc(:), &
 							HeteroNumberConc(:), HeteroRadii(:), &
 							InitNumConc(:), EnvNumConc(:), SourceNumConc(:), SourceMassConc(:,:)
-        REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
+        TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
                                           ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep, &
                                           SubExtCoeffSep, SubSSASep
         INTEGER, ALLOCATABLE :: OutFH(:), OFH(:)
@@ -50,11 +51,11 @@ SUBROUTINE EulerianBox()
 
 	!Molar emision ratios to CO for Timbavati Fire
 	!See Trentman, 2005 
-	real*8, ALLOCATABLE :: Gas_ER(:), Flux(:)
-        real*8, ALLOCATABLE :: Aero_Num_ER(:), Aero_AqMol_ER(:,:)
-        real*8, ALLOCATABLE :: Aero_OrgMol_ER(:,:), Aero_AqOrgMol_ER(:,:)
-        real*8, ALLOCATABLE :: Aero_Num_Flux(:), Aero_AqMol_Flux(:,:)
-        real*8, ALLOCATABLE :: Aero_OrgMol_Flux(:,:), Aero_AqOrgMol_Flux(:,:)
+	TYPE (XPLEX), ALLOCATABLE :: Gas_ER(:), Flux(:)
+        TYPE (XPLEX), ALLOCATABLE :: Aero_Num_ER(:), Aero_AqMol_ER(:,:)
+        TYPE (XPLEX), ALLOCATABLE :: Aero_OrgMol_ER(:,:), Aero_AqOrgMol_ER(:,:)
+        TYPE (XPLEX), ALLOCATABLE :: Aero_Num_Flux(:), Aero_AqMol_Flux(:,:)
+        TYPE (XPLEX), ALLOCATABLE :: Aero_OrgMol_Flux(:,:), Aero_AqOrgMol_Flux(:,:)
 
         spinup = 600 !spinup time in s
 	Xlength = boxlength !in km
@@ -712,16 +713,20 @@ SUBROUTINE InitializeGasEulerianBox(NumGasChems, FluxCO, Gas_ER, Flux, Chem)
                                         GasPhaseBackground, &
                                         HowManyEvolveGasChems, &
                                         HowManyGasChems	
+	USE XPLEXIFY
+       USE MYTYPE
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
         !External variables
         INTEGER, INTENT(IN)   :: NumGasChems 
-        REAL*8, INTENT(IN)    :: FluxCO
-        REAL*8, INTENT(INOUT) :: Gas_ER(HowManyGasChems), Flux(HowManyGasChems), Chem(HowManyGasChems)
+        TYPE (XPLEX), INTENT(IN)    :: FluxCO
+        TYPE (XPLEX), INTENT(INOUT) :: Gas_ER(HowManyGasChems), Flux(HowManyGasChems), Chem(HowManyGasChems)
 
         !Internal variables
         INTEGER               :: q, IndCO
-        REAL                  :: GasConc
+        TYPE (XPLEX)          :: GasConc
 
         !Find Index for CO
 	IndCO = FindChem("CO", 0)
@@ -759,20 +764,24 @@ SUBROUTINE InitializeAeroEulerianBox(NumBins, NumAqChems, NumOrgChems, &
                                         Boundaryparticles, &
                                         SortAerosolAtGridPointForCoagulation, &
                                         RecalculateRadius
+	USE XPLEXIFY
+       USE MYTYPE
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
         !External variables
         INTEGER, INTENT(IN)     :: NumBins, NumAqChems
         INTEGER, INTENT(IN)     :: NumOrgChems, NumAqOrgChems
-        REAL*8,  INTENT(IN)     :: FluxCO
-        REAL*8,  INTENT(INOUT)  :: Aero_Num_ER(NumBins), Aero_Num_Flux(NumBins)
-        REAL*8,  INTENT(INOUT)  :: Aero_AqMol_ER(NumBins,NumAqChems), Aero_AqMol_Flux(NumBins,NumAqChems)
-        REAL*8,  INTENT(INOUT)  :: Aero_OrgMol_ER(NumBins,NumOrgChems), Aero_OrgMol_Flux(NumBins,NumOrgChems)
-        REAL*8,  INTENT(INOUT)  :: Aero_AqOrgMol_ER(NumBins,NumAqOrgChems), Aero_AqOrgMol_Flux(NumBins,NumAqOrgChems) 
+        TYPE (XPLEX),  INTENT(IN)     :: FluxCO
+        TYPE (XPLEX),  INTENT(INOUT)  :: Aero_Num_ER(NumBins), Aero_Num_Flux(NumBins)
+        TYPE (XPLEX),  INTENT(INOUT)  :: Aero_AqMol_ER(NumBins,NumAqChems), Aero_AqMol_Flux(NumBins,NumAqChems)
+        TYPE (XPLEX),  INTENT(INOUT)  :: Aero_OrgMol_ER(NumBins,NumOrgChems), Aero_OrgMol_Flux(NumBins,NumOrgChems)
+        TYPE (XPLEX),  INTENT(INOUT)  :: Aero_AqOrgMol_ER(NumBins,NumAqOrgChems), Aero_AqOrgMol_Flux(NumBins,NumAqOrgChems) 
 
         !Internal variables
         INTEGER                 :: q, j, IndCO
-        REAL*8                  :: molecCO !Excess CO in molec/cm3
+        TYPE (XPLEX)                  :: molecCO !Excess CO in molec/cm3
 	TYPE(Particle), POINTER :: Current, Env
 
 	CALL SortAerosolAtGridPointForCoagulation () 
@@ -849,18 +858,22 @@ SUBROUTINE StepDiluGasEulerian(HowManyGasChems,WindSpeed,&
                                         HowManyEvolveGasChems, &
                                         gasphasedepvel	
 
+	USE XPLEXIFY
+       USE MYTYPE
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
         !External variables
         INTEGER, INTENT(IN) :: HowManyGasChems
-        REAL*8,  INTENT(IN) :: WindSpeed !m/s
-        REAL*8,  INTENT(IN) :: Xlength, Height !km
-        REAL*8,  INTENT(IN) :: MixTimeStep, t, spinup !s
-        REAL*8,  INTENT(IN) :: Flux(HowManyGasChems) !molecules/km2/s  
+        TYPE (XPLEX),  INTENT(IN) :: WindSpeed !m/s
+        TYPE (XPLEX),  INTENT(IN) :: Xlength, Height !km
+        TYPE (XPLEX),  INTENT(IN) :: MixTimeStep, t, spinup !s
+        TYPE (XPLEX),  INTENT(IN) :: Flux(HowManyGasChems) !molecules/km2/s  
 
         !Internal Variables
-        REAL*8, ALLOCATABLE :: Chem(:)
-        REAL*8              :: xlen, hi !m
+        TYPE (XPLEX), ALLOCATABLE :: Chem(:)
+        TYPE (XPLEX)              :: xlen, hi !m
         INTEGER             :: q
 
         xlen =1000.0*XLength
@@ -901,23 +914,27 @@ SUBROUTINE StepDiluAeroEulerian(WindSpeed,Xlength,Height,Temp,&
                                         SortAerosolAtGridPointForCoagulation, &
                                         ShellRefIndAndRad, &
                                         RecalculateRadius
+	USE XPLEXIFY
+       USE MYTYPE
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
         !External variables
-        REAL*8,  INTENT(IN) :: WindSpeed !m/s
-        REAL*8,  INTENT(IN) :: Xlength, Height !km
-        REAL*8,  INTENT(IN) :: Temp !K
-        REAL*8,  INTENT(IN) :: MixTimeStep, t, spinup !s
-        REAL*8,  INTENT(IN) :: Aero_Num_Flux(NumBins) !particles/km2/s  
-        REAL*8,  INTENT(IN) :: Aero_AqMol_Flux(NumBins,NumAqChems) !mols/km2/s  
-        REAL*8,  INTENT(IN) :: Aero_OrgMol_Flux(NumBins,NumOrgChems) !mols/km2/s  
-        REAL*8,  INTENT(IN) :: Aero_AqOrgMol_Flux(NumBins,NumAqOrgChems) !mols/km2/s 
+        TYPE (XPLEX),  INTENT(IN) :: WindSpeed !m/s
+        TYPE (XPLEX),  INTENT(IN) :: Xlength, Height !km
+        TYPE (XPLEX),  INTENT(IN) :: Temp !K
+        TYPE (XPLEX),  INTENT(IN) :: MixTimeStep, t, spinup !s
+        TYPE (XPLEX),  INTENT(IN) :: Aero_Num_Flux(NumBins) !particles/km2/s  
+        TYPE (XPLEX),  INTENT(IN) :: Aero_AqMol_Flux(NumBins,NumAqChems) !mols/km2/s  
+        TYPE (XPLEX),  INTENT(IN) :: Aero_OrgMol_Flux(NumBins,NumOrgChems) !mols/km2/s  
+        TYPE (XPLEX),  INTENT(IN) :: Aero_AqOrgMol_Flux(NumBins,NumAqOrgChems) !mols/km2/s 
         INTEGER, INTENT(IN) :: NumAqChems, NumOrgChems, NumAqOrgChems, NumBins
 
         !Internal Variables
-        REAL*8              :: xlen, hi !m
-        REAL*8              :: InitNumConc, EnvNumConc
-        REAL*8              :: InitialMol, EnvMol, NewMol
+        TYPE (XPLEX)              :: xlen, hi !m
+        TYPE (XPLEX)              :: InitNumConc, EnvNumConc
+        TYPE (XPLEX)              :: InitialMol, EnvMol, NewMol
         INTEGER             :: I, J
 	TYPE(Particle), POINTER :: Current, Env
 

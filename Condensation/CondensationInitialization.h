@@ -32,6 +32,8 @@
 !! with a single command
 SUBROUTINE SetAllDissolution()
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	CALL SetDissolution
@@ -71,11 +73,13 @@ SUBROUTINE SetDissolution ()
 					HowManyAqEqReactions,		&
 					GetAqCharge
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Local Infrastructural Variables
 		INTEGER	:: I, J, K, allocation_error,IonIndex(2)
-		REAL*8	:: MassTally, H2SO4GasIndex, SO4AqIndex, HAqIndex
+		TYPE (XPLEX)	:: MassTally, H2SO4GasIndex, SO4AqIndex, HAqIndex
 		CHARACTER(len=512)	:: CurrLine, Token, GasChem1, &
                                            GasChem2, AqIon1, AqIon2
 		CHARACTER (len=12)	:: Numbers = "0123456789+-"
@@ -864,11 +868,13 @@ SUBROUTINE SetDissolution ()
 					GasMolecularMass 
 
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Local Infrastructural Variables
 		INTEGER	:: I, J, K, allocation_error,IonIndex(2)
-		REAL*8	:: MassTally, H2SO4GasIndex, HSO4AqIndex, HAqIndex
+		TYPE (XPLEX)	:: MassTally, H2SO4GasIndex, HSO4AqIndex, HAqIndex
 		CHARACTER(len=512)	:: CurrLine, Token, GasChem1, &
                                            GasChem2, AqIon1, AqIon2
 		CHARACTER (len=12)	:: Numbers = "0123456789+-"
@@ -1149,11 +1155,13 @@ SUBROUTINE SetDissolution ()
 					GasMolecularMass 
 
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Local Infrastructural Variables
 		INTEGER	:: I, J, K, allocation_error,IonIndex(2)
-		REAL*8	:: MassTally, H2SO4GasIndex, HSO4AqIndex, HAqIndex
+		TYPE (XPLEX)	:: MassTally, H2SO4GasIndex, HSO4AqIndex, HAqIndex
 		CHARACTER(len=512)	:: CurrLine, Token, GasChem1, &
                                            GasChem2, AqIon1, AqIon2
 		CHARACTER (len=12)	:: Numbers = "0123456789+-"

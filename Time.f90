@@ -25,7 +25,7 @@
 !! 1. SUBROUTINE ResetTime ()										!!
 !! 2. SUBROUTINE ResetTimeStepSize (inTimeStepSize)					!!
 !! 3. SUBROUTINE StepTime ()										!!
-!! 4. REAL*8 FUNCTION GetTime ()									!!
+!! 4. TYPE (XPLEX) FUNCTION GetTime ()									!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -38,6 +38,10 @@
 
 		USE ModelParameters, ONLY : Seconds, Minutes, Hours, Days
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		PRIVATE
@@ -48,15 +52,19 @@
 					GetTime, ResetTimeStepSize
 
 		REAL*8, PARAMETER :: BeginningTime = 0.
-		REAL*8            :: TimeStepSize
+		TYPE (XPLEX)            :: TimeStepSize
 
 		INTEGER :: TimeStep 
-		REAL*8  :: CurrentTime 
+		TYPE (XPLEX)  :: CurrentTime 
 
 	CONTAINS
 
 	SUBROUTINE ResetTime ()
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		TimeStep    = 0
@@ -67,9 +75,13 @@
 
 	SUBROUTINE ResetTimeStepSize (inTimeStepSize)
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: inTimeStepSize
+		TYPE (XPLEX) :: inTimeStepSize
 
 		TimeStepSize = inTimeStepSize
 
@@ -79,6 +91,10 @@
 
 	SUBROUTINE StepTime ()
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		TimeStep = TimeStep + 1
@@ -88,7 +104,11 @@
 
 
 
-	REAL*8 FUNCTION GetTime ()
+	TYPE (XPLEX) FUNCTION GetTime ()
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		GetTime = CurrentTime

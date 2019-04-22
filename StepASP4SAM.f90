@@ -59,6 +59,10 @@
 
 MODULE StepASP
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
         ! CMB: aerosol flag is private
@@ -102,14 +106,18 @@ MODULE StepASP
 		USE OutputRoutines
 		USE Coagulation
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: TimeStep
+		TYPE (XPLEX) :: TimeStep
 		
 		!! Internal Variables
 		INTEGER :: I, NumBins
-		REAL*8 :: TEMP
+		TYPE (XPLEX) :: TEMP
 	
 		TYPE(Particle), POINTER :: cur
 		TYPE(Particle), POINTER :: Current, Env
@@ -220,33 +228,37 @@ MODULE StepASP
 	  USE OutputRoutines
 	  USE Coagulation
 
+	  USE XPLEXIFY
+       USE MYTYPE
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 
 	  !! External Variables
-	  REAL*8, INTENT(IN) :: Temp  !(in K)
-	  REAL*8, INTENT(IN) :: Press !(in mbar)
-	  REAL*8, INTENT(IN) :: Dens  !(in kg/m3 dry air)
-	  REAL*8 :: GasConc(HowManyEvolveGasChems) !(in molecules/cm3)
-	  REAL*8, INTENT(IN) :: AeroNumConc(HowManyBins) !(in particles/cm3)
-	  REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !(in ug/m3)
-	  REAL*8, INTENT(IN) :: Transmissivity
-	  !REAL*8, INTENT(IN) :: PhotoRates(12)
+	  TYPE (XPLEX), INTENT(IN) :: Temp  !(in K)
+	  TYPE (XPLEX), INTENT(IN) :: Press !(in mbar)
+	  TYPE (XPLEX), INTENT(IN) :: Dens  !(in kg/m3 dry air)
+	  TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems) !(in molecules/cm3)
+	  TYPE (XPLEX), INTENT(IN) :: AeroNumConc(HowManyBins) !(in particles/cm3)
+	  TYPE (XPLEX) :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !(in ug/m3)
+	  TYPE (XPLEX), INTENT(IN) :: Transmissivity
+	  !TYPE (XPLEX), INTENT(IN) :: PhotoRates(12)
 
 	  !! Internal Variables
 	  INTEGER :: I, J, L, RxnIndex, NumAq, GG
-	  REAL*8 :: HeteroNumberConc(HowManyBins)
-          REAL*8 :: HeteroRadii(HowManyBins)
-	  REAL*8 :: Scale
+	  TYPE (XPLEX) :: HeteroNumberConc(HowManyBins)
+          TYPE (XPLEX) :: HeteroRadii(HowManyBins)
+	  TYPE (XPLEX) :: Scale
 
 	  TYPE(Particle), POINTER :: cur
 	  
 	  ! CMB add
-	  real*8, intent(in) :: sza
+	  TYPE (XPLEX), intent(in) :: sza
 	  integer :: doAerosols
 	  ! CRL add
-	  double precision minimum_H2O
-	  real*8,parameter :: cm3_to_m3 = 1e6 ! convert cm3 to m3
-	  real*8,parameter :: umol_to_mol = 1e6 ! convert umol to mol 
+	  TYPE (XPLEX) minimum_H2O
+	  TYPE (XPLEX),parameter :: cm3_to_m3 = 1e6 ! convert cm3 to m3
+	  TYPE (XPLEX),parameter :: umol_to_mol = 1e6 ! convert umol to mol 
 	  doAerosols = getAerosolProc()
 	  ! end CMB add
 	  !write(*,*) 'Entered InputConcenctrations calling spillbeans...'
@@ -509,28 +521,32 @@ MODULE StepASP
 		USE OutputRoutines
 		USE Coagulation
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: Temp, Press, Dens
-		REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
+		TYPE (XPLEX) :: Temp, Press, Dens
+		TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
                                           ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep, &
                                           SubExtCoeffSep, SubSSASep
-		REAL*8 :: GasConc(HowManyEvolveGasChems)!molecules/cm3
-		REAL*8 :: AeroNumConc(HowManyBins)!particles/cm3
-		REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !ug/m3
-		REAL*8 :: Radius(HowManyBins) !cm
-		REAL*8 :: TermVel(HowManyBins) !m/s
+		TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)!molecules/cm3
+		TYPE (XPLEX) :: AeroNumConc(HowManyBins)!particles/cm3
+		TYPE (XPLEX) :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !ug/m3
+		TYPE (XPLEX) :: Radius(HowManyBins) !cm
+		TYPE (XPLEX) :: TermVel(HowManyBins) !m/s
 		
 		!! Internal Variables
 		INTEGER :: I, J, NumAq, NumModes
-		REAL*8 :: SaltConc(HowManyAqChems)
+		TYPE (XPLEX) :: SaltConc(HowManyAqChems)
 	
 		TYPE(Particle), POINTER :: Cur
 		
 		! CMB add
         integer :: doAerosols != getAerosolProc()
-		real*8 :: filler_value, ro2_t, rco3_t
+		TYPE (XPLEX) :: filler_value, ro2_t, rco3_t
         doAerosols = getAerosolProc()
 		filler_value = 1.0E-34
 		! end CMB add
@@ -651,11 +667,15 @@ MODULE StepASP
 	USE OutputRoutines
 	USE Coagulation
 	
+	USE XPLEXIFY
+       USE MYTYPE
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
     ! CMB add
     integer :: ii
-    real*8, intent(in), optional :: sza, Transmissivity
+    TYPE (XPLEX), intent(in), optional :: sza, Transmissivity
     !logical, intent(in), optional :: doAerosols
     integer, intent(in), optional :: doAerosols
     !logical :: todoAerosols
@@ -665,7 +685,7 @@ MODULE StepASP
 	!! Define the local variables
 	integer :: i, j, k, l, seedarray(2),q, r, NumBins
     INTEGER :: time(8), sizerand
-	REAL*4  :: etimearray(2)
+	TYPE (XPLEX)  :: etimearray(2)
 	TYPE(Particle), POINTER :: Cur, Env
 	CHARACTER (len = 8)     :: ErrorDate
 	CHARACTER (len = 10)    :: ErrorTime
@@ -774,30 +794,34 @@ MODULE StepASP
 		USE OutputRoutines
 		USE Coagulation
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: Timestep !(in s)
-		REAL*8 :: Temp  !(in K)
-		REAL*8 :: Press !(in mbar)
-		REAL*8 :: Dens  !(in kg/m3 dry air)
-		REAL*8 :: RH_ASP 
-		REAL*8 :: GasConc(HowManyEvolveGasChems)
-		REAL*8 :: NumConc(HowManyBins)
-		REAL*8 :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
-		REAL*8 :: Radius(HowManyBins)
-		REAL*8 :: TermVel(HowManyBins)
-		!REAL*8 :: PhotoRates(12)
+		TYPE (XPLEX) :: Timestep !(in s)
+		TYPE (XPLEX) :: Temp  !(in K)
+		TYPE (XPLEX) :: Press !(in mbar)
+		TYPE (XPLEX) :: Dens  !(in kg/m3 dry air)
+		TYPE (XPLEX) :: RH_ASP 
+		TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+		TYPE (XPLEX) :: NumConc(HowManyBins)
+		TYPE (XPLEX) :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
+		TYPE (XPLEX) :: Radius(HowManyBins)
+		TYPE (XPLEX) :: TermVel(HowManyBins)
+		!TYPE (XPLEX) :: PhotoRates(12)
 		
 		! CMB add: 
-		real*8, intent(in) :: sza, Transmissivity
+		TYPE (XPLEX), intent(in) :: sza, Transmissivity
 		integer, intent(in), optional :: do_aerosols
 		!logical :: want_aerosols
 		! end CMB add
 
                 ! CB: Ifort complains unless these dimensions match
-		!REAL*8, DIMENSION(18) :: ExtCoeff, SingScat, Assym
-                REAL*8, DIMENSION(451):: ExtCoeff, SingScat, Assym
+		!TYPE (XPLEX), DIMENSION(18) :: ExtCoeff, SingScat, Assym
+                TYPE (XPLEX), DIMENSION(451):: ExtCoeff, SingScat, Assym
 		INTEGER :: I,mm
 	    ! CMB add
 	    !want_aerosols = .false.
@@ -819,18 +843,22 @@ MODULE StepASP
 !---------------------------
       subroutine convert_gas_concs_units(tpar,ppar,cbsum_ppb,numtypes,&
                                          cbsum_molec_cm3, direction)
+      USE XPLEXIFY
+       USE MYTYPE
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
-      real*8, intent(IN) :: ppar ! Pa
-      real*8, intent(IN) :: tpar
-      real*8, intent(INOUT) :: cbsum_ppb(:)
-      real*8, intent(INOUT) :: cbsum_molec_cm3(:)
+      TYPE (XPLEX), intent(IN) :: ppar ! Pa
+      TYPE (XPLEX), intent(IN) :: tpar
+      TYPE (XPLEX), intent(INOUT) :: cbsum_ppb(:)
+      TYPE (XPLEX), intent(INOUT) :: cbsum_molec_cm3(:)
       integer, intent(IN) :: numtypes
-      real*8 :: factor
+      TYPE (XPLEX) :: factor
       integer :: direction, i ! 1: ppb->molec/cm3, -1: reverse, others: no action
       real, parameter :: R__J_K_mol = 8.3144598  ! J mol-1 K-1 or other units
       integer, parameter :: M3_TO_CM3 = 100000
-      real*8, parameter :: avogadrosnum = 6.022140857E23
+      TYPE (XPLEX), parameter :: avogadrosnum = 6.022140857E23
 
       factor = (ppar*avogadrosnum/R__J_K_mol/tpar)/ &
                 M3_TO_CM3/1.0E9 ! extra 1e6 is for ppm, 1e9 for ppb
@@ -878,49 +906,57 @@ MODULE StepASP
       !use StepASP
       use ModelParameters, ONLY : HowManyBins
       !use InfrastructuralCodes   
+      USE XPLEXIFY
+       USE MYTYPE
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
       !include 'DEFCONC.INC'
+      !USE XPLEXIFY
+       USE MYTYPE
+      !USE XPLEXIFY
+       USE MYTYPE
       !implicit none
       integer mm, ntr,iden,zden
       !! ------------- from ASP ----------------- External Variables
-      REAL*8 :: timestep !(in s)
-      !REAL*8 :: Temp  !(in K)
-      REAL*8 :: Press !(in mbar)
-      REAL*8 :: Dens  !(in kg/m3 dry air)
-      REAL*8 :: GasConc(HowManyEvolveGasChems)
-      REAL*8 :: NumConc(HowManyBins)
-      REAL*8 :: MassConc(HowManyBins, HowManyAqChems+&
+      TYPE (XPLEX) :: timestep !(in s)
+      !TYPE (XPLEX) :: Temp  !(in K)
+      TYPE (XPLEX) :: Press !(in mbar)
+      TYPE (XPLEX) :: Dens  !(in kg/m3 dry air)
+      TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+      TYPE (XPLEX) :: NumConc(HowManyBins)
+      TYPE (XPLEX) :: MassConc(HowManyBins, HowManyAqChems+&
                          HowManyAqCations+HowManyAqAnions+& ! in # particles/cm3
                          HowManyOrgChems+HowManyAqOrgChems) ! in ug/m3
-      REAL*8 :: AfterNum(HowManyBins)
-      REAL*8 :: AfterMass(HowManyBins, HowManyAqChems+&
+      TYPE (XPLEX) :: AfterNum(HowManyBins)
+      TYPE (XPLEX) :: AfterMass(HowManyBins, HowManyAqChems+&
                          HowManyAqCations+HowManyAqAnions+& ! in # particles/cm3
                          HowManyOrgChems+HowManyAqOrgChems) ! in ug/m3
-      !REAL*8 :: MassConc(HowManyBins,65)
-      REAL*8 :: TermVel(HowManyBins)
-      REAL*8 :: Radius(HowManyBins)
-      !REAL*8 :: PhotoRates(12)
+      !TYPE (XPLEX) :: MassConc(HowManyBins,65)
+      TYPE (XPLEX) :: TermVel(HowManyBins)
+      TYPE (XPLEX) :: Radius(HowManyBins)
+      !TYPE (XPLEX) :: PhotoRates(12)
       ! CB: Ifort complains unless these dimensions match
-      !REAL*8, DIMnENSION(18) :: ExtCoeff, SingScat, Assym
-      REAL*8, DIMENSION(451):: ExtCoeff, SingScat, Assym
+      !TYPE (XPLEX), DIMnENSION(18) :: ExtCoeff, SingScat, Assym
+      TYPE (XPLEX), DIMENSION(451):: ExtCoeff, SingScat, Assym
       ! ---------------------- end from ASP
       integer, intent(in) :: numtyp, naddp
       !logical, intent(inout) :: to_initialize_asp
       !type(pset), allocatable, intent(inout) :: dirt(:)
-      real*8 :: factor
+      TYPE (XPLEX) :: factor
       integer :: direction, i ! 1: ppm->molec/cm3, -1: reverse, others: no action
       real, parameter :: R__J_K_mol = 8.3144598  ! or other units
       integer, parameter :: M3_TO_CM3 = 100000
-      real*8, parameter :: avogadrosnum = 6.022140857E23
-      real*8, intent(INOUT) :: cbsum_ppb(:)    ! before (ignore ppm, actually in ppb)
-      real*8, intent(INOUT) :: casum_ppb(:)    ! after 
-      real*8, intent(in) :: ppar, solarzenithangle, density
-      real*8 :: press_mbar, tempK
-      REAL*8 :: cbsum_molec_cm3(HowManyEvolveGasChems)
-      REAL*8 :: casum_molec_cm3(HowManyEvolveGasChems)
+      TYPE (XPLEX), parameter :: avogadrosnum = 6.022140857E23
+      TYPE (XPLEX), intent(INOUT) :: cbsum_ppb(:)    ! before (ignore ppm, actually in ppb)
+      TYPE (XPLEX), intent(INOUT) :: casum_ppb(:)    ! after 
+      TYPE (XPLEX), intent(in) :: ppar, solarzenithangle, density
+      TYPE (XPLEX) :: press_mbar, tempK
+      TYPE (XPLEX) :: cbsum_molec_cm3(HowManyEvolveGasChems)
+      TYPE (XPLEX) :: casum_molec_cm3(HowManyEvolveGasChems)
       integer :: allo_status, iter
-      real*8 :: derp
-	  real*8, intent(in) :: Transmissivity !Estimated cloud cover 
+      TYPE (XPLEX) :: derp
+	  TYPE (XPLEX), intent(in) :: Transmissivity !Estimated cloud cover 
 	  
       ! bug fix: pressures already in mb
       press_mbar = ppar/100.0   ! convert to mbar from Pa

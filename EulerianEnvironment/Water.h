@@ -39,7 +39,7 @@
 
 ! ****************************************************************
 ! Modified by CMB (AER): gfortran requires some explicit casting
-!                        to double precision (dexp)
+!                        to TYPE (XPLEX) (dexp)
 ! 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! Retrieve the Saturation Vapor Pressure Values.  At some point,
@@ -47,21 +47,23 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!! This function checks out (07/13/07, MJA)
 !#ifdef __GFORTRAN__
-        REAL*8 function GetSatVapPress()
+        TYPE (XPLEX) function GetSatVapPress()
 !#else
-!	REAL*8 FUNCTION GetSatVapPress()  RESULT (SatVapPress)
+!	TYPE (XPLEX) FUNCTION GetSatVapPress()  RESULT (SatVapPress)
 !#endif
 	  USE ModelParameters, ONLY : mbar
 
+	  USE XPLEXIFY
+       USE MYTYPE
 	  implicit none
  
-	  real*8  :: Temp
+	  TYPE (XPLEX)  :: Temp
 
           ! CB: Modify to make it look like a function call so ifort doesn't complain 
 	  !Temp  = GetTemp 
           Temp = GetTemp()
 !#ifdef __GFORTRAN__
-          GetSatVapPress = 6.112 * dexp(17.67*(Temp-273.15)/(Temp-29.65)) * mbar
+          GetSatVapPress = 6.112 * exp(17.67*(Temp-273.15)/(Temp-29.65)) * mbar
 !#else
 !	  SatVapPress = 6.112 * dexp(17.67*(Temp-273.15) /(Temp-29.65)) * mbar
 !#endif
@@ -73,8 +75,10 @@
 	!! Retrieve the Saturation Vapor Concentration Values.  At some point,
 	!! this may be updated to take interpolated values.
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION GetSatVapBurden()
+	TYPE (XPLEX) FUNCTION GetSatVapBurden()
 
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
           
           ! CB: make look like a func call...
@@ -84,13 +88,15 @@
 	RETURN
 	END FUNCTION GetSatVapBurden
 
-	REAL*8 FUNCTION GetSatVapConcentration()  
+	TYPE (XPLEX) FUNCTION GetSatVapConcentration()  
 
 	  USE ModelParameters, ONLY : eps, ChemScale
 
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 
-	  real*8 :: SatVapPress
+	  TYPE (XPLEX) :: SatVapPress
 
 	  SatVapPress			   = GetSatVapPress ()
 
@@ -103,13 +109,15 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! Retrieve the Saturation Mass Mixing Ratio of water wv_sat
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!        REAL*8 FUNCTION GetSatMixingRatio () RESULT (SatMixRatio)
-        REAL*8 FUNCTION GetSatMixingRatio()
+!        TYPE (XPLEX) FUNCTION GetSatMixingRatio () RESULT (SatMixRatio)
+        TYPE (XPLEX) FUNCTION GetSatMixingRatio()
 
 		use ModelParameters, ONLY : eps, ppb
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
-		real*8			   :: SatVapPress	! internal
+		TYPE (XPLEX)			   :: SatVapPress	! internal
 
                 ! CB: add parentheses at end so that ifort doesn't complain
 		SatVapPress = GetSatVapPress()
@@ -127,14 +135,16 @@
 	!! Retrieve the Mass Mixing Ratio  of Water Vapor, wv
 	!! See 2.31 of Jacobson, 2005 (2nd ed.)
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!	REAL*8 FUNCTION GetMixingRatio (RHin) RESULT (MixRatio)
-	REAL*8 FUNCTION GetMixingRatio(RHin)
+!	TYPE (XPLEX) FUNCTION GetMixingRatio (RHin) RESULT (MixRatio)
+	TYPE (XPLEX) FUNCTION GetMixingRatio(RHin)
 
 		use ModelParameters, ONLY : eps, ppb
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
-		real*8, optional   :: RHin
-		real*8	           :: SatVapPress, RH
+		TYPE (XPLEX), optional   :: RHin
+		TYPE (XPLEX)	           :: SatVapPress, RH
 
 		IF (Present(RHin)) THEN
 			RH = RHin
@@ -161,13 +171,15 @@
 	!! Output is Air Density in (g / lengthscale^3)		!!
 	!! Tested against Example 2.3 in Jacobson	        !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!	REAL*8 FUNCTION GetAirDensity () RESULT (Density)
-	REAL*8 FUNCTION GetAirDensity()
+!	TYPE (XPLEX) FUNCTION GetAirDensity () RESULT (Density)
+	TYPE (XPLEX) FUNCTION GetAirDensity()
 
 		use ModelParameters
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
-		real*8			   :: MixRatio, RH
+		TYPE (XPLEX)			   :: MixRatio, RH
 
 		MixRatio = GetMixingRatio ()
 !		Density = GetPress () * (1. + MixRatio) /		&
@@ -183,14 +195,16 @@
 	!! Invert the Concentration of Water to get the                     !!
         !! local relative humidity                                          !!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION GetRelativeHumidity()
+	TYPE (XPLEX) FUNCTION GetRelativeHumidity()
 
 		USE ModelParameters, ONLY : eps, ChemScale
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Local Variables
-		REAL*8 :: WaterConc
+		TYPE (XPLEX) :: WaterConc
 
 		WaterConc = GetGasChem(1)
 
@@ -214,15 +228,17 @@
       !! Same as GetRelativeHumidity, but at a particular grid point instead!!
       !! of location.							    !!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION GetRelativeHumidityFromGrid ()
+	TYPE (XPLEX) FUNCTION GetRelativeHumidityFromGrid ()
 
 		USE InfrastructuralCode, ONLY : ERROR
 		USE ModelParameters, ONLY : eps, ChemScale
 
+		USE XPLEXIFY
+       USE MYTYPE 
 		IMPLICIT NONE 
 
 		!! Local Variables
-		REAL*8 :: T, WaterConc
+		TYPE (XPLEX) :: T, WaterConc
 
 		WaterConc = GetGasChem(1)
 
@@ -241,12 +257,12 @@
       !! takes that burden, diagnoses the other environmental parameters, and!!
       !! then delivers a relative humidity value.			     !!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION GetRelativeHumidityFromBurden (WaterBurden)
+	TYPE (XPLEX) FUNCTION GetRelativeHumidityFromBurden (WaterBurden)
 
 		USE ModelParameters, ONLY : eps, ChemScale
 
 		!! Local Variables
-		REAL*8 :: T, WaterBurden
+		TYPE (XPLEX) :: T, WaterBurden
 		
 		GetRelativeHumidityFromBurden =	GetPress() * WaterBurden  / &
 				(GetSatVapPress() * (GetM()))
@@ -261,9 +277,11 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE SetAllRelativeHumidities (RH)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: RH
+	TYPE (XPLEX)  :: RH
 
         CALL SetRelativeHumidity (RH)
 
@@ -278,12 +296,14 @@ SUBROUTINE SetRelativeHumidity (RH)
 
 	USE ModelParameters, ONLY : eps, ChemScale, ppbscale
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: RH
+	TYPE (XPLEX)  :: RH
 
 	!! Local Variables
-	REAL*8 :: T, Press, WaterMR, SPress
+	TYPE (XPLEX) :: T, Press, WaterMR, SPress
 
 	SPress = GetSatVapPress()
 
@@ -302,15 +322,17 @@ END SUBROUTINE SetRelativeHumidity
 !! Further dependence of surface tension on electrolytic properties !!
 !! is treated by SurfaceTension() in ParticleAttributes.h           !! 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION SurfaceTensionOfWater ()
+	TYPE (XPLEX) FUNCTION SurfaceTensionOfWater ()
 
 	  USE InfrastructuralCode, ONLY : Warn, REAL2STR
 	  USE ModelParameters,     ONLY : dyncm
 
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 
 	  !! Local Variables
-	  REAL*8 :: Tc
+	  TYPE (XPLEX) :: Tc
 
 	  Tc = GetTemp() - 273.15
 
@@ -332,10 +354,12 @@ END SUBROUTINE SetRelativeHumidity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! DIFFUSIVITY OF WATER VAPOR as a function of temperature and pressure. !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION DiffusionCoefficientOfWater ()
+	TYPE (XPLEX) FUNCTION DiffusionCoefficientOfWater ()
 
 		USE ModelParameters, ONLY : Atmospheres, cm
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 
@@ -350,14 +374,16 @@ END SUBROUTINE SetRelativeHumidity
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! SPECIFIC HEAT OF MOIST AIR AT CONSTANT PRESSURE !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION GetCpm ()
+	TYPE (XPLEX) FUNCTION GetCpm ()
 
 		USE Modelparameters, ONLY : Cpd, CpV
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Internal Variables
-		REAL*8 :: MR
+		TYPE (XPLEX) :: MR
 
 		MR = GetMixingRatio()
 

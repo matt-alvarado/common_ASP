@@ -39,15 +39,17 @@
 !! This can't be housed within the Module Aerosols and be made EXTERNAL as  !!
 !! well.  So it's is floating on its own.									!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION EvalIdLogGamma (IonicStr, Q, Stoich, Charge)
+TYPE (XPLEX) FUNCTION EvalIdLogGamma (IonicStr, Q, Stoich, Charge)
 
+	USE XPLEXIFY
+        USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8  :: IonicStr, Q(3), Stoich(4), Charge(4)		! Total Ionic Strength and the Kusik-Meissner Q Value for the I,J pair
+	TYPE (XPLEX), INTENT(IN)  :: IonicStr, Q(3), Stoich(4), Charge(4)		! Total Ionic Strength and the Kusik-Meissner Q Value for the I,J pair
 
 	!! Internal Variables
-	REAL*8  :: B,C,D,SQRTI
+	TYPE (XPLEX)  :: B,C,D,SQRTI
 	INTEGER :: I
 
 	SQRTI = SQRT(IonicStr)

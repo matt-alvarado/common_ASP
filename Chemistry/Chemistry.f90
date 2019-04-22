@@ -85,7 +85,9 @@
 MODULE Chemistry
 
     ! CMB: add these two
-	PRIVATE :: parcelIndex, timestepIndex
+	USE MYTYPE
+        USE XPLEXIFY
+        PRIVATE :: parcelIndex, timestepIndex
 	
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! Specify which variables, arrays, subroutines, and functions	!!
@@ -172,26 +174,26 @@ MODULE Chemistry
 					!     "
 	!! These are indexed by the GAS PHASE INDEX
 	CHARACTER (len=15), ALLOCATABLE :: GasPhaseChemicalNames(:)	   !
-	REAL*8,		    ALLOCATABLE :: EnthalpyOfVaporization(:) 
+	TYPE (XPLEX),		    ALLOCATABLE :: EnthalpyOfVaporization(:) 
 ! Peroxy Radical Flag, 2 if should be included in RO2_T and RCO3_T sums (acyl peroxy),
 !                         1 if should be included in RO2_T sum only, 0 if not
-	REAL*8,		    ALLOCATABLE :: GasPhasePeroxy(:)   
+	TYPE (XPLEX),		    ALLOCATABLE :: GasPhasePeroxy(:)   
 ! The Latent Heat of Evaporation of Each Species (J/g)
-	REAL*8,		    ALLOCATABLE :: GasMolecularMass(:)		   
+	TYPE (XPLEX),		    ALLOCATABLE :: GasMolecularMass(:)		   
 ! Molecular Mass (g / mole)
-	REAL*8,		    ALLOCATABLE :: GasPhaseReactionRates(:,:)  
+	TYPE (XPLEX),		    ALLOCATABLE :: GasPhaseReactionRates(:,:)  
 ! This holds reaction rate information
-	REAL*8,		    ALLOCATABLE :: GasPhaseBackground(:)
-	REAL*8,		    ALLOCATABLE :: GasPhaseEmisFactor(:) !g/kg dry matter burned, MJA, 2016-09-13
-	REAL*8,		    ALLOCATABLE :: GasPhaseDepVel(:)		
-	REAL*8				:: PhotoRates(96,51)
+	TYPE (XPLEX),		    ALLOCATABLE :: GasPhaseBackground(:)
+	TYPE (XPLEX),		    ALLOCATABLE :: GasPhaseEmisFactor(:) !g/kg dry matter burned, MJA, 2016-09-13
+	TYPE (XPLEX),		    ALLOCATABLE :: GasPhaseDepVel(:)		
+	TYPE (XPLEX)				:: PhotoRates(96,51)
 
         ! CB add (this will have to be made configurable in the future!)
         REAL*8, PARAMETER :: piDouble = 3.1415926535897932384626433
         REAL*8, PARAMETER :: DegToRad = piDouble/180.0
         REAL*8, PARAMETER :: RadToDeg = 1.0/DegToRad
-        REAL*8 :: PhotoRateTimes(96), PhotoRateZenithAngles(96)
-        !REAL*8 :: piDouble, DegToRad, RadToDeg
+        TYPE (XPLEX) :: PhotoRateTimes(96), PhotoRateZenithAngles(96)
+        !TYPE (XPLEX) :: piDouble, DegToRad, RadToDeg
         ! end CB add
 
 	INTEGER :: GasConcInputTypeFlag
@@ -208,19 +210,19 @@ MODULE Chemistry
 !!! --            Temperature Dependence
 !!! --   (i,6): - Delta Cp0 / R      for Equilibrium Coefficient 
 !!! --            Temperature Dependence
-	REAL*8,		    ALLOCATABLE :: GasAerEquilibriaList(:,:)
+	TYPE (XPLEX),		    ALLOCATABLE :: GasAerEquilibriaList(:,:)
 	INTEGER	:: GasPhaseReactionRateArraySize(2)
 
 	!! These are indexed by the AQUEOUS PHASE INDEX
 	CHARACTER (len=15), ALLOCATABLE :: AqPhaseChemicalNames(:) 
-	REAL*8,		    ALLOCATABLE :: SolidSaltDensity(:)  
+	TYPE (XPLEX),		    ALLOCATABLE :: SolidSaltDensity(:)  
 	Integer,	    ALLOCATABLE ::  RefIndFlag(:)
 ! Electrolyte Density (mole / cm3) for aq. species
-	REAL*8,		    ALLOCATABLE :: AqPhaseReactionRateInfo(:,:) 
+	TYPE (XPLEX),		    ALLOCATABLE :: AqPhaseReactionRateInfo(:,:) 
 ! This holds reaction rate information
-	REAL*8,		    ALLOCATABLE :: AqPhaseReactionRates(:,:)   
+	TYPE (XPLEX),		    ALLOCATABLE :: AqPhaseReactionRates(:,:)   
 ! This holds reaction rates v. temperature
-	REAL*8,		    ALLOCATABLE :: AqMolecularMass(:)	
+	TYPE (XPLEX),		    ALLOCATABLE :: AqMolecularMass(:)	
 ! Molecular Mass (g / mole)
 	INTEGER	:: AqPhaseReactionRateArraySize(2)
 
@@ -233,15 +235,15 @@ MODULE Chemistry
 	! The charge allocations are reportd as + integral values
 	INTEGER, ALLOCATABLE :: AqAnionCharge(:)	
 	! The charge allocations are reportd as + integral values
-	REAL*8,  ALLOCATABLE :: AqIonGrid(:,:,:)		
+	TYPE (XPLEX),  ALLOCATABLE :: AqIonGrid(:,:,:)		
 	! Maps Ion Pair to Electrolyte and Provides Equilibrium Data
-	REAL*8,  ALLOCATABLE :: AqCationMass(:)			
+	TYPE (XPLEX),  ALLOCATABLE :: AqCationMass(:)			
 	! The charge allocations are reportd as + integral values
-	REAL*8,  ALLOCATABLE :: AqAnionMass(:)			
+	TYPE (XPLEX),  ALLOCATABLE :: AqAnionMass(:)			
 	! The charge allocations are reportd as + integral values
-	REAL*8,  ALLOCATABLE :: CationIonicRefraction(:)	
+	TYPE (XPLEX),  ALLOCATABLE :: CationIonicRefraction(:)	
 		!Ionic refraction for each ion	
-	REAL*8,  ALLOCATABLE :: AnionIonicRefraction(:)		
+	TYPE (XPLEX),  ALLOCATABLE :: AnionIonicRefraction(:)		
 	!Ionic refraction for each ion	
 	
 !!! -- ION-ELECTROLYTE MAP and EQUILIBRIUM DATA -- !!!
@@ -297,7 +299,7 @@ MODULE Chemistry
 
 ! The list of electrolytes used in the model, 
 ! and also density and surface tension parameters
-	REAL*8,  ALLOCATABLE :: AqEquilibriaList(:,:)	
+	TYPE (XPLEX),  ALLOCATABLE :: AqEquilibriaList(:,:)	
 
 !!! -- DECODING KEY FOR KMRef (a,b)
 !!! -- 
@@ -310,7 +312,7 @@ MODULE Chemistry
 !!! --   (i,7) : Kusik-Meissner Temperature Dependence
 !!! --   (i,8) : Number of H2O Molecules Needed on LHS of Dissociation
 
-	REAL*8,  ALLOCATABLE :: KMRef(:,:)				
+	TYPE (XPLEX),  ALLOCATABLE :: KMRef(:,:)				
 	INTEGER :: HowManyKMParams
 
 	!! These are used in the Aqueous Phase Reaction Rate Table
@@ -320,25 +322,25 @@ MODULE Chemistry
 
 	!! These are indexed by the ORGANIC PHASE INDEX
 	CHARACTER (len=15), ALLOCATABLE :: OrgPhaseChemicalNames(:) 
-	REAL*8,		ALLOCATABLE :: OrgMolecularMass(:)		   
+	TYPE (XPLEX),		ALLOCATABLE :: OrgMolecularMass(:)		   
         ! Molecular Mass (g / mole)
-	REAL*8,		ALLOCATABLE :: OrgDensity(:)		   
+	TYPE (XPLEX),		ALLOCATABLE :: OrgDensity(:)		   
         ! Density (g / cm3)
-	REAL*8,		ALLOCATABLE :: OrgActivityFlag(:)
-        REAL*8,		ALLOCATABLE :: OrgActivityIndex(:)
+	TYPE (XPLEX),		ALLOCATABLE :: OrgActivityFlag(:)
+        TYPE (XPLEX),		ALLOCATABLE :: OrgActivityIndex(:)
 
 
 	!! These are indexed by the HYDROPHILIC ORGANIC COMPOUND INDEX
 	CHARACTER (len=15), ALLOCATABLE :: AqOrgPhaseChemicalNames(:) 
-	REAL*8,		ALLOCATABLE :: AqOrgMolecularMass(:)		   
+	TYPE (XPLEX),		ALLOCATABLE :: AqOrgMolecularMass(:)		   
         ! Molecular Mass (g / mole)
-	REAL*8,		ALLOCATABLE :: AqOrgDensity(:)		   
+	TYPE (XPLEX),		ALLOCATABLE :: AqOrgDensity(:)		   
         ! Density (g / cm3)
 	INTEGER,	ALLOCATABLE :: AqOrgNumCarbon(:)
-	REAL*8,		ALLOCATABLE :: Kappa(:)
-	REAL*8,		ALLOCATABLE :: GammaInf(:)
-	REAL*8,		ALLOCATABLE :: AqOrgActivityFlag(:)
-        REAL*8,		ALLOCATABLE :: AqOrgActivityIndex(:)		   
+	TYPE (XPLEX),		ALLOCATABLE :: Kappa(:)
+	TYPE (XPLEX),		ALLOCATABLE :: GammaInf(:)
+	TYPE (XPLEX),		ALLOCATABLE :: AqOrgActivityFlag(:)
+        TYPE (XPLEX),		ALLOCATABLE :: AqOrgActivityIndex(:)		   
 	
         !! Each array is sized by the number of evolving chemicals,
 	!! but only a certain subset of these will evolve (placed first
@@ -381,6 +383,10 @@ MODULE Chemistry
         integer :: parcelIndex, timeIndex
 ! end CB
 
+!INTERFACE MolecularDiffusionCoefficient(ChemIndex)
+!      MODULE PROCEDURE xMolecularDiffusionCoefficient
+!END INTERFACE
+
 	CONTAINS
 ! cmb add	
  integer function getParcelIndex() result(parcInd)
@@ -421,6 +427,8 @@ MODULE Chemistry
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	SUBROUTINE SetChemistryParams()
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Deal with Gas Phase Initialization
@@ -517,13 +525,15 @@ MODULE Chemistry
 		USE Time, ONLY : CurrentTime, BeginningTime
 		USE GridPointFields, ONLY : ResetGasPhaseReactionRates, &
                                             GridGasChem
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
 		!! Input Variables
 		LOGICAL :: IFGAS,IFAQ
   
                 !!Internal Variables
-                REAL*8 :: RO2_T, RCO3_T, C_H2O
+                TYPE (XPLEX) :: RO2_T, RCO3_T, C_H2O
 
                 
 		!!!!!!!!!!!!!!!
@@ -555,10 +565,12 @@ MODULE Chemistry
 		!This subroutine just calls ResetHeteroRates
 
 		USE Time, ONLY : CurrentTime, BeginningTime
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
 		!! Input Variables
-		REAL*8 :: Radii(:), NumConc(:)
+		TYPE (XPLEX) :: Radii(:), NumConc(:)
 		INTEGER  :: NumBins
 		LOGICAL  :: FirstTime
 
@@ -575,11 +587,13 @@ MODULE Chemistry
 						GetTemp, &
 						GetAirDensity
 					  
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8,  INTENT(in) :: ReactionRates(:,:)
-		REAL*8,  INTENT(in) :: Radius(:) !Radius in m
-		REAL*8,  INTENT(in) :: NumberConc(:) 
+		TYPE (XPLEX),  INTENT(in) :: ReactionRates(:,:)
+		TYPE (XPLEX),  INTENT(in) :: Radius(:) !Radius in m
+		TYPE (XPLEX),  INTENT(in) :: NumberConc(:) 
                 !Number Concentration in cm**(-3)
 		
                 INTEGER, INTENT(in) :: ArraySize(2)
@@ -589,7 +603,7 @@ MODULE Chemistry
 		LOGICAL, INTENT(in) :: FirstTime
 
 		INTEGER :: I,J,K,L,N
-		REAL*8	:: Temp,Mgas,X(3),Uptake, MW, MWingrams, & 
+		TYPE (XPLEX)	:: Temp,Mgas,X(3),Uptake, MW, MWingrams, & 
                            Dg, R, c_bar, &
 			   Surf_Conc, Term, Total, k_het, massofmolecule, A
 
@@ -609,7 +623,7 @@ MODULE Chemistry
 				TEMP = GetTemp()
 						
 		                !Calculate Diffusivity from MW
-			       Dg = 0.375/(4.5*Angstrom)**2./GetAirDensity()* &
+			       Dg = 0.375/((4.5*Angstrom)*(4.5*Angstrom))/GetAirDensity()* &
 				SQRT(Rstar*Temp*AirMolecMass*ChemScale/	&
 				Avogadro/MWingrams*(MWingrams+		&
 				Avogadro*AirMolecMass)/2/Pi)
@@ -677,6 +691,8 @@ MODULE Chemistry
 		USE InfrastructuralCode
 		USE ModelParameters
 		
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: FH, I, J
@@ -725,13 +741,15 @@ MODULE Chemistry
         
         ! CB: I have added a routine to 
         SUBROUTINE getSzaIndices(sza, previous, next_indx)
+        USE XPLEXIFY
+       USE MYTYPE
         implicit none
 
-        real*8, intent(in) :: sza
+        TYPE (XPLEX), intent(in) :: sza
         integer, intent(out) :: previous, next_indx
         integer :: i
-        real*8 :: current_zenith_angle, previous_angle
-        real*8 :: next_angle
+        TYPE (XPLEX) :: current_zenith_angle, previous_angle
+        TYPE (XPLEX) :: next_angle
 
         previous = -1
         previous_angle = -360
@@ -803,21 +821,23 @@ MODULE Chemistry
         USE GridPointFields, ONLY : GasPhaseChemicalRates, &
                                     linear2dInterp
 
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
-        REAL*8,  INTENT(in) :: ReactionRates(:,:)
+        TYPE (XPLEX),  INTENT(in) :: ReactionRates(:,:)
         INTEGER, INTENT(in) :: ArraySize(2)
-        !REAL*8,  INTENT(in) :: ut
+        !TYPE (XPLEX),  INTENT(in) :: ut
         LOGICAL, INTENT(in) :: FirstTime
         
         INTEGER :: I,J,K,L, TimeIndex, RxnIndex
-        REAL*8 :: OldRate, y1, y2, ut1, ut2, A, ut_temp
+        TYPE (XPLEX) :: OldRate, y1, y2, ut1, ut2, A, ut_temp
         REAL*8, PARAMETER :: Scale = 1.0
 
         ! cb add
         integer :: lowerZenithIndex, higherZenithIndex, ii
-        real*8 :: DegHigher, DegLower, cosLower, cosHigher, szarad
-        real*8 :: RateHigher, RateLower, InterpolatedRate, sza, transmissivity
+        TYPE (XPLEX) :: DegHigher, DegLower, cosLower, cosHigher, szarad
+        TYPE (XPLEX) :: RateHigher, RateLower, InterpolatedRate, sza, transmissivity
         ! end cb add
 
         !! Loop over all reactions
@@ -886,8 +906,8 @@ MODULE Chemistry
 
                     !print *, 'DegHigher = ', DegHigher
                     !print *, 'DegLower = ', DegLower
-                    cosLower = dcos(DegLower*RadToDeg)
-                    cosHigher = dcos(DegHigher*RadToDeg)
+                    cosLower = cos(DegLower*RadToDeg)
+                    cosHigher = cos(DegHigher*RadToDeg)
                     szarad = sza*DegToRad
 
                     RateLower = PhotoRates(lowerZenithIndex, RxnIndex)
@@ -899,7 +919,7 @@ MODULE Chemistry
 
                     call linear2dInterp(cosLower, RateLower, &
                                         cosHigher, RateHigher, &
-                                        dcos(szarad), InterpolatedRate)
+                                        cos(szarad), InterpolatedRate)
                     !print *, 'Interpolated Rate = ', InterpolatedRate
                     !print *, 'Scale Factor = ', Scale
                     GasPhaseChemicalRates(L) = Scale*transmissivity*abs(InterpolatedRate)
@@ -955,15 +975,17 @@ MODULE Chemistry
                                         Int2Str, Real2Str
 	USE GridPointFields,	 ONLY : GasPhaseChemicalRates
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8,  INTENT(in) :: ReactionRates(:,:)
+	TYPE (XPLEX),  INTENT(in) :: ReactionRates(:,:)
 	INTEGER, INTENT(in) :: ArraySize(2)
-	REAL*8,  INTENT(in) :: ut, t !ut in hr, t in seconds
+	TYPE (XPLEX),  INTENT(in) :: ut, t !ut in hr, t in seconds
 	LOGICAL, INTENT(in) :: FirstTime
 		
 	INTEGER :: I,J,K,L, TimeIndex, RxnIndex
-	REAL*8 :: OldRate, y1, y2, ut1, ut2, A, ut_temp
+	TYPE (XPLEX) :: OldRate, y1, y2, ut1, ut2, A, ut_temp
 	REAL*8, PARAMETER :: Scale = 1.0
 
 
@@ -1063,9 +1085,11 @@ MODULE Chemistry
 	
 	! CB: Make a version of this for SZA
 	subroutine RecalculatePhotoRatesSZA(sza, transmissivity, FirstTime)
+	    USE XPLEXIFY
+       USE MYTYPE
 	    implicit none
 
-	    real*8 :: sza, transmissivity
+	    TYPE (XPLEX) :: sza, transmissivity
 	    logical :: FirstTime
 
 	    call ResetPhotoRatesSZA(GasPhaseReactionRates, &
@@ -1081,10 +1105,12 @@ MODULE Chemistry
 		!after every time RecalculateGasPhaseReactionRates is called. 
 		
 		USE Time, ONLY : CurrentTime, BeginningTime
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
 		!! Input Variables
-		REAL*8   :: ut, t
+		TYPE (XPLEX)   :: ut, t
 		LOGICAL  :: FirstTime
 
 		CALL ResetPhotoRates (GasPhaseReactionRates,GasPhaseReactionRateArraySize, ut, t, FirstTime)
@@ -1096,6 +1122,8 @@ MODULE Chemistry
 	!! 1 and HowManyAqChems + HowManyAqCations + HowManyAqAnions !!
 	INTEGER FUNCTION GetAqCharge (ChemIndex) !!!!!!!!!!!!!!!!!!!!!!
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		
 		INTEGER :: ChemIndex
@@ -1123,6 +1151,8 @@ MODULE Chemistry
 
 		USE InfrastructuralCode, ONLY : ERROR, StripToken
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		INTEGER				  :: i, Index, Phase
 		CHARACTER*(*)		  :: Chem
@@ -1221,6 +1251,8 @@ MODULE Chemistry
 
 		USE InfrastructuralCode, ONLY : ERROR, StripToken
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
@@ -1273,6 +1305,8 @@ MODULE Chemistry
 
 		USE InfrastructuralCode, ONLY : ERROR, StripToken
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
@@ -1303,6 +1337,8 @@ MODULE Chemistry
 
 		USE InfrastructuralCode, ONLY : ERROR, StripToken
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
@@ -1334,14 +1370,16 @@ MODULE Chemistry
         !! of total peroxy radicals (GasPhasePeroxy flags 1 or 2)
         !! and places it in RO2_T slot and returns as the value
         !! MJA, 01/25/2013
-	REAL*8  FUNCTION GetTotalPeroxy()
+	TYPE (XPLEX)  FUNCTION GetTotalPeroxy()
                
                 USE GridPointFields, ONLY : GridGasChem, ReplaceGridCellChemBurden
 
+		USE XPLEXIFY
+       USE MYTYPE           
 		IMPLICIT NONE           
 
                 INTEGER :: q, ind
-                REAL*8, ALLOCATABLE  :: Chem(:)
+                TYPE (XPLEX), ALLOCATABLE  :: Chem(:)
                 
                 ALLOCATE(CHEM(HowManyGasChems))
                 
@@ -1381,14 +1419,16 @@ MODULE Chemistry
         !! of total acyl peroxy radicals (GasPhasePeroxy flag 2)
         !! and places it in RCO3_T slot and returns as the value
         !! MJA, 01/25/2013
-	REAL*8  FUNCTION GetTotalAcylPeroxy()
+	TYPE (XPLEX)  FUNCTION GetTotalAcylPeroxy()
 
                 USE GridPointFields, ONLY : GridGasChem, ReplaceGridCellChemBurden
 
+		USE XPLEXIFY
+       USE MYTYPE           
 		IMPLICIT NONE           
 
                 INTEGER :: q, ind
-                REAL*8, ALLOCATABLE  :: Chem(:)
+                TYPE (XPLEX), ALLOCATABLE  :: Chem(:)
 
                 ALLOCATE(CHEM(HowManyGasChems))
 

@@ -50,6 +50,8 @@ SUBROUTINE SetGasPhaseChemistry ()
 				   GetSatVapPress,		&
 				   GetRelativeHumidity,		&
 				   GetSatMixingRatio
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Local Infrastructural Variables
@@ -62,13 +64,13 @@ SUBROUTINE SetGasPhaseChemistry ()
 
 	!! These Local Variables Arrive From the Input Deck
 	integer	:: NumbChems
-	REAL*8	:: Mgas, MixH2O, RH, SPress
+	TYPE (XPLEX)	:: Mgas, MixH2O, RH, SPress
 
 	!! And there is a file handle to be used
 	integer	:: FH
 
         ! MJA 2016-09-13: Variable to temporarily store initial concentration
-        REAL*8	:: init_conc
+        TYPE (XPLEX)	:: init_conc
 
         ! MJA 2016-09-13: Variable to set initial concentrations to 0 if a STILT run (hardcoded for now!)
         logical	:: STILT    
@@ -79,11 +81,11 @@ SUBROUTINE SetGasPhaseChemistry ()
 
         ! MJA 2016-09-13: Variables to stroe CO index and CO initial concentration (hardcoded for now!)
         integer	:: CO_index
-        REAL*8	:: CO_init
+        TYPE (XPLEX)	:: CO_init
 
         ! CMB (AER, Inc): Insert this parameter as a "filler" value for
         !                 which to analyze 
-        real*8 :: filler_conc
+        TYPE (XPLEX) :: filler_conc
         filler_conc = 1.0e-12
 
 	FH = GetFileHandle()
@@ -387,6 +389,8 @@ END SUBROUTINE SetGasPhaseChemistry
 SUBROUTINE SetGasPhaseODEandJacobian ()
 	use ModelParameters
 	USE InfrastructuralCode, ONLY : INT2STR, ERROR, Transcript
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Input Vars

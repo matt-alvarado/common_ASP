@@ -31,20 +31,22 @@
 !! points according to the volume not bounded (opposing corner) by each and the!!
 !! free point.  See Press et al. Section 3.6 for further discussion.	!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION InterpolateGrid (XP, YP, ZP, Grid, Index) RESULT (OutValue)
+	TYPE (XPLEX) FUNCTION InterpolateGrid (XP, YP, ZP, Grid, Index) RESULT (OutValue)
 		
 		use ModelParameters
 		use InfrastructuralCode
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
 		!! In-Out Variables
-		real*8  :: XP, YP, ZP, Grid(:,:,:)
+		TYPE (XPLEX)  :: XP, YP, ZP, Grid(:,:,:)
 		integer :: Index					!! Index is tells which grid spacing is used
 
 		!! Internal Variables
-		real*8  :: widthX, widthY, widthZ	!! the distance between grid points in each direction
+		TYPE (XPLEX)  :: widthX, widthY, widthZ	!! the distance between grid points in each direction
 		integer :: ix, iy, iz				!! the closest grid point in each direction (lower)
-		real*8  :: dx, dy, dz				!! the cartesian distance between each lower gridpoint and the free point
+		TYPE (XPLEX)  :: dx, dy, dz				!! the cartesian distance between each lower gridpoint and the free point
 		integer :: dim						!! number of dimensions of interpolation
 		logical :: doXYZ(3)					!! which of the dimensions to do
 
@@ -186,11 +188,13 @@ end if
 	FUNCTION LocateGridPoint(X, Y, Z, Index) RESULT (Location)
 
 		USE ModelParameters
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! In-Out Variables
 		INTEGER :: X, Y, Z, Index	!! Index is tells which grid spacing is used
-		REAL*8  :: Location(3)
+		TYPE (XPLEX)  :: Location(3)
 	
 		!! DON'T SWITCH THIS WITHOUT CHANGING IT IN CLOSESTGRIDPOINT() AS WELL
 		!! (but don't set it true or it fucks up the volume calculation)
@@ -236,11 +240,13 @@ end if
 	SUBROUTINE ClosestGridPoint(XX, YY, ZZ, Index, X, Y, Z) 
 
 		USE ModelParameters
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! In-Out Variables
 		INTEGER :: X, Y, Z, Index	!! Index is tells which grid spacing is used
-		REAL*8  :: XX, YY, ZZ
+		TYPE (XPLEX)  :: XX, YY, ZZ
 
 		!! DON'T SWITCH THIS WITHOUT CHANGING IT IN CLOSESTGRIDPOINT() AS WELL
 		!! (but don't set it true or it fucks up the volume calculation)

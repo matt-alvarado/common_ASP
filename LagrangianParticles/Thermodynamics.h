@@ -97,6 +97,8 @@
 
 	USE InfrastructuralCode, ONLY : ERROR,REAL2STR,INT2STR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: ReactIndex
@@ -153,6 +155,8 @@ SUBROUTINE PrintParticleContents (InParticle, FH, Initialize, ToScreen, &
 
 	USE ModelParameters, ONLY : moles, micron, cm, grams, dyncm, Avogadro
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variable
@@ -332,6 +336,8 @@ SUBROUTINE DumpParticleContentsAtError (InParticle, OutFileName,    &
 	USE ModelParameters,     ONLY : moles, micron, cm, grams, dyncm,&
                                         OutPutDeckSubDir
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variable
@@ -462,11 +468,13 @@ END SUBROUTINE DumpParticleContentsAtError
 !! The Phase Flag is either Aqueous-Phase (1) or Gas-Aerosol   !!
 !! Transfer (2).					       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION EqCoeff (WhichEquilibrium, InParticle , Phase)
+TYPE (XPLEX) FUNCTION EqCoeff (WhichEquilibrium, InParticle , Phase)
 
 	USE Chemistry, ONLY : AqEquilibriaList
 	USE ModelParameters, ONLY : EqCoeffTref 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -474,7 +482,7 @@ REAL*8 FUNCTION EqCoeff (WhichEquilibrium, InParticle , Phase)
 	INTEGER :: WhichEquilibrium, Phase
 
 	!! Internal Variables
-	REAL*8  :: TempRatio
+	TYPE (XPLEX)  :: TempRatio
 
 	!! Shouldn't ever trip this, but may somewhere
 	!! These equilibria are infinitely dissociating
@@ -497,10 +505,12 @@ REAL*8 FUNCTION EqCoeff (WhichEquilibrium, InParticle , Phase)
 	RETURN
 END FUNCTION EqCoeff 
 
-REAL*8 FUNCTION DeliquesenceRH (WhichEquilibrium, InParticle)
+TYPE (XPLEX) FUNCTION DeliquesenceRH (WhichEquilibrium, InParticle)
 
 	USE Chemistry, ONLY : AqEquilibriaList
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -508,7 +518,7 @@ REAL*8 FUNCTION DeliquesenceRH (WhichEquilibrium, InParticle)
 	INTEGER :: WhichEquilibrium
 
 	!! Internal Variables
-	REAL*8  :: InvTemperature, InvRefTemp
+	TYPE (XPLEX)  :: InvTemperature, InvRefTemp
 
 
 	InvTemperature = 1.0/InParticle%Temperature
@@ -526,6 +536,8 @@ END FUNCTION DeliquesenceRH
 !! find the electrolyte equilibria for each.          !!
 SUBROUTINE FindAqElectrolyteEquilibriumForGridPoint (UpdateThermo)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: GG
@@ -583,6 +595,8 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 									
 	USE GridPointFields,     ONLY : GetRelativeHumidity
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -595,7 +609,7 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
         
 	!! Internal Variables
 	INTEGER :: I, J, K, WorstEqIndex, DemoteAfterThisIteration
-	REAL*8  :: II, JJ, KK, LL, CC, RH, WorstEqValue, AnTot, CatTot, ErrorTol
+	TYPE (XPLEX)  :: II, JJ, KK, LL, CC, RH, WorstEqValue, AnTot, CatTot, ErrorTol
 
     ! CMB (AER): Gfortran complains at being able to perform int/bool/double
     !            conversions implicitly; let's provide more context.
@@ -615,7 +629,7 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 	REAL*8, PARAMETER :: CritMajMin = AqThermoEquilibriumError / 100.
 
         ! cb add
-        real*8, parameter :: zero_thresh = 1.1E-40	! TODO
+        REAL*8, parameter :: zero_thresh = 1.1E-40	! TODO
 	
         !! Use Scaffolding Code?
 	LOGICAL :: Scaffolding
@@ -711,7 +725,7 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 	DO I = 1, HowManyAqEqReactions
 
 		!WRITE(*,*) J
-		CALL EquilibrateAqueousDissociationReaction (I, InParticle, OptErrorTolerance = ErrorTol, ReturnType=J)
+		CALL EquilibrateAqueousDissociationReaction (I, InParticle, OptErrorTolerance = ErrorTol%r, ReturnType=J)
 	        IF(Scaffolding) WRITE(*,*) I,J
 		IF (J .EQ. 1) THEN
 			AlreadyEquilibrated      = .FALSE.
@@ -743,7 +757,7 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 	DO K = 1, NumbInitIterations-1
 		DO I = 1, HowManyAqEqReactions
 			!IF (Scaffolding) WRITE(*,*) I,K
-			CALL EquilibrateAqueousDissociationReaction (I, InParticle, OptErrorTolerance = ErrorTol, ReturnType = J)
+			CALL EquilibrateAqueousDissociationReaction (I, InParticle, OptErrorTolerance = ErrorTol%r, ReturnType = J)
 			IF (Scaffolding) WRITE(*,*) "Dissociation Okay"
                         !MJA 11-08-2012
 			!IF (UpdateThermo) CALL KusikMeissner (InParticle)
@@ -787,9 +801,9 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 		END IF
 
 		!! Get the deviation from Equilibrium
-		! CMB: use double precision
+		! CMB: use TYPE (XPLEX)
 		!II = ABS(1.-EquilibriumConstantsRatio (I, InParticle))
-		II = dabs(1. - EquilibriumConstantsRatio(I, InParticle))
+		II = abs(1. - EquilibriumConstantsRatio(I, InParticle))
 
 		!! If it is the worst the loop has seen, keep track of it
 		IF (II .GT. WorstEqValue) THEN
@@ -974,8 +988,10 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	USE GridPointFields, ONLY : GetRelativeHumidity
 
 	USE InfrastructuralCode, ONLY : INT2STR, Real2Str, Transcript,  &
-                                        ERROR, WARN, IsNaN
+                                        ERROR, WARN!, IsNaN
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -987,7 +1003,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Local Variables
 	INTEGER :: I, J
-	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
+	TYPE (XPLEX)  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                    ActivityCoefficients, ErrorTolerance, DRH, RH
 	LOGICAL :: WaterRxn
 
@@ -1011,9 +1027,9 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!	 AnionMolality  (INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle) .EQ. 0.) )RETURN
 	!END IF
 	IF  (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
-		IF ((dabs(Molality(INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle)) .le. 1.0e-40) .AND.	 &
-				(dabs(CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle)) .le. 1.0e-40  .OR.     &
-				 dabs(AnionMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle)) &
+		IF ((abs(Molality(INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle)) .le. 1.0e-40) .AND.	 &
+				(abs(CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle)) .le. 1.0e-40  .OR.     &
+				 abs(AnionMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle)) &
 				 .le. 1.0e-40)) then
 			RETURN    
 	        END IF
@@ -1033,14 +1049,14 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 !
 ! CMB (AER, Inc): More floating-point equality checks...
 
-	if ((dabs(AqEquilibriaList(WhichEquilibriumRxn, 9) + 1.) .lt. 0.000001) .or. &
-			((dabs(AqEquilibriaList(WhichEquilibriumRxn, 6) - 1.) .lt. 0.000001) .and. &
+	if ((abs(AqEquilibriaList(WhichEquilibriumRxn, 9) + 1.) .lt. 0.000001) .or. &
+			((abs(AqEquilibriaList(WhichEquilibriumRxn, 6) - 1.) .lt. 0.000001) .and. &
 					RH .ge. DRH)) then					
 !	IF (AqEquilibriaList(WhichEquilibriumRxn,9) .EQ. -1. .OR. &
 !		(AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 .AND. RH .GE. DRH)) THEN 
 !			return
-		if (dabs(AqEquilibriaList(WhichEquilibriumRxn, 1) + 1.) .lt. 0.000001) return
-		if (dabs(InParticle%AqChems(int(AqEquilibriaList(WhichEquilibriumRxn, 1)))) .le. 1.0e-40) &
+		if (abs(AqEquilibriaList(WhichEquilibriumRxn, 1) + 1.) .lt. 0.000001) return
+		if (abs(InParticle%AqChems(int(AqEquilibriaList(WhichEquilibriumRxn, 1)))) .le. 1.0e-40) &
 			return
 !		IF (AqEquilibriaList(WhichEquilibriumRxn,1) .EQ. -1.) RETURN
 !		IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. 0.) RETURN
@@ -1055,7 +1071,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 !			II = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))),	& ! water limited, or
 !			         InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))	  ! electrolyte limited?
 !		END IF
-		IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8)) .lt. 0.00001) THEN
+		IF (abs(AqEquilibriaList(WhichEquilibriumRxn,8)) .lt. 0.00001) THEN
 			II = InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))
 		ELSE
 			II = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))),	& ! water limited, or
@@ -1066,7 +1082,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
                 ! CMB (AER, Inc): Floating-point equality doesn't work right 
                 !                 here
 		!IF(II .EQ. 0.0) THEN
-                if (dabs(ii) .le. 1.0E-40) then
+                if (abs(ii) .le. 1.0E-40) then
 			!IF (PRESENT(ReturnType)) ReturnType = 2
                         ReturnType = 2
 			RETURN
@@ -1085,7 +1101,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 		!! Second Anion for levitocite:
 		! cmb
-		if (dabs(AqEquilibriaList(WhichEquilibriumRxn,22)) .gt. 0.00001) then
+		if (abs(AqEquilibriaList(WhichEquilibriumRxn,22)) .gt. 0.00001) then
 		!IF (AqEquilibriaList(WhichEquilibriumRxn,22) .NE. 0.) THEN
 			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) =&
 			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) +&
@@ -1094,7 +1110,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 		!! Hydrates: Water equilibrium
 		! cmb
-		if (dabs(AqEquilibriaList(WhichEquilibriumRxn, 24)) .gt. 0.00001) then
+		if (abs(AqEquilibriaList(WhichEquilibriumRxn, 24)) .gt. 0.00001) then
 		!IF (AqEquilibriaList(WhichEquilibriumRxn,24) .NE. 0.) THEN
 			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,24))) =&
 			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,24))) +&
@@ -1269,7 +1285,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!! Set the error tolerance according to the 
 	!! subroutine's optional input
 	!IF (PRESENT(OptErrorTolerance)) THEN
-		ErrorTolerance = OptErrorTolerance
+		ErrorTolerance%r = OptErrorTolerance
+                ErrorTolerance%i = 0.0
 	!ELSE
 	!	ErrorTolerance = AqThermoEquilibriumError
 	!END IF
@@ -1279,13 +1296,13 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	IF(SCAFFOLDING) WRITE(*,*) "After Eq Ratio"
 
-	! CMB: mod for double precision
-	if (dabs(eqratio - 1) .lt. errortolerance) return
+	! CMB: mod for TYPE (XPLEX)
+	if (abs(eqratio - 1) .lt. errortolerance) return
 
 	!!Matt Alvarado added this to check for solid electrolyte reactions that are already in
 	!!Equilibrium, as the solid conc = 0.0 and the solution is subsaturated
 	! CMB: mod for floating-point inequality
-        if (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) &
+        if (abs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) &
                 .lt. 0.00001) then
             if (EqRatio .lt. 1.0) then
 !                if (InParticle%AqChems(nint(aqequilibrialist(&
@@ -1300,7 +1317,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!!Matt Alvarado added this to skip carbonate equilibrium 
 	!!when CO3-- concentration approaches 0.
 	! cmb
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8) - 1.0) .lt. 0.00001 & !A hydrate reaction
+	IF (abs(AqEquilibriaList(WhichEquilibriumRxn,8) - 1.0) .lt. 0.00001 & !A hydrate reaction
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
 		.AND. AqAnionNames(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. "CO3--" & !CO2 equilibrium only
 	    .AND. EqRatio .GT. 1.0 & !The solution is super-saturated
@@ -1326,7 +1343,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!For (NH4)2SO4 equilibrium as SO4-- approaches 0 (acidic aerosol)
 	! cmb
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .lt. 0.00001) THEN !A solid electrolyte
+	IF (abs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .lt. 0.00001) THEN !A solid electrolyte
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0) THEN !A solid electrolyte
 		IF(EqRatio .GT. 1.0 & !The solution is supersaturated
 		!       MJA 20181003 - try using ratio between limiting product and reactant instead
@@ -1363,7 +1380,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Loop over Corrections until convergence if there is anything to do
 	! CMB: floating-point equality check
-	if (.not. (dabs(qnumer) .le. 1.0e-40 .and. dabs(qdenom) .le. 1.0e-40)) then
+	if (.not. (abs(qnumer) .le. 1.0e-40 .and. abs(qdenom) .le. 1.0e-40)) then
 	!IF (.NOT. (Qnumer .EQ. 0 .AND. Qdenom .EQ. 0)) THEN
 	DO WHILE (.NOT. CheckEquilibriumConvergenceForAqDissociationRxn (WhichEquilibriumRxn, InParticle, ErrorTolerance))
 
@@ -1392,7 +1409,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Hydrates: Water equilibrium
 	! CMB (floating-point equality check)
-	if (dabs(aqequilibrialist(WhichEquilibriumRxn, 24)) .gt. 1.0e-40) then
+	if (abs(aqequilibrialist(WhichEquilibriumRxn, 24)) .gt. 1.0e-40) then
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,24) .NE. 0.) THEN
 		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,24))) =		&
 				InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,24)))		&
@@ -1509,7 +1526,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!!
 	!! the minimum iteration number is because this can 
 	!! occassionally happen early in the equilibration process
-        if ( (dabs(II - EqRatio) .lt. ErrorTolerance/10.0)) then
+        if ( (abs(II - EqRatio) .lt. ErrorTolerance/10.0)) then
             if (I .gt. 25) then
                 if (WhichEquilibriumRxn .eq. 1) then
                     Z = Z/sqrt(errortolerance)
@@ -1518,7 +1535,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
                 endif
             endif
         endif
-	!if ( (dabs(II - EqRatio) .lt. ErrorTolerance/10.0) .and. &
+	!if ( (abs(II - EqRatio) .lt. ErrorTolerance/10.0) .and. &
 	!		(I .gt. 25.) .and. &
 	!		(WhichEquilibriumRxn .eq. 1) ) then
 	!IF (ABS(II-EqRatio) .LT. ErrorTolerance/10. .AND. I .GT. 25. .AND. WhichEquilibriumRxn .EQ. 1)  THEN
@@ -1667,6 +1684,8 @@ SUBROUTINE ReformElectrolyte(WhichRxn, InParticle)
 								HydroxyIndex,					&
 								WaterEquilibriumIndex
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -1674,7 +1693,7 @@ SUBROUTINE ReformElectrolyte(WhichRxn, InParticle)
 	TYPE(PARTICLE),POINTER :: InParticle
 
 	INTEGER :: RxnType
-	REAL*8  :: dX
+	TYPE (XPLEX)  :: dX
 
 	RxnType = -1
 
@@ -1789,19 +1808,21 @@ LOGICAL FUNCTION CheckEquilibriumConvergenceForAqDissociationRxn (WhichEquilibri
 
 	USE Chemistry,       ONLY : AqEquilibriaList ! AqIonGrid, 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichEquilibriumRxn
-	REAL*8  :: ErrorTolerance
+	TYPE (XPLEX)  :: ErrorTolerance
 	TYPE(PARTICLE),POINTER :: InParticle
 
 	!! These are infinitely dissociating reactions
 	! CMB: floating-point inequality check
-	if (dabs(aqequilibrialist(WhichEquilibriumRxn, 9) - 1) .le. 1.0e-40) then
+	if (abs(aqequilibrialist(WhichEquilibriumRxn, 9) - 1) .le. 1.0e-40) then
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,9) .EQ. -1.) THEN
 		! CMB: floating-point check
-		IF (dabs(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))) .le. 1.0e-40) THEN
+		IF (abs(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))) .le. 1.0e-40) THEN
 		!IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. 0) THEN
 			CheckEquilibriumConvergenceForAqDissociationRxn = .TRUE.
 		ELSE
@@ -1829,23 +1850,25 @@ END FUNCTION CheckEquilibriumConvergenceForAqDissociationRxn
 !! case the denominator activity coefficient is simply 1), and  !!
 !! if not it stores an equivalent activity coefficient ratio.   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
+TYPE (XPLEX) FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 
 	USE Chemistry,       ONLY : AqEquilibriaList, HowManyAqChems, HowManyAqCations
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichEquilibriumRxn
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8	:: MM, Eq, AwPow, Dum1
+	TYPE (XPLEX)	:: MM, Eq, AwPow, Dum1
 
 	!! If this should be an infinitely dissociating reaction, then it either
 	!! is in equilibrium or it is infinitely far away.
 	! CMB: Mod for floating-point inequality
-	if (dabs(aqequilibrialist(WhichEquilibriumRxn,9) - 1) .le. 1.0e-40) then
+	if (abs(aqequilibrialist(WhichEquilibriumRxn,9) - 1) .le. 1.0e-40) then
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,9) .EQ. -1.) THEN
-		if (dabs(inparticle%aqchems(int(aqequilibrialist(WhichEquilibriumRxn, 1))))&
+		if (abs(inparticle%aqchems(int(aqequilibrialist(WhichEquilibriumRxn, 1))))&
 				.le. 1.0e-40) then
 		!IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. 0) THEN
 			EquilibriumConstantsRatio = 1.
@@ -1913,9 +1936,9 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 		CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)),InParticle) ** AqEquilibriaList(WhichEquilibriumRxn, 4) *	&
 	    AnionMolality (INT(AqEquilibriaList(WhichEquilibriumRxn,3)),InParticle) ** AqEquilibriaList(WhichEquilibriumRxn, 5) *	&
 		InParticle%GammaMixed(FLOOR(AqEquilibriaList(WhichEquilibriumRxn, 16)))													&
-		** ANINT(10000. * (AqEquilibriaList(WhichEquilibriumRxn, 16) - FLOOR(AqEquilibriaList(WhichEquilibriumRxn, 16)))) /		&
+		** NINT(10000. * (AqEquilibriaList(WhichEquilibriumRxn, 16) - FLOOR(AqEquilibriaList(WhichEquilibriumRxn, 16)))) /		&
 		InParticle%GammaMixed(WhichEquilibriumRxn)																				&
-		** ANINT(10000. * (AqEquilibriaList(WhichEquilibriumRxn, 17) - FLOOR(AqEquilibriaList(WhichEquilibriumRxn, 17)))) /		&
+		** NINT(10000. * (AqEquilibriaList(WhichEquilibriumRxn, 17) - FLOOR(AqEquilibriaList(WhichEquilibriumRxn, 17)))) /		&
 		AwPow / MM / Eq
 
 	ELSE IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 .AND. &
@@ -1954,6 +1977,8 @@ SUBROUTINE CalculateIonicStrength (InParticle)
 			      AqCationCharge,			&
 			      AqAnionCharge
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -1961,7 +1986,7 @@ SUBROUTINE CalculateIonicStrength (InParticle)
 
 	!! Internal Variables
 	INTEGER :: I
-	REAL*8  :: II
+	TYPE (XPLEX)  :: II
 
 	!! If this is an empty section, we have no truck with it
 	! CMB: floating point inequality
@@ -1992,7 +2017,7 @@ END SUBROUTINE CalculateIonicStrength
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the Mean Activity of an Electrolyte !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
+TYPE (XPLEX) FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 
 	USE Chemistry, ONLY : AqEquilibriaList, AqCationNames, AqAnionNames, &
 						  HowManyAqChems, HowManyAqCations
@@ -2000,6 +2025,8 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	USE InfrastructuralCode
 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -2068,10 +2095,12 @@ END FUNCTION MeanActivity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the Charge Fraction (Z Fraction) !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION ChargeFraction (CationChg, AnionChg)
+TYPE (XPLEX) FUNCTION ChargeFraction (CationChg, AnionChg)
 
 	USE Chemistry, ONLY : AqCationCharge, AqAnionCharge
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: CationChg, AnionChg
@@ -2084,7 +2113,7 @@ END FUNCTION ChargeFraction
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the Q Parameter for the K-M Scheme !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION CalcQ (EqRxn, InParticle)
+TYPE (XPLEX) FUNCTION CalcQ (EqRxn, InParticle)
 
 	USE Chemistry,		 ONLY : AqCationCharge,		&
 				        AqAnionCharge,		&
@@ -2095,6 +2124,8 @@ REAL*8 FUNCTION CalcQ (EqRxn, InParticle)
 
 	USE ModelParameters, ONLY : ThermoTref
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: EqRxn
@@ -2146,6 +2177,8 @@ SUBROUTINE KusikMeissner (InParticle)
 
 	USE ModelParameters, ONLY : MaxIonicStrKM
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -2157,10 +2190,10 @@ SUBROUTINE KusikMeissner (InParticle)
 			   CatCharge(HowManyAqEqReactions),AnCharge(HowManyAqEqReactions),			&
 			   KMCatCharge(HowManyKMParams),KMAnCharge(HowManyKMParams)
 
-    REAL*8  :: CationicStrFr(HowManyAqEqReactions),AnionicStrFr(HowManyAqEqReactions),	&
+    TYPE (XPLEX)  :: CationicStrFr(HowManyAqEqReactions),AnionicStrFr(HowManyAqEqReactions),	&
 			   SUM1, SUM2, Ia, Ic, LGP1, LGP2, LGP3, II, JJ, FauxIonicStr, TempIonicStr
 
-    REAL*8, ALLOCATABLE  :: LogGammaPure(:)
+    TYPE (XPLEX), ALLOCATABLE  :: LogGammaPure(:)
 
 	!! If this is an empty section, we have no truck with it
 	! cmb
@@ -2269,7 +2302,7 @@ SUBROUTINE KusikMeissner (InParticle)
 		!! if we have a partially-dissociating reaction, which is dereferenced
 		!! during equilibration
 		! CMB (AER): floating point inequality
-		if (dabs(aqequilibrialist(K, 18)) .le. 1.0e-40) then
+		if (abs(aqequilibrialist(K, 18)) .le. 1.0e-40) then
 		!IF (AqEquilibriaList(K,18) .EQ. 0.) THEN
 
 			!! If only 16 is filled, then this is a simple case and we calculate
@@ -2279,7 +2312,7 @@ SUBROUTINE KusikMeissner (InParticle)
 			!! is in 17, as it will eventually be used in the denominator of the 
 			!! equilibration calculation.
 			! CMB (AER): floating point inequality
-			IF (dabs(AqEquilibriaList(K,17)) .le. 1.0e-40) THEN
+			IF (abs(AqEquilibriaList(K,17)) .le. 1.0e-40) THEN
 			!IF (AqEquilibriaList(K,17) .EQ. 0) THEN
 				LogGammaPure(K) = CalcLogGammaPure(FLOOR(AqEquilibriaList(K,16)), InParticle)
 			ELSE
@@ -2338,7 +2371,7 @@ SUBROUTINE KusikMeissner (InParticle)
 
 	  !! No need to calculate the mixture if the ionic strength is zero! (Which it oughtn't ever be.)
 	  ! CMB (floating point inequality check)
-	  IF (dabs(InParticle%IonicStr) .le. 1.d-40) THEN
+	  IF (abs(InParticle%IonicStr) .le. 1.d-40) THEN
 		  InParticle%GammaMixed(K) = 1.
 	  ELSE
 
@@ -2425,17 +2458,19 @@ END SUBROUTINE KusikMeissner
 !! This is simply the Kusik-Meissner         !!
 !! formulation				     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL *8 FUNCTION CalcLogGammaPure (K, InParticle)
+TYPE (XPLEX) FUNCTION CalcLogGammaPure (K, InParticle)
      
-        USE InfrastructuralCode, ONLY : IsNaN
+        !USE InfrastructuralCode, ONLY : IsNaN
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: K
 
 	!! Internal Variables
-	REAL *8 :: B, C, Q, SqrtI
+	TYPE (XPLEX) :: B, C, Q, SqrtI
 	TYPE (Particle) :: InParticle
 
 	!! If this is an empty section, we have no truck with it
@@ -2493,6 +2528,8 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 						MaxIonicStrKm
 	USE InfrastructuralCode,	ONLY : WARN, ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -2500,11 +2537,11 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 
 	!! Internal Variables
 	INTEGER :: K, IERR, CatIndex, AnIndex
-	REAL*8  :: LogAw, Q(3),	Stoich(4), Charges(4),	&
+	TYPE (XPLEX)  :: LogAw, Q(3),	Stoich(4), Charges(4),	&
 			   InorganicIntegral,					&	! The Value of the Integrated Value of the Inorganic Portion
 			   II, JJ,								&
 			   PatKumWeights(HowManyAqEqReactions,3), &
-			   IonicStrength
+			   IonicStrength, TempB
 
 	EXTERNAL EvalIdLogGamma
 
@@ -2552,9 +2589,9 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 
 			!! The definitions of all of these 
 
-			Stoich(1) = ANINT((AqEquilibriaList(K,16) - FLOOR(AqEquilibriaList(K,16))) * 100000000.)/10000.
-			Stoich(2) = ANINT((AqEquilibriaList(K,18) - FLOOR(AqEquilibriaList(K,18))) * 100000000.)/10000.
-			Stoich(3) = ANINT((AqEquilibriaList(K,17) - FLOOR(AqEquilibriaList(K,17))) * 100000000.)/10000.
+			Stoich(1) = NINT((AqEquilibriaList(K,16) - FLOOR(AqEquilibriaList(K,16))) * 100000000.)/10000.
+			Stoich(2) = NINT((AqEquilibriaList(K,18) - FLOOR(AqEquilibriaList(K,18))) * 100000000.)/10000.
+			Stoich(3) = NINT((AqEquilibriaList(K,17) - FLOOR(AqEquilibriaList(K,17))) * 100000000.)/10000.
 			Stoich(4) = AqEquilibriaList(K,4) + AqEquilibriaList(K,5)
 
 			Charges(1) = AqCationCharge(INT(KMRef(FLOOR(AqEquilibriaList(K,16)),2))) * &
@@ -2585,8 +2622,10 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 		END IF
 		
 		!! This routine is housed in DGAUS8.f.  It's an adaptive time step integrator, modified to pass dummy arguments to FUN.
+            TempB%r = 0.0
+            TempB%i = 0.0
 	    CALL DGAUS8 (EvalIdLogGamma,			&
-					 0., IonicStrength,	& ! Integration Limits
+					 TempB, IonicStrength,	& ! Integration Limits
 					 Q, Stoich, Charges,		& ! Pass-Along Argument to EvalIdLogGamma
 					 WaterContentPrecision,	    & ! An error tolerance
 					 InorganicIntegral,			& ! The Result
@@ -2631,19 +2670,21 @@ END SUBROUTINE UpdateWaterActivity
 !! Calculate the Residual Between the Ambient RH and the Local	!!
 !! Water Activity corrected for curvature effects				!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION WaterResidual (InParticle, SpecifiedRH)
+TYPE (XPLEX) FUNCTION WaterResidual (InParticle, SpecifiedRH)
 
 	USE GridPointFields,     ONLY : GetRelativeHumidity
 	USE infrastructuralcode, ONLY : ERROR
 
+	USE XPLEXIFY
+        USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8       :: SpecifiedRH
+	TYPE (XPLEX)       :: SpecifiedRH
 
 	!! Internal Variables
-	REAL*8 :: RH
+	TYPE (XPLEX) :: RH
 
 	CALL UpdateWaterActivity(InParticle)
 
@@ -2689,25 +2730,27 @@ SUBROUTINE EquilibriumWaterContentAmount (InParticle, EquilibToThisRH, &
 					SmallestAerosolPossible,            &
                                         MinimumWater
 
-	USE InfrastructuralCode, ONLY : Error, IsNaN
+	USE InfrastructuralCode, ONLY : Error!, IsNaN
 
 	USE GridPointFields,	 ONLY : GetRelativeHumidity, GetGasBurden, &
 					ReplaceGridCellChemBurden
 
 	USE Time,		ONLY : CurrentTime, BeginningTime
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8	     :: EquilibToThisRH
+	TYPE (XPLEX)	     :: EquilibToThisRH
 	LOGICAL      :: ForceEquilibrium
 	INTEGER      :: ReturnType
-	REAL*8	     :: WaterContent
+	TYPE (XPLEX)	     :: WaterContent
 	
 
 	!! Internal Variables 
-	REAL*8  :: InitialWaterContent, Residual, Change, ChangeFac, II, RH
+	TYPE (XPLEX)  :: InitialWaterContent, Residual, Change, ChangeFac, II, RH
 	INTEGER :: I, N, Direction
 	LOGICAL :: InternalOpenSystem, InternalForceEquilibrium
 

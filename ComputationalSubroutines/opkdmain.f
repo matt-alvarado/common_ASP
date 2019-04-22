@@ -1,9 +1,11 @@
 *DECK DLSODE
       SUBROUTINE DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
      1                  ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, MF)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
-      DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW)
 C***BEGIN PROLOGUE  DLSODE
 C***PURPOSE  Livermore Solver for Ordinary Differential Equations.
@@ -12,7 +14,7 @@ C            nonstiff systems of first-order ODE's,
 C               dy/dt = f(t,y),   or, in component form,
 C               dy(i)/dt = f(i) = f(i,t,y(1),y(2),...,y(N)),  i=1,...,N.
 C***CATEGORY  I1A
-C***TYPE      DOUBLE PRECISION (SLSODE-S, DLSODE-D)
+C***TYPE      TYPE (XPLEX) (SLSODE-S, DLSODE-D)
 C***KEYWORDS  ORDINARY DIFFERENTIAL EQUATIONS, INITIAL VALUE PROBLEM,
 C             STIFF, NONSTIFF
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
@@ -57,7 +59,7 @@ C
 C        EXTERNAL F, JAC
 C        INTEGER  NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK(LIW),
 C       *         LIW, MF
-C        DOUBLE PRECISION Y(NEQ), T, TOUT, RTOL, ATOL(ntol), RWORK(LRW)
+C        TYPE (XPLEX) Y(NEQ), T, TOUT, RTOL, ATOL(ntol), RWORK(LRW)
 C
 C        CALL DLSODE (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
 C       *            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, MF)
@@ -69,7 +71,7 @@ C                   program.  The form of F must be:
 C
 C                   SUBROUTINE  F (NEQ, T, Y, YDOT)
 C                   INTEGER  NEQ
-C                   DOUBLE PRECISION  T, Y(*), YDOT(*)
+C                   TYPE (XPLEX)  T, Y(*), YDOT(*)
 C
 C                   The inputs are NEQ, T, Y.  F is to set
 C
@@ -196,7 +198,7 @@ C                   dummy name.  The form of JAC must be:
 C
 C                   SUBROUTINE JAC (NEQ, T, Y, ML, MU, PD, NROWPD)
 C                   INTEGER  NEQ, ML, MU, NROWPD
-C                   DOUBLE PRECISION  T, Y(*), PD(NROWPD,*)
+C                   TYPE (XPLEX)  T, Y(*), PD(NROWPD,*)
 C
 C                   See item c, under "Description" below for more
 C                   information about JAC.
@@ -231,7 +233,7 @@ C     a. First write a subroutine of the form
 C
 C           SUBROUTINE  F (NEQ, T, Y, YDOT)
 C           INTEGER  NEQ
-C           DOUBLE PRECISION  T, Y(*), YDOT(*)
+C           TYPE (XPLEX)  T, Y(*), YDOT(*)
 C
 C        which supplies the vector function f by loading YDOT(i) with
 C        f(i).
@@ -261,7 +263,7 @@ C        subroutine of the form
 C
 C           SUBROUTINE  JAC (NEQ, T, Y, ML, MU, PD, NROWPD)
 C           INTEGER  NEQ, ML, MU, NRWOPD
-C           DOUBLE PRECISION  T, Y(*), PD(NROWPD,*)
+C           TYPE (XPLEX)  T, Y(*), PD(NROWPD,*)
 C
 C        which provides df/dy by loading PD as follows:
 C        - For a full Jacobian (MF = 21), load PD(i,j) with df(i)/dy(j),
@@ -304,7 +306,7 @@ C
 C        EXTERNAL  FEX, JEX
 C        INTEGER  IOPT, IOUT, ISTATE, ITASK, ITOL, IWORK(23), LIW, LRW,
 C       *         MF, NEQ
-C        DOUBLE PRECISION  ATOL(3), RTOL, RWORK(58), T, TOUT, Y(3)
+C        TYPE (XPLEX)  ATOL(3), RTOL, RWORK(58), T, TOUT, Y(3)
 C        NEQ = 3
 C        Y(1) = 1.D0
 C        Y(2) = 0.D0
@@ -339,7 +341,7 @@ C        END
 C
 C        SUBROUTINE  FEX (NEQ, T, Y, YDOT)
 C        INTEGER  NEQ
-C        DOUBLE PRECISION  T, Y(3), YDOT(3)
+C        TYPE (XPLEX)  T, Y(3), YDOT(3)
 C        YDOT(1) = -.04D0*Y(1) + 1.D4*Y(2)*Y(3)
 C        YDOT(3) = 3.D7*Y(2)*Y(2)
 C        YDOT(2) = -YDOT(1) - YDOT(3)
@@ -348,7 +350,7 @@ C        END
 C
 C        SUBROUTINE  JEX (NEQ, T, Y, ML, MU, PD, NRPD)
 C        INTEGER  NEQ, ML, MU, NRPD
-C        DOUBLE PRECISION  T, Y(3), PD(NRPD,3)
+C        TYPE (XPLEX)  T, Y(3), PD(NRPD,3)
 C        PD(1,1) = -.04D0
 C        PD(1,2) = 1.D4*Y(3)
 C        PD(1,3) = 1.D4*Y(2)
@@ -457,7 +459,7 @@ C              the scalar t and the vector y. Subroutine F is to compute
 C              the function f. It is to have the form
 C
 C                 SUBROUTINE F (NEQ, T, Y, YDOT)
-C                 DOUBLE PRECISION  T, Y(*), YDOT(*)
+C                 TYPE (XPLEX)  T, Y(*), YDOT(*)
 C
 C              where NEQ, T, and Y are input, and the array YDOT =
 C              f(T,Y) is output.  Y and YDOT are arrays of length NEQ.
@@ -693,7 +695,7 @@ C              0   No optional inputs are being used.  Default values
 C                  will be used in all cases.
 C              1   One or more optional inputs are being used.
 C
-C     RWORK    A real working array (double precision).  The length of
+C     RWORK    A real working array (TYPE (XPLEX)).  The length of
 C              RWORK must be at least
 C
 C                 20 + NYH*(MAXORD + 1) + 3*NEQ + LWM
@@ -766,7 +768,7 @@ C              scalar t and the vector y.  (See the MF description below
 C              for MITER.)  It is to have the form
 C
 C                 SUBROUTINE JAC (NEQ, T, Y, ML, MU, PD, NROWPD)
-C                 DOUBLE PRECISION T, Y(*), PD(NROWPD,*)
+C                 TYPE (XPLEX) T, Y(*), PD(NROWPD,*)
 C
 C              where NEQ, T, Y, ML, MU, and NROWPD are input and the
 C              array PD is to be loaded with partial derivatives
@@ -1022,7 +1024,7 @@ C     If DLSODE is to be used in an overlay situation, the user must
 C     declare, in the primary overlay, the variables in:
 C     (1) the call sequence to DLSODE,
 C     (2) the internal COMMON block /DLS001/, of length 255 
-C         (218 double precision words followed by 37 integer words).
+C         (218 TYPE (XPLEX) words followed by 37 integer words).
 C
 C     If DLSODE is used on a system in which the contents of internal
 C     COMMON blocks are not preserved between calls, the user should
@@ -1082,7 +1084,7 @@ C     factors of H**j/factorial(j).  On the first call for the problem,
 C     given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C     NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C     can be obtained by including in SEWSET the statements:
-C           DOUBLE PRECISION RLS
+C           TYPE (XPLEX) RLS
 C           COMMON /DLS001/ RLS(218),ILS(37)
 C           NQ = ILS(33)
 C           NST = ILS(34)
@@ -1204,7 +1206,7 @@ C**End
 C
 C  Declare externals.
       EXTERNAL DPREPJ, DSOLSY
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
 C
 C  Declare all other variables.
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
@@ -1213,10 +1215,10 @@ C  Declare all other variables.
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, I2, IFLAG, IMXER, KGO, LF0,
      1   LENIW, LENRW, LENWM, ML, MORD, MU, MXHNL0, MXSTP0
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*80 MSG
@@ -1332,6 +1334,8 @@ C-----------------------------------------------------------------------
       LENIW = 20 + N
       IF (MITER .EQ. 0 .OR. MITER .EQ. 3) LENIW = 20
       IWORK(18) = LENIW
+!      write(*,*) "LENRW", LENRW
+!      write(*,*) "LRW", LRW
       IF (LENRW .GT. LRW) GO TO 617
       IF (LENIW .GT. LIW) GO TO 618
 C Check RTOL and ATOL for legality. ------------------------------------
@@ -1409,7 +1413,7 @@ C if this is positive, or MAX(ATOL(I)/ABS(Y(I))) otherwise, adjusted
 C so as to be between 100*UROUND and 1.0E-3.
 C Then the computed value H0 is given by..
 C                                      NEQ
-C   H0**2 = TOL / ( w0**-2 + (1/NEQ) * SUM ( f(i)/ywt(i) )**2  )
+C   H0**2 = TOL / ( w0**-2 + (1/NEQ) * NEWSUM ( f(i)/ywt(i) )**2  )
 C                                       1
 C where   w0     = MAX ( ABS(T), ABS(TOUT) ),
 C         f(i)   = i-th component of initial value of f,
@@ -1433,9 +1437,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DVNORM (N, RWORK(LF0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DVNORM (N, RWORK(LF0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -1756,16 +1760,18 @@ C----------------------- END OF SUBROUTINE DLSODE ----------------------
 *DECK DLSODES
       SUBROUTINE DLSODES (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
      1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, MF)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
-      DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW)
 C-----------------------------------------------------------------------
 C This is the 12 November 2003 version of
 C DLSODES: Livermore Solver for Ordinary Differential Equations
 C          with general Sparse Jacobian matrix.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODES solves the initial value problem for stiff or nonstiff
 C systems of first order ODEs,
@@ -1809,7 +1815,7 @@ C problem (with program and output) following this summary.
 C
 C A. First provide a subroutine of the form:
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C which supplies the vector function f by loading YDOT(i) with f(i).
 C
 C B. Next determine (or guess) whether or not the problem is stiff.
@@ -1828,7 +1834,7 @@ C directly (MF = 121), but if this is not feasible, DLSODES will
 C compute it internally by difference quotients (MF = 222).
 C If you are supplying the Jacobian, provide a subroutine of the form:
 C               SUBROUTINE JAC (NEQ, T, Y, J, IAN, JAN, PDJ)
-C               DOUBLE PRECISION T, Y(*), IAN(*), JAN(*), PDJ(*)
+C               TYPE (XPLEX) T, Y(*), IAN(*), JAN(*), PDJ(*)
 C Here NEQ, T, Y, and J are input arguments, and the JAC routine is to
 C load the array PDJ (of length NEQ) with the J-th column of df/dy.
 C I.e., load PDJ(i) with df(i)/dy(J) for all relevant values of i.
@@ -1872,7 +1878,7 @@ C          where:
 C          NNZ    = the number of nonzero elements in the sparse
 C                   Jacobian (if this is unknown, use an estimate), and
 C          LENRAT = the real to integer wordlength ratio (usually 1 in
-C                   single precision and 2 in double precision).
+C                   single precision and 2 in TYPE (XPLEX)).
 C          In any case, the required size of RWORK cannot generally
 C          be predicted in advance if MF = 121 or 222, and the value
 C          above is a rough estimate of a crude lower bound.  Some
@@ -1954,7 +1960,7 @@ C During the run and at the end, statistical quantities of interest
 C are printed (see optional outputs in the full description below).
 C
 C     EXTERNAL FEX, JEX
-C     DOUBLE PRECISION ATOL, RTOL, RWORK, T, TOUT, Y
+C     TYPE (XPLEX) ATOL, RTOL, RWORK, T, TOUT, Y
 C     DIMENSION Y(12), RWORK(500), IWORK(30)
 C     DATA LRW/500/, LIW/30/
 C     NEQ = 12
@@ -2000,8 +2006,8 @@ C     STOP
 C     END
 C
 C     SUBROUTINE FEX (NEQ, T, Y, YDOT)
-C     DOUBLE PRECISION T, Y, YDOT
-C     DOUBLE PRECISION RK1, RK2, RK3, RK4, RK5, RK6, RK7, RK8, RK9,
+C     TYPE (XPLEX) T, Y, YDOT
+C     TYPE (XPLEX) RK1, RK2, RK3, RK4, RK5, RK6, RK7, RK8, RK9,
 C    1   RK10, RK11, RK12, RK13, RK14, RK15, RK16, RK17
 C     DIMENSION Y(12), YDOT(12)
 C     DATA RK1/0.1D0/, RK2/10.0D0/, RK3/50.0D0/, RK4/2.5D0/, RK5/0.1D0/,
@@ -2030,8 +2036,8 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE JEX (NEQ, T, Y, J, IA, JA, PDJ)
-C     DOUBLE PRECISION T, Y, PDJ
-C     DOUBLE PRECISION RK1, RK2, RK3, RK4, RK5, RK6, RK7, RK8, RK9,
+C     TYPE (XPLEX) T, Y, PDJ
+C     TYPE (XPLEX) RK1, RK2, RK3, RK4, RK5, RK6, RK7, RK8, RK9,
 C    1   RK10, RK11, RK12, RK13, RK14, RK15, RK16, RK17
 C     DIMENSION Y(12), IA(*), JA(*), PDJ(12)
 C     DATA RK1/0.1D0/, RK2/10.0D0/, RK3/50.0D0/, RK4/2.5D0/, RK5/0.1D0/,
@@ -2180,7 +2186,7 @@ C          form dy/dt = f(t,y), where f is a vector-valued function
 C          of the scalar t and the vector y.  Subroutine F is to
 C          compute the function f.  It is to have the form
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C          where NEQ, T, and Y are input, and the array YDOT = f(t,y)
 C          is output.  Y and YDOT are arrays of length NEQ.
 C          Subroutine F should not alter y(1),...,y(NEQ).
@@ -2413,7 +2419,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a work array used for a mixture of real (double precision)
+C RWORK  = a work array used for a mixture of real (TYPE (XPLEX))
 C          and integer work space.
 C          The length of RWORK (in real words) must be at least
 C             20 + NYH*(MAXORD + 1) + 3*NEQ + LWM    where
@@ -2427,7 +2433,7 @@ C          LWM = NEQ + 2                              if MITER = 3.
 C          In the above formulas,
 C          NNZ    = number of nonzero elements in the Jacobian matrix.
 C          LENRAT = the real to integer wordlength ratio (usually 1 in
-C                   single precision and 2 in double precision).
+C                   single precision and 2 in TYPE (XPLEX)).
 C          (See the MF description for METH and MITER.)
 C          Thus if MAXORD has its default value and NEQ is constant,
 C          the minimum length of RWORK is:
@@ -2494,7 +2500,7 @@ C JAC    = name of user-supplied routine (MITER = 1 or MOSS = 1) to
 C          compute the Jacobian matrix, df/dy, as a function of
 C          the scalar t and the vector y.  It is to have the form
 C               SUBROUTINE JAC (NEQ, T, Y, J, IAN, JAN, PDJ)
-C               DOUBLE PRECISION T, Y(*), IAN(*), JAN(*), PDJ(*)
+C               TYPE (XPLEX) T, Y(*), IAN(*), JAN(*), PDJ(*)
 C          where NEQ, T, Y, J, IAN, and JAN are input, and the array
 C          PDJ, of length NEQ, is to be loaded with column J
 C          of the Jacobian on output.  Thus df(i)/dy(J) is to be
@@ -2833,9 +2839,9 @@ C If DLSODES is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODES, and
 C   (2) the two internal Common blocks
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
-C         /DLSS01/  of length  40  (6 double precision words
+C         /DLSS01/  of length  40  (6 TYPE (XPLEX) words
 C                      followed by 34 integer words),
 C
 C If DLSODES is used on a system in which the contents of internal
@@ -2888,7 +2894,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -2949,7 +2955,7 @@ C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           converted arithmetic IF statements to logical IF statements;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20020502  Corrected declarations in descriptions of user routines.
 C 20031105  Restored 'own' variables to Common blocks, to enable
 C           interrupt/restart feature.
@@ -3004,7 +3010,7 @@ C All the others are subroutines.
 C
 C-----------------------------------------------------------------------
       EXTERNAL DPRJS, DSOLSS
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
@@ -3016,11 +3022,11 @@ C-----------------------------------------------------------------------
       INTEGER I, I1, I2, IFLAG, IMAX, IMUL, IMXER, IPFLAG, IPGO, IREM,
      1   J, KGO, LENRAT, LENYHT, LENIW, LENRW, LF0, LIA, LJA,
      2   LRTEM, LWTEM, LYHD, LYHN, MF1, MORD, MXHNL0, MXSTP0, NCOLM
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*60 MSG
@@ -3054,7 +3060,7 @@ C
 C-----------------------------------------------------------------------
 C In the Data statement below, set LENRAT equal to the ratio of
 C the wordlength for a real number to that for an integer.  Usually,
-C LENRAT = 1 for single precision and 2 for double precision.  If the
+C LENRAT = 1 for single precision and 2 for TYPE (XPLEX).  If the
 C true ratio is not an integer, use the next smaller integer (.ge. 1).
 C-----------------------------------------------------------------------
       DATA LENRAT/2/
@@ -3169,6 +3175,8 @@ C-----------------------------------------------------------------------
       IF (MOSS .EQ. 0 .AND. MITER .NE. 0 .AND. MITER .NE. 3)
      1   LENIW = LENIW + N + 1
       IWORK(18) = LENIW
+!      write(*,*) "LENRW", LENRW
+!      write(*,*) "LRW", LRW
       IF (LENRW .GT. LRW) GO TO 617
       IF (LENIW .GT. LIW) GO TO 618
       LIA = 31
@@ -3241,6 +3249,8 @@ C DIPREP and DPREP do sparse matrix preprocessing if MITER = 1 or 2. ---
       IPGO = -IPFLAG + 1
       GO TO (90, 628, 629, 630, 631, 632, 633), IPGO
  90   IWORK(22) = LYH
+!      write(*,*) "LENRW", LENRW
+!      write(*,*) "LRW", LRW
       IF (LENRW .GT. LRW) GO TO 617
 C Set flag to signal parameter changes to DSTODE. ----------------------
  92   JSTART = -1
@@ -3291,6 +3301,9 @@ C DIPREP and DPREP do sparse matrix preprocessing if MITER = 1 or 2. ---
       IF (IPFLAG .NE. -1) IWORK(23) = IPIAN
       IF (IPFLAG .NE. -1) IWORK(24) = IPJAN
       IPGO = -IPFLAG + 1
+!      write(*,*) "IPGO", IPGO
+!      write(*,*) "LENRW", LENRW
+!      write(*,*) "LRW", LRW
       GO TO (115, 628, 629, 630, 631, 632, 633), IPGO
  115  IWORK(22) = LYH
       IF (LENRW .GT. LRW) GO TO 617
@@ -3355,9 +3368,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DVNORM (N, RWORK(LF0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DVNORM (N, RWORK(LF0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -3735,16 +3748,18 @@ C----------------------- End of Subroutine DLSODES ---------------------
 *DECK DLSODA
       SUBROUTINE DLSODA (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
      1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, JT)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, JT
-      DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW)
 C-----------------------------------------------------------------------
 C This is the 12 November 2003 version of
 C DLSODA: Livermore Solver for Ordinary Differential Equations, with
 C         Automatic method switching for stiff and nonstiff problems.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODA solves the initial value problem for stiff or nonstiff
 C systems of first order ODEs,
@@ -3787,7 +3802,7 @@ C problem (with program and output) following this summary.
 C
 C A. First provide a subroutine of the form:
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C which supplies the vector function f by loading YDOT(i) with f(i).
 C
 C B. Write a main program which calls Subroutine DLSODA once for
@@ -3879,7 +3894,7 @@ C At the end of the run, statistical quantities of interest are
 C printed (see optional outputs in the full description below).
 C
 C     EXTERNAL FEX
-C     DOUBLE PRECISION ATOL, RTOL, RWORK, T, TOUT, Y
+C     TYPE (XPLEX) ATOL, RTOL, RWORK, T, TOUT, Y
 C     DIMENSION Y(3), ATOL(3), RWORK(70), IWORK(23)
 C     NEQ = 3
 C     Y(1) = 1.
@@ -3915,7 +3930,7 @@ C     STOP
 C     END
 C
 C     SUBROUTINE FEX (NEQ, T, Y, YDOT)
-C     DOUBLE PRECISION T, Y, YDOT
+C     TYPE (XPLEX) T, Y, YDOT
 C     DIMENSION Y(3), YDOT(3)
 C     YDOT(1) = -.04*Y(1) + 1.D4*Y(2)*Y(3)
 C     YDOT(3) = 3.D7*Y(2)*Y(2)
@@ -3989,7 +4004,7 @@ C          form dy/dt = f(t,y), where f is a vector-valued function
 C          of the scalar t and the vector y.  Subroutine F is to
 C          compute the function f.  It is to have the form
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C          where NEQ, T, and Y are input, and the array YDOT = f(t,y)
 C          is output.  Y and YDOT are arrays of length NEQ.
 C          Subroutine F should not alter Y(1),...,Y(NEQ).
@@ -4209,7 +4224,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a real array (double precision) for work space, and (in the
+C RWORK  = a real array (TYPE (XPLEX)) for work space, and (in the
 C          first 20 words) for conditional and optional inputs and
 C          optional outputs.
 C          As DLSODA switches automatically between stiff and nonstiff
@@ -4316,7 +4331,7 @@ C          IWORK above).  In either case, if JT = 1 or 4, the JAC
 C          routine must compute df/dy as a function of the scalar t
 C          and the vector y.  It is to have the form
 C               SUBROUTINE JAC (NEQ, T, Y, ML, MU, PD, NROWPD)
-C               DOUBLE PRECISION T, Y(*), PD(NROWPD,*)
+C               TYPE (XPLEX) T, Y(*), PD(NROWPD,*)
 C          where NEQ, T, Y, ML, MU, and NROWPD are input and the array
 C          PD is to be loaded with partial derivatives (elements of
 C          the Jacobian matrix) on output.  PD must be given a first
@@ -4592,9 +4607,9 @@ C If DLSODA is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODA, and
 C   (2) the two internal Common blocks
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
-C         /DLSA01/  of length  31    (22 double precision words
+C         /DLSA01/  of length  31    (22 TYPE (XPLEX) words
 C                      followed by  9 integer words).
 C
 C If DLSODA is used on a system in which the contents of internal
@@ -4647,7 +4662,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -4679,7 +4694,7 @@ C           changed error messages to quoted strings;
 C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20010613  Revised excess accuracy test (to match rest of ODEPACK).
 C 20010808  Fixed bug in DPRJA (matrix in DBNORM call).
 C 20020502  Corrected declarations in descriptions of user routines.
@@ -4719,7 +4734,7 @@ C function routines.  All the others are subroutines.
 C
 C-----------------------------------------------------------------------
       EXTERNAL DPRJA, DSOLSY
-      DOUBLE PRECISION DUMACH, DMNORM
+      TYPE (XPLEX) DUMACH, DMNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
@@ -4728,11 +4743,11 @@ C-----------------------------------------------------------------------
       INTEGER I, I1, I2, IFLAG, IMXER, KGO, LF0,
      1   LENIW, LENRW, LENWM, ML, MORD, MU, MXHNL0, MXSTP0
       INTEGER LEN1, LEN1C, LEN1N, LEN1S, LEN2, LENIWC, LENRWC
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION TSW, ROWNS2, PDNORM
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) TSW, ROWNS2, PDNORM
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*60 MSG
@@ -4995,9 +5010,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DMNORM (N, RWORK(LF0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DMNORM (N, RWORK(LF0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -5368,10 +5383,12 @@ C----------------------- End of Subroutine DLSODA ----------------------
       SUBROUTINE DLSODAR (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
      1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, JT,
      2            G, NG, JROOT)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, G
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, JT,
      1   NG, JROOT
-      DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW),
      1   JROOT(NG)
 C-----------------------------------------------------------------------
@@ -5380,7 +5397,7 @@ C DLSODAR: Livermore Solver for Ordinary Differential Equations, with
 C          Automatic method switching for stiff and nonstiff problems,
 C          and with Root-finding.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODAR solves the initial value problem for stiff or nonstiff
 C systems of first order ODEs,
@@ -5436,12 +5453,12 @@ C problem (with program and output) following this summary.
 C
 C A. First provide a subroutine of the form:
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C which supplies the vector function f by loading YDOT(i) with f(i).
 C
 C B. Provide a subroutine of the form:
 C               SUBROUTINE G (NEQ, T, Y, NG, GOUT)
-C               DOUBLE PRECISION T, Y(*), GOUT(NG)
+C               TYPE (XPLEX) T, Y(*), GOUT(NG)
 C which supplies the vector function g by loading GOUT(i) with
 C g(i), the i-th constraint function whose root is sought.
 C
@@ -5553,7 +5570,7 @@ C At the end of the run, statistical quantities of interest are
 C printed (see optional outputs in the full description below).
 C
 C     EXTERNAL FEX, GEX
-C     DOUBLE PRECISION ATOL, RTOL, RWORK, T, TOUT, Y
+C     TYPE (XPLEX) ATOL, RTOL, RWORK, T, TOUT, Y
 C     DIMENSION Y(3), ATOL(3), RWORK(76), IWORK(23), JROOT(2)
 C     NEQ = 3
 C     Y(1) = 1.
@@ -5597,7 +5614,7 @@ C     STOP
 C     END
 C
 C     SUBROUTINE FEX (NEQ, T, Y, YDOT)
-C     DOUBLE PRECISION T, Y, YDOT
+C     TYPE (XPLEX) T, Y, YDOT
 C     DIMENSION Y(3), YDOT(3)
 C     YDOT(1) = -.04*Y(1) + 1.D4*Y(2)*Y(3)
 C     YDOT(3) = 3.D7*Y(2)*Y(2)
@@ -5606,7 +5623,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE GEX (NEQ, T, Y, NG, GOUT)
-C     DOUBLE PRECISION T, Y, GOUT
+C     TYPE (XPLEX) T, Y, GOUT
 C     DIMENSION Y(3), GOUT(2)
 C     GOUT(1) = Y(1) - 1.D-4
 C     GOUT(2) = Y(3) - 1.D-2
@@ -5686,7 +5703,7 @@ C          form dy/dt = f(t,y), where f is a vector-valued function
 C          of the scalar t and the vector y.  Subroutine F is to
 C          compute the function f.  It is to have the form
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C          where NEQ, T, and Y are input, and the array YDOT = f(t,y)
 C          is output.  Y and YDOT are arrays of length NEQ.
 C          Subroutine F should not alter Y(1),...,Y(NEQ).
@@ -5915,7 +5932,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a real array (double precision) for work space, and (in the
+C RWORK  = a real array (TYPE (XPLEX)) for work space, and (in the
 C          first 20 words) for conditional and optional inputs and
 C          optional outputs.
 C          As DLSODAR switches automatically between stiff and nonstiff
@@ -6022,7 +6039,7 @@ C          IWORK above).  In either case, if JT = 1 or 4, the JAC
 C          routine must compute df/dy as a function of the scalar t
 C          and the vector y.  It is to have the form
 C               SUBROUTINE JAC (NEQ, T, Y, ML, MU, PD, NROWPD)
-C               DOUBLE PRECISION T, Y(*), PD(NROWPD,*)
+C               TYPE (XPLEX) T, Y(*), PD(NROWPD,*)
 C          where NEQ, T, Y, ML, MU, and NROWPD are input and the array
 C          PD is to be loaded with partial derivatives (elements of
 C          the Jacobian matrix) on output.  PD must be given a first
@@ -6072,7 +6089,7 @@ C G      = the name of subroutine for constraint functions, whose
 C          roots are desired during the integration.  It is to have
 C          the form
 C               SUBROUTINE G (NEQ, T, Y, NG, GOUT)
-C               DOUBLE PRECISION T, Y(*), GOUT(NG)
+C               TYPE (XPLEX) T, Y(*), GOUT(NG)
 C          where NEQ, T, Y, and NG are input, and the array GOUT
 C          is output.  NEQ, T, and Y have the same meaning as in
 C          the F routine, and GOUT is an array of length NG.
@@ -6339,11 +6356,11 @@ C If DLSODAR is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODAR, and
 C   (2) the three internal Common blocks
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
-C         /DLSA01/  of length  31    (22 double precision words
+C         /DLSA01/  of length  31    (22 TYPE (XPLEX) words
 C                      followed by  9 integer words).
-C         /DLSR01/  of length   7  (3 double precision words
+C         /DLSR01/  of length   7  (3 TYPE (XPLEX) words
 C                      followed by  4 integer words).
 C
 C If DLSODAR is used on a system in which the contents of internal
@@ -6396,7 +6413,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -6429,7 +6446,7 @@ C           changed error messages to quoted strings;
 C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20010613  Revised excess accuracy test (to match rest of ODEPACK).
 C 20010808  Fixed bug in DPRJA (matrix in DBNORM call).
 C 20020502  Corrected declarations in descriptions of user routines.
@@ -6473,7 +6490,7 @@ C function routines.  All the others are subroutines.
 C
 C-----------------------------------------------------------------------
       EXTERNAL DPRJA, DSOLSY
-      DOUBLE PRECISION DUMACH, DMNORM
+      TYPE (XPLEX) DUMACH, DMNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
@@ -6484,12 +6501,12 @@ C-----------------------------------------------------------------------
      1   LENRW, LENWM, LF0, ML, MORD, MU, MXHNL0, MXSTP0
       INTEGER LEN1, LEN1C, LEN1N, LEN1S, LEN2, LENIWC, LENRWC
       INTEGER IRFP, IRT, LENYH, LYHNEW
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION TSW, ROWNS2, PDNORM
-      DOUBLE PRECISION ROWNR3, T0, TLAST, TOUTC
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) TSW, ROWNS2, PDNORM
+      TYPE (XPLEX) ROWNR3, T0, TLAST, TOUTC
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*60 MSG
@@ -6775,9 +6792,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DMNORM (N, RWORK(LF0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DMNORM (N, RWORK(LF0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -7206,9 +7223,11 @@ C----------------------- End of Subroutine DLSODAR ---------------------
 *DECK DLSODPK
       SUBROUTINE DLSODPK (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
      1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, PSOL, MF)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, PSOL
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
-      DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW)
 C-----------------------------------------------------------------------
 C This is the 18 November 2003 version of
@@ -7216,7 +7235,7 @@ C DLSODPK: Livermore Solver for Ordinary Differential equations,
 C          with Preconditioned Krylov iteration methods for the
 C          Newton correction linear systems.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODPK solves the initial value problem for stiff or nonstiff
 C systems of first order ODEs,
@@ -7304,7 +7323,7 @@ C program distributed with this solver.
 C
 C A. First provide a subroutine of the form:
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C which supplies the vector function f by loading YDOT(i) with f(i).
 C
 C B. Next determine (or guess) whether or not the problem is stiff.
@@ -7336,7 +7355,7 @@ C with the preconditioning of the linear systems to be solved.
 C These are as follows:
 C
 C     SUBROUTINE JAC (F, NEQ, T, Y, YSV, REWT, FTY, V, HL0, WP,IWP, IER)
-C     DOUBLE PRECISION T, Y(*),YSV(*), REWT(*), FTY(*), V(*), HL0, WP(*)
+C     TYPE (XPLEX) T, Y(*),YSV(*), REWT(*), FTY(*), V(*), HL0, WP(*)
 C     INTEGER IWP(*)
 C        This routine must evaluate and preprocess any parts of the
 C     Jacobian matrix df/dy involved in the preconditioners P1, P2, P.
@@ -7352,7 +7371,7 @@ C     JAC should return IER = 0 if successful, and IER .ne. 0 if not.
 C     (If IER .ne. 0, a smaller time step will be tried.)
 C
 C     SUBROUTINE PSOL (NEQ, T, Y, FTY, WK, HL0, WP, IWP, B, LR, IER)
-C     DOUBLE PRECISION T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
+C     TYPE (XPLEX) T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
 C     INTEGER IWP(*)
 C        This routine must solve a linear system with B as right-hand
 C     side and one of the preconditioning matrices, P1, P2, or P, as
@@ -7494,7 +7513,7 @@ C          form dy/dt = f(t,y), where f is a vector-valued function
 C          of the scalar t and the vector y.  Subroutine F is to
 C          compute the function f.  It is to have the form
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C          where NEQ, T, and Y are input, and the array YDOT = f(t,y)
 C          is output.  Y and YDOT are arrays of length NEQ.
 C          Subroutine F should not alter Y(1),...,Y(NEQ).
@@ -7713,7 +7732,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a real working array (double precision).
+C RWORK  = a real working array (TYPE (XPLEX)).
 C          The length of RWORK must be at least
 C             20 + NYH*(MAXORD + 1) + 3*NEQ + LENLS + LWP    where
 C          NYH    = the initial value of NEQ,
@@ -7801,7 +7820,7 @@ C          matrix preconditioning operations (MITER .ge. 1).
 C          It is to have the form
 C            SUBROUTINE JAC (F, NEQ, T, Y, YSV, REWT, FTY, V,
 C           1                HL0, WP, IWP, IER)
-C            DOUBLE PRECISION T, Y(*),YSV(*), REWT(*), FTY(*), V(*),
+C            TYPE (XPLEX) T, Y(*),YSV(*), REWT(*), FTY(*), V(*),
 C           1                 HL0, WP(*)
 C            INTEGER IWP(*)
 C          This routine must evaluate and preprocess any parts of the
@@ -7845,7 +7864,7 @@ C PSOL   = the name of the user-supplied routine for the
 C          solution of preconditioner linear systems.
 C          It is to have the form
 C            SUBROUTINE PSOL (NEQ, T, Y, FTY, WK,HL0, WP,IWP, B, LR,IER)
-C            DOUBLE PRECISION T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
+C            TYPE (XPLEX) T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
 C            INTEGER IWP(*)
 C          This routine must solve a linear system with B as right-hand
 C          side and one of the preconditioning matrices, P1, P2, or P,
@@ -8144,9 +8163,9 @@ C If DLSODPK is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODPK, and
 C   (2) the two internal Common blocks
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
-C         /DLPK01/  of length  17  (4 double precision words
+C         /DLPK01/  of length  17  (4 TYPE (XPLEX) words
 C                      followed by 13 integer words).
 C
 C If DLSODPK is used on a system in which the contents of internal
@@ -8199,7 +8218,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -8265,7 +8284,7 @@ C           changed error messages to quoted strings;
 C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20020502  Corrected declarations in descriptions of user routines.
 C 20030603  Corrected duplicate type declaration for DUMACH.
 C 20031105  Restored 'own' variables to Common blocks, to enable
@@ -8309,7 +8328,7 @@ C Note:  DVNORM, DDOT, DNRM2, DUMACH, IXSAV, and IUMACH are function
 C routines.  All the others are subroutines.
 C
 C-----------------------------------------------------------------------
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
@@ -8319,12 +8338,12 @@ C-----------------------------------------------------------------------
       INTEGER I, I1, I2, IFLAG, IMXER, KGO, LF0, LENIW,
      1   LENIWK, LENRW, LENWM, LENWK, LIWP, LWP, MORD, MXHNL0, MXSTP0,
      2   NCFN0, NCFL0, NLI0, NNI0, NNID, NSTD, NWARN
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
-      DOUBLE PRECISION ATOLI, AVDIM, AYI, BIG, EWTI, H0, HMAX, HMX,
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) ATOLI, AVDIM, AYI, BIG, EWTI, H0, HMAX, HMX,
      1   RCFL, RCFN, RH, RTOLI, TCRIT,
-     2   TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+     2   TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT, LAVD, LCFN, LCFL, LWARN
       CHARACTER*60 MSG
@@ -8575,9 +8594,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DVNORM (N, RWORK(LF0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DVNORM (N, RWORK(LF0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -8949,10 +8968,12 @@ C----------------------- End of Subroutine DLSODPK ---------------------
       SUBROUTINE DLSODKR (F, NEQ, Y, T, TOUT, ITOL, RTOL, ATOL, ITASK,
      1            ISTATE, IOPT, RWORK, LRW, IWORK, LIW, JAC, PSOL,
      2            MF, G, NG, JROOT)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, PSOL, G
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF,
      1        NG, JROOT
-      DOUBLE PRECISION Y, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), RTOL(*), ATOL(*), RWORK(LRW), IWORK(LIW),
      1          JROOT(*)
 C-----------------------------------------------------------------------
@@ -8961,7 +8982,7 @@ C DLSODKR: Livermore Solver for Ordinary Differential equations,
 C          with preconditioned Krylov iteration methods for the
 C          Newton correction linear systems, and with Rootfinding.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODKR solves the initial value problem for stiff or nonstiff
 C systems of first order ODEs,
@@ -9071,12 +9092,12 @@ C program distributed with this solver.
 C
 C A. First provide a subroutine of the form:
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C which supplies the vector function f by loading YDOT(i) with f(i).
 C
 C B. Provide a subroutine of the form:
 C               SUBROUTINE G (NEQ, T, Y, NG, GOUT)
-C               DOUBLE PRECISION T, Y(*), GOUT(NG)
+C               TYPE (XPLEX) T, Y(*), GOUT(NG)
 C which supplies the vector function g by loading GOUT(i) with
 C g(i), the i-th constraint function whose root is sought.
 C
@@ -9109,7 +9130,7 @@ C with the preconditioning of the linear systems to be solved.
 C These are as follows:
 C
 C     SUBROUTINE JAC (F, NEQ, T, Y, YSV, REWT, FTY,V,HL0,JOK,WP,IWP,IER)
-C     DOUBLE PRECISION T, Y(*), YSV(*), REWT(*), FTY(*), V(*), HL0,WP(*)
+C     TYPE (XPLEX) T, Y(*), YSV(*), REWT(*), FTY(*), V(*), HL0,WP(*)
 C     INTEGER IWP(*)
 C        This routine must evaluate and preprocess any parts of the
 C     Jacobian matrix df/dy involved in the preconditioners P1, P2, P.
@@ -9127,7 +9148,7 @@ C     JAC may alter Y and V, but not YSV, REWT, FTY, or HL0.
 C     The JOK argument can be ignored (or see full description below).
 C
 C     SUBROUTINE PSOL (NEQ, T, Y, FTY, WK, HL0, WP, IWP, B, LR, IER)
-C     DOUBLE PRECISION T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
+C     TYPE (XPLEX) T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
 C     INTEGER IWP(*)
 C        This routine must solve a linear system with B as right-hand
 C     side and one of the preconditioning matrices, P1, P2, or P, as
@@ -9286,7 +9307,7 @@ C          form dy/dt = f(t,y), where f is a vector-valued function
 C          of the scalar t and the vector y.  Subroutine F is to
 C          compute the function f.  It is to have the form
 C               SUBROUTINE F (NEQ, T, Y, YDOT)
-C               DOUBLE PRECISION T, Y(*), YDOT(*)
+C               TYPE (XPLEX) T, Y(*), YDOT(*)
 C          where NEQ, T, and Y are input, and the array YDOT = f(t,y)
 C          is output.  Y and YDOT are arrays of length NEQ.
 C          Subroutine F should not alter Y(1),...,Y(NEQ).
@@ -9513,7 +9534,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a real working array (double precision).
+C RWORK  = a real working array (TYPE (XPLEX)).
 C          The length of RWORK must be at least
 C             20 + NYH*(MAXORD+1) + 3*NEQ + 3*NG + LENLS + LWP    where
 C          NYH    = the initial value of NEQ,
@@ -9601,7 +9622,7 @@ C          matrix preconditioning operations (MITER .ge. 1).
 C          It is to have the form
 C            SUBROUTINE JAC (F, NEQ, T, Y, YSV, REWT, FTY, V,
 C           1                HL0, JOK, WP, IWP, IER)
-C            DOUBLE PRECISION T, Y(*), YSV(*), REWT(*), FTY(*), V(*),
+C            TYPE (XPLEX) T, Y(*), YSV(*), REWT(*), FTY(*), V(*),
 C           1                 HL0, WP(*)
 C            INTEGER IWP(*)
 C          This routine must evaluate and preprocess any parts of the
@@ -9646,7 +9667,7 @@ C PSOL   = the name of the user-supplied routine for the
 C          solution of preconditioner linear systems.
 C          It is to have the form
 C            SUBROUTINE PSOL (NEQ, T, Y, FTY, WK,HL0, WP,IWP, B, LR,IER)
-C            DOUBLE PRECISION T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
+C            TYPE (XPLEX) T, Y(*), FTY(*), WK(*), HL0, WP(*), B(*)
 C            INTEGER IWP(*)
 C          This routine must solve a linear system with B as right-hand
 C          side and one of the preconditioning matrices, P1, P2, or P,
@@ -9714,7 +9735,7 @@ C G      = the name of subroutine for constraint functions, whose
 C          roots are desired during the integration.  It is to have
 C          the form
 C               SUBROUTINE G (NEQ, T, Y, NG, GOUT)
-C               DOUBLE PRECISION T, Y(*), GOUT(NG)
+C               TYPE (XPLEX) T, Y(*), GOUT(NG)
 C          where NEQ, T, Y, and NG are input, and the array GOUT
 C          is output.  NEQ, T, and Y have the same meaning as in
 C          the F routine, and GOUT is an array of length NG.
@@ -9993,13 +10014,13 @@ C If DLSODKR is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODKR, and
 C   (2) the four internal Common blocks
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
-C         /DLS002/  of length   5  (1 double precision word
+C         /DLS002/  of length   5  (1 TYPE (XPLEX) word
 C                      followed by  4 integer words),
-C         /DLPK01/  of length  17  (4 double precision words
+C         /DLPK01/  of length  17  (4 TYPE (XPLEX) words
 C                      followed by 13 integer words),
-C         /DLSR01/  of length  14     (5 double precision words
+C         /DLSR01/  of length  14     (5 TYPE (XPLEX) words
 C                      followed by  9 integer words).
 C
 C If DLSODKR is used on a system in which the contents of internal
@@ -10052,7 +10073,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -10102,7 +10123,7 @@ C           changed error messages to quoted strings;
 C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20020502  Corrected declarations in descriptions of user routines.
 C 20030603  Corrected duplicate type declaration for DUMACH.
 C 20031105  Restored 'own' variables to Common blocks, to enable
@@ -10150,7 +10171,7 @@ C Note:  DVNORM, DDOT, DNRM2, DUMACH, IXSAV, and IUMACH are function
 C routines.  All the others are subroutines.
 C
 C-----------------------------------------------------------------------
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
@@ -10163,12 +10184,12 @@ C-----------------------------------------------------------------------
      1   LENIW, LENIWK, LENRW, LENWM, LENWK, LIWP, LWP, MORD, MXHNL0,
      2   MXSTP0, NCFN0, NCFL0, NITER, NLI0, NNI0, NNID, NSTD, NWARN
       INTEGER IRFP, IRT, LENYH, LYHNEW
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION STIFR
-      DOUBLE PRECISION ROWNR3, T0, TLAST, TOUTC
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
-      DOUBLE PRECISION ATOLI, AVDIM, BIG, EWTI, H0, HMAX, HMX, RCFL,
+      TYPE (XPLEX) STIFR
+      TYPE (XPLEX) ROWNR3, T0, TLAST, TOUTC
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) ATOLI, AVDIM, BIG, EWTI, H0, HMAX, HMX, RCFL,
      1   RCFN, RH, RTOLI, TCRIT, TNEXT, TOLSF, TP, SIZE
       DIMENSION MORD(2)
       LOGICAL IHIT, LAVD, LCFN, LCFL, LWARN
@@ -10853,9 +10874,11 @@ C----------------------- End of Subroutine DLSODKR ---------------------
 *DECK DLSODI
       SUBROUTINE DLSODI (RES, ADDA, JAC, NEQ, Y, YDOTI, T, TOUT, ITOL,
      1  RTOL, ATOL, ITASK, ISTATE, IOPT, RWORK, LRW, IWORK, LIW, MF )
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
-      DOUBLE PRECISION Y, YDOTI, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, YDOTI, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), YDOTI(*), RTOL(*), ATOL(*), RWORK(LRW),
      1          IWORK(LIW)
 C-----------------------------------------------------------------------
@@ -10863,7 +10886,7 @@ C This is the 18 November 2003 version of
 C DLSODI: Livermore Solver for Ordinary Differential Equations
 C         (Implicit form).
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODI solves the initial value problem for linearly implicit
 C systems of first order ODEs,
@@ -10900,7 +10923,7 @@ C problem (with program and output) following this summary.
 C
 C A. First, provide a subroutine of the form:
 C               SUBROUTINE RES (NEQ, T, Y, S, R, IRES)
-C               DOUBLE PRECISION T, Y(*), S(*), R(*)
+C               TYPE (XPLEX) T, Y(*), S(*), R(*)
 C which computes the residual function
 C     r = g(t,y)  -  A(t,y) * s ,
 C as a function of t and the vectors y and s.  (s is an internally
@@ -10931,7 +10954,7 @@ C retaining matrix elements is highly problem-dependent.
 C
 C C. You must also provide a subroutine of the form:
 C               SUBROUTINE ADDA (NEQ, T, Y, ML, MU, P, NROWP)
-C               DOUBLE PRECISION T, Y(*), P(NROWP,*)
+C               TYPE (XPLEX) T, Y(*), P(NROWP,*)
 C which adds the matrix A = A(t,y) to the contents of the array P.
 C T and the Y array are input and should not be altered.
 C     In the full matrix case, this routine should add elements of
@@ -10946,7 +10969,7 @@ C Jacobian matrix dr/dy in closed form, where r = g(t,y) - A(t,y)*s
 C (s = a fixed vector) as above.  If dr/dy is being supplied,
 C use MF = 21 or 24, and provide a subroutine of the form:
 C               SUBROUTINE JAC (NEQ, T, Y, S, ML, MU, P, NROWP)
-C               DOUBLE PRECISION T, Y(*), S(*), P(NROWP,*)
+C               TYPE (XPLEX) T, Y(*), S(*), P(NROWP,*)
 C which computes dr/dy as a function of t, y, and s.  Here T, Y, and
 C S are inputs, and the routine is to load dr/dy into P as follows:
 C     In the full matrix case (MF = 21), load P(i,j) with dr(i)/dy(j),
@@ -11073,7 +11096,7 @@ C At the end of the run, statistical quantities of interest are
 C printed (see optional outputs in the full description below).
 C
 C     EXTERNAL RESID, APLUSP, DGBYDY
-C     DOUBLE PRECISION ATOL, RTOL, RWORK, T, TOUT, Y, YDOTI
+C     TYPE (XPLEX) ATOL, RTOL, RWORK, T, TOUT, Y, YDOTI
 C     DIMENSION Y(3), YDOTI(3), ATOL(3), RWORK(58), IWORK(23)
 C     NEQ = 3
 C     Y(1) = 1.
@@ -11111,7 +11134,7 @@ C     STOP
 C     END
 C
 C     SUBROUTINE RESID(NEQ, T, Y, S, R, IRES)
-C     DOUBLE PRECISION T, Y, S, R
+C     TYPE (XPLEX) T, Y, S, R
 C     DIMENSION Y(3), S(3), R(3)
 C     R(1) = -.04*Y(1) + 1.D4*Y(2)*Y(3) - S(1)
 C     R(2) = .04*Y(1) - 1.D4*Y(2)*Y(3) - 3.D7*Y(2)*Y(2) - S(2)
@@ -11120,7 +11143,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE APLUSP(NEQ, T, Y, ML, MU, P, NROWP)
-C     DOUBLE PRECISION T, Y, P
+C     TYPE (XPLEX) T, Y, P
 C     DIMENSION Y(3), P(NROWP,3)
 C     P(1,1) = P(1,1) + 1.
 C     P(2,2) = P(2,2) + 1.
@@ -11128,7 +11151,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE DGBYDY(NEQ, T, Y, S, ML, MU, P, NROWP)
-C     DOUBLE PRECISION T, Y, S, P
+C     TYPE (XPLEX) T, Y, S, P
 C     DIMENSION Y(3), S(3), P(NROWP,3)
 C     P(1,1) = -.04
 C     P(1,2) = 1.D4*Y(3)
@@ -11210,7 +11233,7 @@ C          as a function of the scalar t and the vectors
 C          s and y (s approximates dy/dt).  This subroutine
 C          is to have the form
 C               SUBROUTINE RES (NEQ, T, Y, S, R, IRES)
-C               DOUBLE PRECISION T, Y(*), S(*), R(*)
+C               TYPE (XPLEX) T, Y(*), S(*), R(*)
 C          where NEQ, T, Y, S, and IRES are input, and R and
 C          IRES are output.  Y, S, and R are arrays of length NEQ.
 C             On input, IRES indicates how DLSODI will use the
@@ -11257,7 +11280,7 @@ C          matrix A = A(t,y) to another matrix stored in the same form
 C          as A.  The storage form is determined by MITER (see MF).
 C          This subroutine is to have the form
 C               SUBROUTINE ADDA (NEQ, T, Y, ML, MU, P, NROWP)
-C               DOUBLE PRECISION T, Y(*), P(NROWP,*)
+C               TYPE (XPLEX) T, Y(*), P(NROWP,*)
 C          where NEQ, T, Y, ML, MU, and NROWP are input and P is
 C          output.  Y is an array of length NEQ, and the matrix P is
 C          stored in an NROWP by NEQ array.
@@ -11277,7 +11300,7 @@ C          Jacobian matrix is determined by MITER.  JAC is required
 C          if MITER = 1 or 4 -- otherwise a dummy name can be
 C          passed.  This subroutine is to have the form
 C               SUBROUTINE JAC ( NEQ, T, Y, S, ML, MU, P, NROWP )
-C               DOUBLE PRECISION T, Y(*), S(*), P(NROWP,*)
+C               TYPE (XPLEX) T, Y(*), S(*), P(NROWP,*)
 C          where NEQ, T, Y, S, ML, MU, and NROWP are input and P
 C          is output.  Y and S are arrays of length NEQ, and the
 C          matrix P is stored in an NROWP by NEQ array.
@@ -11564,7 +11587,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a real working array (double precision).
+C RWORK  = a real working array (TYPE (XPLEX)).
 C          The length of RWORK must be at least
 C             20 + NYH*(MAXORD + 1) + 3*NEQ + LENWM    where
 C          NYH    = the initial value of NEQ,
@@ -11858,7 +11881,7 @@ C If DLSODI is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODI, and
 C   (2) the internal Common block
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
 C
 C If DLSODI is used on a system in which the contents of internal
@@ -11911,7 +11934,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -11986,7 +12009,7 @@ C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           converted arithmetic IF statements to logical IF statements;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20020502  Corrected declarations in descriptions of user routines.
 C 20031105  Restored 'own' variables to Common block, to enable
 C           interrupt/restart feature.
@@ -12023,17 +12046,17 @@ C All the others are subroutines.
 C
 C-----------------------------------------------------------------------
       EXTERNAL DPREPJI, DSOLSY
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, I2, IER, IFLAG, IMXER, IRES, KGO,
      1   LENIW, LENRW, LENWM, LP, LYD0, ML, MORD, MU, MXHNL0, MXSTP0
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*60 MSG
@@ -12234,7 +12257,7 @@ C if this is positive, or MAX(ATOL(i)/ABS(Y(i))) otherwise, adjusted
 C so as to be between 100*UROUND and 1.0E-3.
 C Then the computed value H0 is given by..
 C                                      NEQ
-C   H0**2 = TOL / ( w0**-2 + (1/NEQ) * Sum ( YDOT(i)/ywt(i) )**2  )
+C   H0**2 = TOL / ( w0**-2 + (1/NEQ) * Newsum ( YDOT(i)/ywt(i) )**2  )
 C                                       1
 C where   w0      = MAX ( ABS(T), ABS(TOUT) ),
 C         YDOT(i) = i-th component of initial value of dy/dt,
@@ -12258,9 +12281,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DVNORM (N, RWORK(LYD0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DVNORM (N, RWORK(LYD0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -12620,9 +12643,11 @@ C----------------------- End of Subroutine DLSODI ----------------------
 *DECK DLSOIBT
       SUBROUTINE DLSOIBT (RES, ADDA, JAC, NEQ, Y, YDOTI, T, TOUT, ITOL,
      1  RTOL, ATOL, ITASK, ISTATE, IOPT, RWORK, LRW, IWORK, LIW, MF )
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
-      DOUBLE PRECISION Y, YDOTI, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, YDOTI, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), YDOTI(*), RTOL(*), ATOL(*), RWORK(LRW),
      1          IWORK(LIW)
 C-----------------------------------------------------------------------
@@ -12630,7 +12655,7 @@ C This is the 18 November 2003 version of
 C DLSOIBT: Livermore Solver for Ordinary differential equations given
 C          in Implicit form, with Block-Tridiagonal Jacobian treatment.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSOIBT solves the initial value problem for linearly implicit
 C systems of first order ODEs,
@@ -12661,7 +12686,7 @@ C                Charles S. Kenney
 C formerly at:   Naval Weapons Center
 C                China Lake, CA 93555
 C-----------------------------------------------------------------------
-C Summary of Usage.
+C Newsummary of Usage.
 C
 C Communication between the user and the DLSOIBT package, for normal
 C situations, is summarized here.  This summary describes only a subset
@@ -12672,7 +12697,7 @@ C problem (with program and output) following this summary.
 C
 C A. First, provide a subroutine of the form:
 C               SUBROUTINE RES (NEQ, T, Y, S, R, IRES)
-C               DOUBLE PRECISION T, Y(*), S(*), R(*)
+C               TYPE (XPLEX) T, Y(*), S(*), R(*)
 C which computes the residual function
 C     r = g(t,y)  -  A(t,y) * s ,
 C as a function of t and the vectors y and s.  (s is an internally
@@ -12715,7 +12740,7 @@ C (Each asterisk * stands for an index that ranges from 1 to MB.)
 C
 C C. You must also provide a subroutine of the form:
 C     SUBROUTINE ADDA (NEQ, T, Y, MB, NB, PA, PB, PC)
-C     DOUBLE PRECISION T, Y(*), PA(MB,MB,NB), PB(MB,MB,NB), PC(MB,MB,NB)
+C     TYPE (XPLEX) T, Y(*), PA(MB,MB,NB), PB(MB,MB,NB), PC(MB,MB,NB)
 C which adds the nonzero blocks of the matrix A = A(t,y) to the
 C contents of the arrays PA, PB, and PC, following the structure
 C description in Paragraph B above.
@@ -12741,7 +12766,7 @@ C Jacobian matrix dr/dy in closed form, where r = g(t,y) - A(t,y)*s
 C (s = a fixed vector) as above.  If dr/dy is being supplied,
 C use MF = 21, and provide a subroutine of the form:
 C     SUBROUTINE JAC (NEQ, T, Y, S, MB, NB, PA, PB, PC)
-C     DOUBLE PRECISION T, Y(*), S(*), PA(MB,MB,NB), PB(MB,MB,NB),
+C     TYPE (XPLEX) T, Y(*), S(*), PA(MB,MB,NB), PB(MB,MB,NB),
 C    1                 PC(MB,MB,NB)
 C which computes dr/dy as a function of t, y, and s.  Here T, Y, and
 C S are inputs, and the routine is to load dr/dy into PA, PB, PC,
@@ -12873,7 +12898,7 @@ C of solution statistics at t = .1, .2, .3, and .4, and of the
 C solution vector at t = .4.  Here the block size is just MB = 1.
 C
 C     EXTERNAL RESID, ADDABT, JACBT
-C     DOUBLE PRECISION ATOL, RTOL, RWORK, T, TOUT, Y, YDOTI
+C     TYPE (XPLEX) ATOL, RTOL, RWORK, T, TOUT, Y, YDOTI
 C     DIMENSION Y(41), YDOTI(41), RWORK(514), IWORK(61)
 C     NEQ = 41
 C     DO 10 I = 1,NEQ
@@ -12913,7 +12938,7 @@ C     STOP
 C     END
 C
 C     SUBROUTINE RESID (N, T, Y, S, R, IRES)
-C     DOUBLE PRECISION T, Y, S, R, ETA, DELX, EODSQ
+C     TYPE (XPLEX) T, Y, S, R, ETA, DELX, EODSQ
 C     DIMENSION Y(N), S(N), R(N)
 C     DATA ETA/0.05/, DELX/0.05/
 C     EODSQ = ETA/DELX**2
@@ -12929,7 +12954,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE ADDABT (N, T, Y, MB, NB, PA, PB, PC)
-C     DOUBLE PRECISION T, Y, PA, PB, PC
+C     TYPE (XPLEX) T, Y, PA, PB, PC
 C     DIMENSION Y(N), PA(MB,MB,NB), PB(MB,MB,NB), PC(MB,MB,NB)
 C     PA(1,1,1) = PA(1,1,1) + 1.0
 C     NM1 = N - 1
@@ -12943,7 +12968,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE JACBT (N, T, Y, S, MB, NB, PA, PB, PC)
-C     DOUBLE PRECISION T, Y, S, PA, PB, PC, ETA, DELX, EODSQ
+C     TYPE (XPLEX) T, Y, S, PA, PB, PC, ETA, DELX, EODSQ
 C     DIMENSION Y(N), S(N), PA(MB,MB,NB),PB(MB,MB,NB),PC(MB,MB,NB)
 C     DATA ETA/0.05/, DELX/0.05/
 C     EODSQ = ETA/DELX**2
@@ -13030,7 +13055,7 @@ C          as a function of the scalar t and the vectors
 C          s and y (s approximates dy/dt).  This subroutine
 C          is to have the form
 C              SUBROUTINE RES (NEQ, T, Y, S, R, IRES)
-C              DOUBLE PRECISION T, Y(*), S(*), R(*)
+C              TYPE (XPLEX) T, Y(*), S(*), R(*)
 C          where NEQ, T, Y, S, and IRES are input, and R and
 C          IRES are output. Y, S, and R are arrays of length NEQ.
 C             On input, IRES indicates how DLSOIBT will use the
@@ -13076,7 +13101,7 @@ C ADDA   = the name of the user-supplied subroutine which adds the
 C          matrix A = A(t,y) to another matrix, P, stored in
 C          block-tridiagonal form.  This routine is to have the form
 C               SUBROUTINE ADDA (NEQ, T, Y, MB, NB, PA, PB, PC)
-C               DOUBLE PRECISION T, Y(*), PA(MB,MB,NB), PB(MB,MB,NB),
+C               TYPE (XPLEX) T, Y(*), PA(MB,MB,NB), PB(MB,MB,NB),
 C              1                 PC(MB,MB,NB)
 C          where NEQ, T, Y, MB, NB, and the arrays PA, PB, and PC
 C          are input, and the arrays PA, PB, and PC are output.
@@ -13108,7 +13133,7 @@ C          the Jacobian matrix, dr/dy, where r = g - A*s.  JAC is
 C          required if MITER = 1.  Otherwise a dummy name can be
 C          passed.  This subroutine is to have the form
 C               SUBROUTINE JAC (NEQ, T, Y, S, MB, NB, PA, PB, PC)
-C               DOUBLE PRECISION T, Y(*), S(*), PA(MB,MB,NB),
+C               TYPE (XPLEX) T, Y(*), S(*), PA(MB,MB,NB),
 C              1                 PB(MB,MB,NB), PC(MB,MB,NB)
 C          where NEQ, T, Y, S, MB, NB, and the arrays PA, PB, and PC
 C          are input, and the arrays PA, PB, and PC are output.
@@ -13407,7 +13432,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a real working array (double precision).
+C RWORK  = a real working array (TYPE (XPLEX)).
 C          The length of RWORK must be at least
 C             20 + NYH*(MAXORD + 1) + 3*NEQ + LENWM    where
 C          NYH    = the initial value of NEQ,
@@ -13684,7 +13709,7 @@ C If DLSOIBT is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSOIBT, and
 C   (2) the internal Common block
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
 C
 C If DLSOIBT is used on a system in which the contents of internal
@@ -13737,7 +13762,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -13787,7 +13812,7 @@ C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           converted arithmetic IF statements to logical IF statements;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20020502  Corrected declarations in descriptions of user routines.
 C 20031105  Restored 'own' variables to Common block, to enable
 C           interrupt/restart feature.
@@ -13825,17 +13850,17 @@ C All the others are subroutines.
 C
 C-----------------------------------------------------------------------
       EXTERNAL DPJIBT, DSLSBT
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, I2, IER, IFLAG, IMXER, IRES, KGO,
      1   LENIW, LENRW, LENWM, LP, LYD0, MB, MORD, MXHNL0, MXSTP0, NB
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*60 MSG
@@ -14057,9 +14082,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DVNORM (N, RWORK(LYD0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DVNORM (N, RWORK(LYD0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------
@@ -14419,9 +14444,11 @@ C----------------------- End of Subroutine DLSOIBT ---------------------
 *DECK DLSODIS
       SUBROUTINE DLSODIS (RES, ADDA, JAC, NEQ, Y, YDOTI, T, TOUT, ITOL,
      1  RTOL, ATOL, ITASK, ISTATE, IOPT, RWORK, LRW, IWORK, LIW, MF )
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA, JAC
       INTEGER NEQ, ITOL, ITASK, ISTATE, IOPT, LRW, IWORK, LIW, MF
-      DOUBLE PRECISION Y, YDOTI, T, TOUT, RTOL, ATOL, RWORK
+      TYPE (XPLEX) Y, YDOTI, T, TOUT, RTOL, ATOL, RWORK
       DIMENSION NEQ(*), Y(*), YDOTI(*), RTOL(*), ATOL(*), RWORK(LRW),
      1          IWORK(LIW)
 C-----------------------------------------------------------------------
@@ -14429,7 +14456,7 @@ C This is the 18 November 2003 version of
 C DLSODIS: Livermore Solver for Ordinary Differential equations
 C          (Implicit form) with general Sparse Jacobian matrices.
 C
-C This version is in double precision.
+C This version is in TYPE (XPLEX).
 C
 C DLSODIS solves the initial value problem for linearly implicit
 C systems of first order ODEs,
@@ -14485,7 +14512,7 @@ C problem (with program and output) following this summary.
 C
 C A. First, provide a subroutine of the form:
 C                SUBROUTINE RES (NEQ, T, Y, S, R, IRES)
-C                DOUBLE PRECISION T, Y(*), S(*), R(*)
+C                TYPE (XPLEX) T, Y(*), S(*), R(*)
 C which computes the residual function
 C      r = g(t,y)  -  A(t,y) * s ,
 C as a function of t and the vectors y and s.  (s is an internally
@@ -14508,7 +14535,7 @@ C                             of matrix A.
 C
 C C. You must also provide a subroutine of the form:
 C                SUBROUTINE ADDA (NEQ, T, Y, J, IAN, JAN, P)
-C                DOUBLE PRECISION T, Y(*), P(*)
+C                TYPE (XPLEX) T, Y(*), P(*)
 C                INTEGER IAN(*), JAN(*)
 C which adds the matrix A = A(t,y) to the contents of the array P.
 C NEQ, T, Y, and J are input arguments and should not be altered.
@@ -14522,7 +14549,7 @@ C Jacobian matrix dr/dy in closed form, where r = g(t,y) - A(t,y)*s
 C (s = a fixed vector) as above.  If dr/dy is being supplied,
 C use MF = 21, 121, or 321, and provide a subroutine of the form:
 C               SUBROUTINE JAC (NEQ, T, Y, S, J, IAN, JAN, PDJ)
-C               DOUBLE PRECISION T, Y(*), S(*), PDJ(*)
+C               TYPE (XPLEX) T, Y(*), S(*), PDJ(*)
 C               INTEGER IAN(*), JAN(*)
 C which computes dr/dy as a function of t, y, and s.  Here NEQ, T, Y, S,
 C and J are input arguments, and the JAC routine is to load the array
@@ -14591,7 +14618,7 @@ C          NNZ    = the number of nonzero elements in the sparse
 C                   iteration matrix  P = A - con*dr/dy (con = scalar)
 C                   (If NNZ is unknown, use an estimate of it.)
 C          LENRAT = the real to integer wordlength ratio (usually 1 in
-C                   single precision and 2 in double precision).
+C                   single precision and 2 in TYPE (XPLEX)).
 C          In any case, the required size of RWORK cannot generally
 C          be predicted in advance for any value of MF, and the
 C          value above is a rough estimate of a crude lower bound.
@@ -14673,7 +14700,7 @@ C solution vector at t = .4.  Optional outputs (run statistics) are
 C also printed.
 C
 C     EXTERNAL RESID, ADDASP, JACSP
-C     DOUBLE PRECISION ATOL, RTOL, RW, T, TOUT, Y, YDOTI, R4D, EODSQ, DELX
+C     TYPE (XPLEX) ATOL, RTOL, RW, T, TOUT, Y, YDOTI, R4D, EODSQ, DELX
 C     DIMENSION Y(40), YDOTI(40), RW(1409), IW(30)
 C     COMMON /TEST1/ R4D, EODSQ, NM1
 C     DATA ITOL/1/, RTOL/1.0D-3/, ATOL/1.0D-3/, ITASK/1/, IOPT/0/
@@ -14717,7 +14744,7 @@ C     STOP
 C     END
 C
 C     SUBROUTINE GFUN (N, T, Y, G)
-C     DOUBLE PRECISION T, Y, G, R4D, EODSQ
+C     TYPE (XPLEX) T, Y, G, R4D, EODSQ
 C     DIMENSION G(N), Y(N)
 C     COMMON /TEST1/ R4D, EODSQ, NM1
 C     G(1) = R4D*(Y(N)**2-Y(2)**2) + EODSQ*(Y(2)-2.0*Y(1)+Y(N))
@@ -14730,7 +14757,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE RESID (N, T, Y, S, R, IRES)
-C     DOUBLE PRECISION T, Y, S, R, R4D, EODSQ
+C     TYPE (XPLEX) T, Y, S, R, R4D, EODSQ
 C     DIMENSION Y(N), S(N), R(N)
 C     COMMON /TEST1/ R4D, EODSQ, NM1
 C     CALL GFUN (N, T, Y, R)
@@ -14742,7 +14769,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE ADDASP (N, T, Y, J, IP, JP, P)
-C     DOUBLE PRECISION T, Y, P
+C     TYPE (XPLEX) T, Y, P
 C     DIMENSION Y(N), IP(*), JP(*), P(N)
 C     JM1 = J - 1
 C     JP1 = J + 1
@@ -14755,7 +14782,7 @@ C     RETURN
 C     END
 C
 C     SUBROUTINE JACSP (N, T, Y, S, J, IP, JP, PDJ)
-C     DOUBLE PRECISION T, Y, S, PDJ, R4D, EODSQ
+C     TYPE (XPLEX) T, Y, S, PDJ, R4D, EODSQ
 C     DIMENSION Y(N), S(N), IP(*), JP(*), PDJ(N)
 C     COMMON /TEST1/ R4D, EODSQ, NM1
 C     JM1 = J - 1
@@ -14840,7 +14867,7 @@ C          as a function of the scalar t and the vectors
 C          s and y (s approximates dy/dt).  This subroutine
 C          is to have the form
 C               SUBROUTINE RES (NEQ, T, Y, S, R, IRES)
-C               DOUBLE PRECISION T, Y(*), S(*), R(*)
+C               TYPE (XPLEX) T, Y(*), S(*), R(*)
 C          where NEQ, T, Y, S, and IRES are input, and R and
 C          IRES are output.  Y, S, and R are arrays of length NEQ.
 C             On input, IRES indicates how DLSODIS will use the
@@ -14886,7 +14913,7 @@ C ADDA   = the name of the user-supplied subroutine which adds the
 C          matrix A = A(t,y) to another matrix stored in sparse form.
 C          This subroutine is to have the form
 C               SUBROUTINE ADDA (NEQ, T, Y, J, IAN, JAN, P)
-C               DOUBLE PRECISION T, Y(*), P(*)
+C               TYPE (XPLEX) T, Y(*), P(*)
 C               INTEGER IAN(*), JAN(*)
 C          where NEQ, T, Y, J, IAN, JAN, and P  are input.  This routine
 C          should add the J-th column of matrix A to the array P, of
@@ -14908,7 +14935,7 @@ C          the Jacobian matrix, dr/dy, where r = g - A*s.  JAC is
 C          required if MITER = 1, or MOSS = 1 or 3.  Otherwise a dummy
 C          name can be passed.  This subroutine is to have the form
 C               SUBROUTINE JAC (NEQ, T, Y, S, J, IAN, JAN, PDJ)
-C               DOUBLE PRECISION T, Y(*), S(*), PDJ(*)
+C               TYPE (XPLEX) T, Y(*), S(*), PDJ(*)
 C               INTEGER IAN(*), JAN(*)
 C         where NEQ, T, Y, S, J, IAN, and JAN are input.  The
 C         array PDJ, of length NEQ, is to be loaded with column J
@@ -15206,7 +15233,7 @@ C          IOPT = 0 means no optional inputs are being used.
 C                   Default values will be used in all cases.
 C          IOPT = 1 means one or more optional inputs are being used.
 C
-C RWORK  = a work array used for a mixture of real (double precision)
+C RWORK  = a work array used for a mixture of real (TYPE (XPLEX))
 C          and integer work space.
 C          The length of RWORK (in real words) must be at least
 C             20 + NYH*(MAXORD + 1) + 3*NEQ + LWM    where
@@ -15220,7 +15247,7 @@ C          NNZ    = number of nonzero elements in the iteration matrix
 C                   P = A - con*J  (con is a constant and J is the
 C                   Jacobian matrix dr/dy).
 C          LENRAT = the real to integer wordlength ratio (usually 1 in
-C                   single precision and 2 in double precision).
+C                   single precision and 2 in TYPE (XPLEX)).
 C          (See the MF description for METH and MITER.)
 C          Thus if MAXORD has its default value and NEQ is constant,
 C          the minimum length of RWORK is:
@@ -15607,9 +15634,9 @@ C If DLSODIS is to be used in an overlay situation, the user
 C must declare, in the primary overlay, the variables in:
 C   (1) the call sequence to DLSODIS, and
 C   (2) the two internal Common blocks
-C         /DLS001/  of length  255  (218 double precision words
+C         /DLS001/  of length  255  (218 TYPE (XPLEX) words
 C                      followed by 37 integer words),
-C         /DLSS01/  of length  40  (6 double precision words
+C         /DLSS01/  of length  40  (6 TYPE (XPLEX) words
 C                      followed by 34 integer words).
 C
 C If DLSODIS is used on a system in which the contents of internal
@@ -15662,7 +15689,7 @@ C factors of H**j/factorial(j).  On the first call for the problem,
 C given by NST = 0, NQ is 1 and H is temporarily set to 1.0.
 C NYH is the initial value of NEQ.  The quantities NQ, H, and NST
 C can be obtained by including in DEWSET the statements:
-C     DOUBLE PRECISION RLS
+C     TYPE (XPLEX) RLS
 C     COMMON /DLS001/ RLS(218),ILS(37)
 C     NQ = ILS(33)
 C     NST = ILS(34)
@@ -15726,7 +15753,7 @@ C           replaced XERRWV/XERRWD with 1993 revised version;
 C           converted prologues, comments, error messages to mixed case;
 C           converted arithmetic IF statements to logical IF statements;
 C           numerous corrections to prologues and internal comments.
-C 20010507  Converted single precision source to double precision.
+C 20010507  Converted single precision source to TYPE (XPLEX).
 C 20020502  Corrected declarations in descriptions of user routines.
 C 20031021  Fixed address offset bugs in Subroutine DPREPI.
 C 20031027  Changed 0. to 0.0D0 in Subroutine DPREPI.
@@ -15790,7 +15817,7 @@ C All the others are subroutines.
 C
 C-----------------------------------------------------------------------
       EXTERNAL DPRJIS, DSOLSS
-      DOUBLE PRECISION DUMACH, DVNORM
+      TYPE (XPLEX) DUMACH, DVNORM
       INTEGER INIT, MXSTEP, MXHNIL, NHNIL, NSLAST, NYH, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
@@ -15803,11 +15830,11 @@ C-----------------------------------------------------------------------
      1   IPGO, IREM, IRES, J, KGO, LENRAT, LENYHT, LENIW, LENRW,
      2   LIA, LIC, LJA, LJC, LRTEM, LWTEM, LYD0, LYHD, LYHN, MF1,
      3   MORD, MXHNL0, MXSTP0, NCOLM
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
-      DOUBLE PRECISION ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
-     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, SUM, W0
+      TYPE (XPLEX) CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
+      TYPE (XPLEX) ATOLI, AYI, BIG, EWTI, H0, HMAX, HMX, RH, RTOLI,
+     1   TCRIT, TDIST, TNEXT, TOL, TOLSF, TP, SIZE, NEWSUM, W0
       DIMENSION MORD(2)
       LOGICAL IHIT
       CHARACTER*60 MSG
@@ -15841,7 +15868,7 @@ C
 C-----------------------------------------------------------------------
 C In the Data statement below, set LENRAT equal to the ratio of
 C the wordlength for a real number to that for an integer.  Usually,
-C LENRAT = 1 for single precision and 2 for double precision.  If the
+C LENRAT = 1 for single precision and 2 for TYPE (XPLEX).  If the
 C true ratio is not an integer, use the next smaller integer (.ge. 1),
 C-----------------------------------------------------------------------
       DATA LENRAT/2/
@@ -16157,9 +16184,9 @@ C-----------------------------------------------------------------------
  150    CONTINUE
  160  TOL = MAX(TOL,100.0D0*UROUND)
       TOL = MIN(TOL,0.001D0)
-      SUM = DVNORM (N, RWORK(LYD0), RWORK(LEWT))
-      SUM = 1.0D0/(TOL*W0*W0) + TOL*SUM**2
-      H0 = 1.0D0/SQRT(SUM)
+      NEWSUM = DVNORM (N, RWORK(LYD0), RWORK(LEWT))
+      NEWSUM = 1.0D0/(TOL*W0*W0) + TOL*NEWSUM**2
+      H0 = 1.0D0/SQRT(NEWSUM)
       H0 = MIN(H0,TDIST)
       H0 = SIGN(H0,TOUT-T)
 C Adjust H0 if necessary to meet HMAX bound. ---------------------------

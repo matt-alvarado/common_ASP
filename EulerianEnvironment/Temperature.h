@@ -34,10 +34,12 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE SetTempField (Temp)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Input Variables
-	real*8  :: Temp
+	TYPE (XPLEX)  :: Temp
 
 	GridTemp = Temp
 
@@ -49,10 +51,12 @@ END SUBROUTINE SetTempField
 !! of the temperature.  Derivation is from gas kinetic theory, setting	!!
 !! average kinetic energy of air molec to 4/pi kB T.			!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetThermalVelocityOfAir ()
+TYPE (XPLEX) FUNCTION GetThermalVelocityOfAir ()
 
 	use ModelParameters, ONLY : ThmVelFac, cm, AirMolecMass
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	GetThermalVelocityOfAir = ThmVelFac * SQRT(GetTemp() / AirMolecMass )
@@ -66,10 +70,12 @@ END FUNCTION GetThermalVelocityOfAir
 !!								    !!
 !! Dh = Kappa_d / (rho cpd)				            !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION MolecularThermalDiffusivity () 
+TYPE (XPLEX) FUNCTION MolecularThermalDiffusivity () 
 
 	USE ModelParameters, ONLY : m, joules, cpd
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 
@@ -83,10 +89,12 @@ END FUNCTION MolecularThermalDiffusivity
 !! The MOLECULAR THERMAL CONDUCTIVITY, calculated from List (1984)'s!!
 !! Smithsonian Meteorological Tables fit.			    !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION MolecularThermalConductivity () 
+TYPE (XPLEX) FUNCTION MolecularThermalConductivity () 
 
   USE ModelParameters, ONLY : joules, cm
 
+  USE XPLEXIFY
+       USE MYTYPE
   IMPLICIT NONE
 
   !! List 1984's empirical fit to Kd (J cm-1 s-1 K-1):
@@ -101,12 +109,14 @@ END FUNCTION MolecularThermalConductivity
 !! taken from List, 1984 (Smithsonian Met Tables) via Jacobson's Modeling !!
 !! book.  The quantity itself is the ratio of shearing stress to shear.	  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetDynamicViscosityOfAir () RESULT (DynVisc)
+TYPE (XPLEX) FUNCTION GetDynamicViscosityOfAir () RESULT (DynVisc)
 
 	use ModelParameters
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
-	real*8			   :: T			 ! internal
+	TYPE (XPLEX)			   :: T			 ! internal
 
 	T = GetTemp ()
 
@@ -118,8 +128,10 @@ END FUNCTION GetDynamicViscosityOfAir
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Retrieve the TEMPERATURE			                  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetTemp () RESULT (Temp)
+TYPE (XPLEX) FUNCTION GetTemp () RESULT (Temp)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	Temp =  GridTemp
@@ -128,10 +140,12 @@ REAL*8 FUNCTION GetTemp () RESULT (Temp)
 END FUNCTION GetTemp
  
 !! Same as GetTemp 
- REAL*8 FUNCTION GetTempFromGrid () RESULT (Temp)
+ TYPE (XPLEX) FUNCTION GetTempFromGrid () RESULT (Temp)
 		
 	USE InfrastructuralCode, ONLY : ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	Temp = GridTemp
@@ -144,14 +158,16 @@ END FUNCTION GetTempFromGrid
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Find the Mean Free Path at a Particular Location !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION MeanFreePathOfAir ()
+TYPE (XPLEX) FUNCTION MeanFreePathOfAir ()
 
         USE ModelParameters, ONLY : grams, cm, lengthscale, massscale
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Internal
-	REAL*8 :: T 
+	TYPE (XPLEX) :: T 
 
 	T = GetTemp()
 

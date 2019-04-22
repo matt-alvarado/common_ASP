@@ -3,13 +3,13 @@
 C***BEGIN PROLOGUE  DGEFA
 C***PURPOSE  Factor a matrix using Gaussian elimination.
 C***CATEGORY  D2A1
-C***TYPE      DOUBLE PRECISION (SGEFA-S, DGEFA-D, CGEFA-C)
+C***TYPE      TYPE (XPLEX) (SGEFA-S, DGEFA-D, CGEFA-C)
 C***KEYWORDS  GENERAL MATRIX, LINEAR ALGEBRA, LINPACK,
 C             MATRIX FACTORIZATION
 C***AUTHOR  Moler, C. B., (U. of New Mexico)
 C***DESCRIPTION
 C
-C     DGEFA factors a double precision matrix by Gaussian elimination.
+C     DGEFA factors a TYPE (XPLEX) matrix by Gaussian elimination.
 C
 C     DGEFA is usually called by DGECO, but it can be called
 C     directly with a saving in time if  RCOND  is not needed.
@@ -17,7 +17,7 @@ C     (Time for DGECO) = (1 + 9/N)*(Time for DGEFA) .
 C
 C     On Entry
 C
-C        A       DOUBLE PRECISION(LDA, N)
+C        A       TYPE (XPLEX)(LDA, N)
 C                the matrix to be factored.
 C
 C        LDA     INTEGER
@@ -57,10 +57,13 @@ C   900326  Removed duplicate information from DESCRIPTION section.
 C           (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DGEFA
+      USE MYTYPE
+      USE XPLEXIFY
+
       INTEGER LDA,N,IPVT(*),INFO
-      DOUBLE PRECISION A(LDA,*)
+      TYPE (XPLEX) A(LDA,*)
 C
-      DOUBLE PRECISION T
+      TYPE (XPLEX) T
       INTEGER IDAMAX,J,K,KP1,L,NM1
 C
 C     GAUSSIAN ELIMINATION WITH PARTIAL PIVOTING
@@ -120,18 +123,18 @@ C***BEGIN PROLOGUE  DGESL
 C***PURPOSE  Solve the real system A*X=B or TRANS(A)*X=B using the
 C            factors computed by DGECO or DGEFA.
 C***CATEGORY  D2A1
-C***TYPE      DOUBLE PRECISION (SGESL-S, DGESL-D, CGESL-C)
+C***TYPE      TYPE (XPLEX) (SGESL-S, DGESL-D, CGESL-C)
 C***KEYWORDS  LINEAR ALGEBRA, LINPACK, MATRIX, SOLVE
 C***AUTHOR  Moler, C. B., (U. of New Mexico)
 C***DESCRIPTION
 C
-C     DGESL solves the double precision system
+C     DGESL solves the TYPE (XPLEX) system
 C     A * X = B  or  TRANS(A) * X = B
 C     using the factors computed by DGECO or DGEFA.
 C
 C     On Entry
 C
-C        A       DOUBLE PRECISION(LDA, N)
+C        A       TYPE (XPLEX)(LDA, N)
 C                the output from DGECO or DGEFA.
 C
 C        LDA     INTEGER
@@ -143,7 +146,7 @@ C
 C        IPVT    INTEGER(N)
 C                the pivot vector from DGECO or DGEFA.
 C
-C        B       DOUBLE PRECISION(N)
+C        B       TYPE (XPLEX)(N)
 C                the right hand side vector.
 C
 C        JOB     INTEGER
@@ -184,10 +187,12 @@ C   900326  Removed duplicate information from DESCRIPTION section.
 C           (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DGESL
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA,N,IPVT(*),JOB
-      DOUBLE PRECISION A(LDA,*),B(*)
+      TYPE (XPLEX) A(LDA,*),B(*)
 C
-      DOUBLE PRECISION DDOT,T
+      TYPE (XPLEX) DDOT,T
       INTEGER K,KB,L,NM1
 C***FIRST EXECUTABLE STATEMENT  DGESL
       NM1 = N - 1
@@ -249,19 +254,19 @@ C
 C***BEGIN PROLOGUE  DGBFA
 C***PURPOSE  Factor a band matrix using Gaussian elimination.
 C***CATEGORY  D2A2
-C***TYPE      DOUBLE PRECISION (SGBFA-S, DGBFA-D, CGBFA-C)
+C***TYPE      TYPE (XPLEX) (SGBFA-S, DGBFA-D, CGBFA-C)
 C***KEYWORDS  BANDED, LINEAR ALGEBRA, LINPACK, MATRIX FACTORIZATION
 C***AUTHOR  Moler, C. B., (U. of New Mexico)
 C***DESCRIPTION
 C
-C     DGBFA factors a double precision band matrix by elimination.
+C     DGBFA factors a TYPE (XPLEX) band matrix by elimination.
 C
 C     DGBFA is usually called by DGBCO, but it can be called
 C     directly with a saving in time if  RCOND  is not needed.
 C
 C     On Entry
 C
-C        ABD     DOUBLE PRECISION(LDA, N)
+C        ABD     TYPE (XPLEX)(LDA, N)
 C                contains the matrix in band storage.  The columns
 C                of the matrix are stored in the columns of  ABD  and
 C                the diagonals of the matrix are stored in rows
@@ -339,10 +344,12 @@ C   900326  Removed duplicate information from DESCRIPTION section.
 C           (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DGBFA
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA,N,ML,MU,IPVT(*),INFO
-      DOUBLE PRECISION ABD(LDA,*)
+      TYPE (XPLEX) ABD(LDA,*)
 C
-      DOUBLE PRECISION T
+      TYPE (XPLEX) T
       INTEGER I,IDAMAX,I0,J,JU,JZ,J0,J1,K,KP1,L,LM,M,MM,NM1
 C
 C***FIRST EXECUTABLE STATEMENT  DGBFA
@@ -436,18 +443,18 @@ C***BEGIN PROLOGUE  DGBSL
 C***PURPOSE  Solve the real band system A*X=B or TRANS(A)*X=B using
 C            the factors computed by DGBCO or DGBFA.
 C***CATEGORY  D2A2
-C***TYPE      DOUBLE PRECISION (SGBSL-S, DGBSL-D, CGBSL-C)
+C***TYPE      TYPE (XPLEX) (SGBSL-S, DGBSL-D, CGBSL-C)
 C***KEYWORDS  BANDED, LINEAR ALGEBRA, LINPACK, MATRIX, SOLVE
 C***AUTHOR  Moler, C. B., (U. of New Mexico)
 C***DESCRIPTION
 C
-C     DGBSL solves the double precision band system
+C     DGBSL solves the TYPE (XPLEX) band system
 C     A * X = B  or  TRANS(A) * X = B
 C     using the factors computed by DGBCO or DGBFA.
 C
 C     On Entry
 C
-C        ABD     DOUBLE PRECISION(LDA, N)
+C        ABD     TYPE (XPLEX)(LDA, N)
 C                the output from DGBCO or DGBFA.
 C
 C        LDA     INTEGER
@@ -465,7 +472,7 @@ C
 C        IPVT    INTEGER(N)
 C                the pivot vector from DGBCO or DGBFA.
 C
-C        B       DOUBLE PRECISION(N)
+C        B       TYPE (XPLEX)(N)
 C                the right hand side vector.
 C
 C        JOB     INTEGER
@@ -507,10 +514,12 @@ C   900326  Removed duplicate information from DESCRIPTION section.
 C           (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DGBSL
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA,N,ML,MU,IPVT(*),JOB
-      DOUBLE PRECISION ABD(LDA,*),B(*)
+      TYPE (XPLEX) ABD(LDA,*),B(*)
 C
-      DOUBLE PRECISION DDOT,T
+      TYPE (XPLEX) DDOT,T
       INTEGER K,KB,L,LA,LB,LM,M,NM1
 C***FIRST EXECUTABLE STATEMENT  DGBSL
       M = MU + ML + 1
@@ -583,7 +592,7 @@ C
 C***BEGIN PROLOGUE  DAXPY
 C***PURPOSE  Compute a constant times a vector plus a vector.
 C***CATEGORY  D1A7
-C***TYPE      DOUBLE PRECISION (SAXPY-S, DAXPY-D, CAXPY-C)
+C***TYPE      TYPE (XPLEX) (SAXPY-S, DAXPY-D, CAXPY-C)
 C***KEYWORDS  BLAS, LINEAR ALGEBRA, TRIAD, VECTOR
 C***AUTHOR  Lawson, C. L., (JPL)
 C           Hanson, R. J., (SNLA)
@@ -596,16 +605,16 @@ C    Description of Parameters
 C
 C     --Input--
 C        N  number of elements in input vector(s)
-C       DA  double precision scalar multiplier
-C       DX  double precision vector with N elements
+C       DA  TYPE (XPLEX) scalar multiplier
+C       DX  TYPE (XPLEX) vector with N elements
 C     INCX  storage spacing between elements of DX
-C       DY  double precision vector with N elements
+C       DY  TYPE (XPLEX) vector with N elements
 C     INCY  storage spacing between elements of DY
 C
 C     --Output--
-C       DY  double precision result (unchanged if N .LE. 0)
+C       DY  TYPE (XPLEX) result (unchanged if N .LE. 0)
 C
-C     Overwrite double precision DY with double precision DA*DX + DY.
+C     Overwrite TYPE (XPLEX) DY with double precision DA*DX + DY.
 C     For I = 0 to N-1, replace  DY(LY+I*INCY) with DA*DX(LX+I*INCX) +
 C       DY(LY+I*INCY),
 C     where LX = 1 if INCX .GE. 0, else LX = 1+(1-N)*INCX, and LY is
@@ -624,7 +633,9 @@ C   891214  Prologue converted to Version 4.0 format.  (BAB)
 C   920310  Corrected definition of LX in DESCRIPTION.  (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DAXPY
-      DOUBLE PRECISION DX(*), DY(*), DA
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) DX(*), DY(*), DA
 C***FIRST EXECUTABLE STATEMENT  DAXPY
       IF (N.LE.0 .OR. DA.EQ.0.0D0) RETURN
       IF (INCX .EQ. INCY) IF (INCX-1) 5,20,60
@@ -674,7 +685,7 @@ C
 C***BEGIN PROLOGUE  DCOPY
 C***PURPOSE  Copy a vector.
 C***CATEGORY  D1A5
-C***TYPE      DOUBLE PRECISION (SCOPY-S, DCOPY-D, CCOPY-C, ICOPY-I)
+C***TYPE      TYPE (XPLEX) (SCOPY-S, DCOPY-D, CCOPY-C, ICOPY-I)
 C***KEYWORDS  BLAS, COPY, LINEAR ALGEBRA, VECTOR
 C***AUTHOR  Lawson, C. L., (JPL)
 C           Hanson, R. J., (SNLA)
@@ -687,15 +698,15 @@ C    Description of Parameters
 C
 C     --Input--
 C        N  number of elements in input vector(s)
-C       DX  double precision vector with N elements
+C       DX  TYPE (XPLEX) vector with N elements
 C     INCX  storage spacing between elements of DX
-C       DY  double precision vector with N elements
+C       DY  TYPE (XPLEX) vector with N elements
 C     INCY  storage spacing between elements of DY
 C
 C     --Output--
 C       DY  copy of vector DX (unchanged if N .LE. 0)
 C
-C     Copy double precision DX to double precision DY.
+C     Copy TYPE (XPLEX) DX to double precision DY.
 C     For I = 0 to N-1, copy DX(LX+I*INCX) to DY(LY+I*INCY),
 C     where LX = 1 if INCX .GE. 0, else LX = 1+(1-N)*INCX, and LY is
 C     defined in a similar way using INCY.
@@ -713,7 +724,9 @@ C   891214  Prologue converted to Version 4.0 format.  (BAB)
 C   920310  Corrected definition of LX in DESCRIPTION.  (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DCOPY
-      DOUBLE PRECISION DX(*), DY(*)
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) DX(*), DY(*)
 C***FIRST EXECUTABLE STATEMENT  DCOPY
       IF (N .LE. 0) RETURN
       IF (INCX .EQ. INCY) IF (INCX-1) 5,20,60
@@ -762,11 +775,11 @@ C
       RETURN
       END
 *DECK DDOT
-      DOUBLE PRECISION FUNCTION DDOT (N, DX, INCX, DY, INCY)
+      TYPE (XPLEX) FUNCTION DDOT (N, DX, INCX, DY, INCY)
 C***BEGIN PROLOGUE  DDOT
 C***PURPOSE  Compute the inner product of two vectors.
 C***CATEGORY  D1A4
-C***TYPE      DOUBLE PRECISION (SDOT-S, DDOT-D, CDOTU-C)
+C***TYPE      TYPE (XPLEX) (SDOT-S, DDOT-D, CDOTU-C)
 C***KEYWORDS  BLAS, INNER PRODUCT, LINEAR ALGEBRA, VECTOR
 C***AUTHOR  Lawson, C. L., (JPL)
 C           Hanson, R. J., (SNLA)
@@ -779,15 +792,15 @@ C    Description of Parameters
 C
 C     --Input--
 C        N  number of elements in input vector(s)
-C       DX  double precision vector with N elements
+C       DX  TYPE (XPLEX) vector with N elements
 C     INCX  storage spacing between elements of DX
-C       DY  double precision vector with N elements
+C       DY  TYPE (XPLEX) vector with N elements
 C     INCY  storage spacing between elements of DY
 C
 C     --Output--
-C     DDOT  double precision dot product (zero if N .LE. 0)
+C     DDOT  TYPE (XPLEX) dot product (zero if N .LE. 0)
 C
-C     Returns the dot product of double precision DX and DY.
+C     Returns the dot product of TYPE (XPLEX) DX and DY.
 C     DDOT = sum for I = 0 to N-1 of  DX(LX+I*INCX) * DY(LY+I*INCY),
 C     where LX = 1 if INCX .GE. 0, else LX = 1+(1-N)*INCX, and LY is
 C     defined in a similar way using INCY.
@@ -805,7 +818,9 @@ C   891214  Prologue converted to Version 4.0 format.  (BAB)
 C   920310  Corrected definition of LX in DESCRIPTION.  (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DDOT
-      DOUBLE PRECISION DX(*), DY(*)
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) DX(*), DY(*)
 C***FIRST EXECUTABLE STATEMENT  DDOT
       DDOT = 0.0D0
       IF (N .LE. 0) RETURN
@@ -850,11 +865,11 @@ C
       RETURN
       END
 *DECK DNRM2
-      DOUBLE PRECISION FUNCTION DNRM2 (N, DX, INCX)
+      TYPE (XPLEX) FUNCTION DNRM2 (N, DX, INCX)
 C***BEGIN PROLOGUE  DNRM2
 C***PURPOSE  Compute the Euclidean length (L2 norm) of a vector.
 C***CATEGORY  D1A3B
-C***TYPE      DOUBLE PRECISION (SNRM2-S, DNRM2-D, SCNRM2-C)
+C***TYPE      TYPE (XPLEX) (SNRM2-S, DNRM2-D, SCNRM2-C)
 C***KEYWORDS  BLAS, EUCLIDEAN LENGTH, EUCLIDEAN NORM, L2,
 C             LINEAR ALGEBRA, UNITARY, VECTOR
 C***AUTHOR  Lawson, C. L., (JPL)
@@ -868,11 +883,11 @@ C    Description of parameters
 C
 C     --Input--
 C        N  number of elements in input vector(s)
-C       DX  double precision vector with N elements
+C       DX  TYPE (XPLEX) vector with N elements
 C     INCX  storage spacing between elements of DX
 C
 C     --Output--
-C    DNRM2  double precision result (zero if N .LE. 0)
+C    DNRM2  TYPE (XPLEX) result (zero if N .LE. 0)
 C
 C     Euclidean norm of the N-vector stored in DX with storage
 C     increment INCX.
@@ -923,9 +938,12 @@ C   890831  REVISION DATE from Version 3.2
 C   891214  Prologue converted to Version 4.0 format.  (BAB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DNRM2
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER NEXT
-      DOUBLE PRECISION DX(*), CUTLO, CUTHI, HITEST, SUM, XMAX, ZERO,
+      REAL CUTLO, CUTHI,ZERO,
      +                 ONE
+      TYPE (XPLEX) DX(*), HITEST, NewSUM, XMAX
       SAVE CUTLO, CUTHI, ZERO, ONE
       DATA ZERO, ONE /0.0D0, 1.0D0/
 C
@@ -936,7 +954,7 @@ C***FIRST EXECUTABLE STATEMENT  DNRM2
          GO TO 300
 C
    10 ASSIGN 30 TO NEXT
-      SUM = ZERO
+      NewSUM = ZERO
       NN = N * INCX
 C
 C                                                 BEGIN MAIN LOOP
@@ -947,7 +965,7 @@ C
       ASSIGN 50 TO NEXT
       XMAX = ZERO
 C
-C                        PHASE 1.  SUM IS ZERO
+C                        PHASE 1.  NewSUM IS ZERO
 C
    50 IF (DX(I) .EQ. ZERO) GO TO 200
       IF (ABS(DX(I)) .GT. CUTLO) GO TO 85
@@ -961,41 +979,41 @@ C                                PREPARE FOR PHASE 4.
 C
   100 I = J
       ASSIGN 110 TO NEXT
-      SUM = (SUM / DX(I)) / DX(I)
+      NewSUM = (NewSUM / DX(I)) / DX(I)
   105 XMAX = ABS(DX(I))
       GO TO 115
 C
-C                   PHASE 2.  SUM IS SMALL.
+C                   PHASE 2.  NewSUM IS SMALL.
 C                             SCALE TO AVOID DESTRUCTIVE UNDERFLOW.
 C
    70 IF (ABS(DX(I)) .GT. CUTLO) GO TO 75
 C
 C                     COMMON CODE FOR PHASES 2 AND 4.
-C                     IN PHASE 4 SUM IS LARGE.  SCALE TO AVOID OVERFLOW.
+C                     IN PHASE 4 NewSUM IS LARGE.  SCALE TO AVOID OVERFLOW.
 C
   110 IF (ABS(DX(I)) .LE. XMAX) GO TO 115
-         SUM = ONE + SUM * (XMAX / DX(I))**2
+         NewSUM = ONE + NewSUM * (XMAX / DX(I))**2
          XMAX = ABS(DX(I))
          GO TO 200
 C
-  115 SUM = SUM + (DX(I)/XMAX)**2
+  115 NewSUM = NewSUM + (DX(I)/XMAX)**2
       GO TO 200
 C
 C                  PREPARE FOR PHASE 3.
 C
-   75 SUM = (SUM * XMAX) * XMAX
+   75 NewSUM = (NewSUM * XMAX) * XMAX
 C
 C     FOR REAL OR D.P. SET HITEST = CUTHI/N
 C     FOR COMPLEX      SET HITEST = CUTHI/(2*N)
 C
    85 HITEST = CUTHI / N
 C
-C                   PHASE 3.  SUM IS MID-RANGE.  NO SCALING.
+C                   PHASE 3.  NewSUM IS MID-RANGE.  NO SCALING.
 C
       DO 95 J = I,NN,INCX
       IF (ABS(DX(J)) .GE. HITEST) GO TO 100
-   95    SUM = SUM + DX(J)**2
-      DNRM2 = SQRT(SUM)
+   95    NewSUM = NewSUM + DX(J)**2
+      DNRM2 = SQRT(NewSUM)
       GO TO 300
 C
   200 CONTINUE
@@ -1006,7 +1024,7 @@ C              END OF MAIN LOOP.
 C
 C              COMPUTE SQUARE ROOT AND ADJUST FOR SCALING.
 C
-      DNRM2 = XMAX * SQRT(SUM)
+      DNRM2 = XMAX * SQRT(NewSUM)
   300 CONTINUE
       RETURN
       END
@@ -1015,7 +1033,7 @@ C
 C***BEGIN PROLOGUE  DSCAL
 C***PURPOSE  Multiply a vector by a constant.
 C***CATEGORY  D1A6
-C***TYPE      DOUBLE PRECISION (SSCAL-S, DSCAL-D, CSCAL-C)
+C***TYPE      TYPE (XPLEX) (SSCAL-S, DSCAL-D, CSCAL-C)
 C***KEYWORDS  BLAS, LINEAR ALGEBRA, SCALE, VECTOR
 C***AUTHOR  Lawson, C. L., (JPL)
 C           Hanson, R. J., (SNLA)
@@ -1028,14 +1046,14 @@ C    Description of Parameters
 C
 C     --Input--
 C        N  number of elements in input vector(s)
-C       DA  double precision scale factor
-C       DX  double precision vector with N elements
+C       DA  TYPE (XPLEX) scale factor
+C       DX  TYPE (XPLEX) vector with N elements
 C     INCX  storage spacing between elements of DX
 C
 C     --Output--
-C       DX  double precision result (unchanged if N.LE.0)
+C       DX  TYPE (XPLEX) result (unchanged if N.LE.0)
 C
-C     Replace double precision DX by double precision DA*DX.
+C     Replace TYPE (XPLEX) DX by double precision DA*DX.
 C     For I = 0 to N-1, replace DX(IX+I*INCX) with  DA * DX(IX+I*INCX),
 C     where IX = 1 if INCX .GE. 0, else IX = 1+(1-N)*INCX.
 C
@@ -1053,7 +1071,9 @@ C   900821  Modified to correct problem with a negative increment.
 C           (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  DSCAL
-      DOUBLE PRECISION DA, DX(*)
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) DA, DX(*)
       INTEGER I, INCX, IX, M, MP1, N
 C***FIRST EXECUTABLE STATEMENT  DSCAL
       IF (N .LE. 0) RETURN
@@ -1095,7 +1115,7 @@ C***BEGIN PROLOGUE  IDAMAX
 C***PURPOSE  Find the smallest index of that component of a vector
 C            having the maximum magnitude.
 C***CATEGORY  D1A2
-C***TYPE      DOUBLE PRECISION (ISAMAX-S, IDAMAX-D, ICAMAX-C)
+C***TYPE      TYPE (XPLEX) (ISAMAX-S, IDAMAX-D, ICAMAX-C)
 C***KEYWORDS  BLAS, LINEAR ALGEBRA, MAXIMUM COMPONENT, VECTOR
 C***AUTHOR  Lawson, C. L., (JPL)
 C           Hanson, R. J., (SNLA)
@@ -1108,13 +1128,13 @@ C    Description of Parameters
 C
 C     --Input--
 C        N  number of elements in input vector(s)
-C       DX  double precision vector with N elements
+C       DX  TYPE (XPLEX) vector with N elements
 C     INCX  storage spacing between elements of DX
 C
 C     --Output--
 C   IDAMAX  smallest index (zero if N .LE. 0)
 C
-C     Find smallest index of maximum magnitude of double precision DX.
+C     Find smallest index of maximum magnitude of TYPE (XPLEX) DX.
 C     IDAMAX = first I, I = 1 to N, to maximize ABS(DX(IX+(I-1)*INCX)),
 C     where IX = 1 if INCX .GE. 0, else IX = 1+(1-N)*INCX.
 C
@@ -1132,7 +1152,9 @@ C   900821  Modified to correct problem with a negative increment.
 C           (WRB)
 C   920501  Reformatted the REFERENCES section.  (WRB)
 C***END PROLOGUE  IDAMAX
-      DOUBLE PRECISION DX(*), DMAX, XMAG
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) DX(*), DMAX, XMAG
       INTEGER I, INCX, IX, N
 C***FIRST EXECUTABLE STATEMENT  IDAMAX
       IDAMAX = 0
@@ -1176,7 +1198,7 @@ C***BEGIN PROLOGUE  XERRWD
 C***SUBSIDIARY
 C***PURPOSE  Write error message with values.
 C***CATEGORY  R3C
-C***TYPE      DOUBLE PRECISION (XERRWV-S, XERRWD-D)
+C***TYPE      TYPE (XPLEX) (XERRWV-S, XERRWD-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -1205,7 +1227,7 @@ C  2. The message is assumed to take only one line.
 C     Multi-line messages are generated by repeated calls.
 C  3. If LEVEL = 2, control passes to the statement   STOP
 C     to abort the run.  This statement may be machine-dependent.
-C  4. R1 and R2 are assumed to be in double precision and are printed
+C  4. R1 and R2 are assumed to be in TYPE (XPLEX) and are printed
 C     in D21.13 format.
 C
 C***ROUTINES CALLED  IXSAV
@@ -1231,7 +1253,9 @@ C**End
 C
 C  Declare arguments.
 C
-      DOUBLE PRECISION R1, R2
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) R1, R2
       INTEGER NMES, NERR, LEVEL, NI, I1, I2, NR
       CHARACTER*(*) MSG
 C
@@ -1293,6 +1317,8 @@ C Subroutines called by XSETF.. None
 C Function routine called by XSETF.. IXSAV
 C-----------------------------------------------------------------------
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER MFLAG, JUNK, IXSAV
 C
 C***FIRST EXECUTABLE STATEMENT  XSETF

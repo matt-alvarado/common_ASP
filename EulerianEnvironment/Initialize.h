@@ -22,10 +22,12 @@
 	SUBROUTINE InitializeGridPointFields (T, Press)
 
 	  USE InfrastructuralCode, ONLY : Error
+	  USE XPLEXIFY
+       USE MYTYPE
 	  implicit none
 
 	  !! Define the input variables
-	  real*8  :: T, Press
+	  TYPE (XPLEX)  :: T, Press
 
 	  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	  !! Initialize Primary Variables First!!

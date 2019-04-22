@@ -31,13 +31,15 @@
 
 		Use ModelParameters
 		USE GridPointFields,      ONLY : GetTemp
+                USE XPLEXIFY
+       USE MYTYPE
                 IMPLICIT NONE
 
-		REAL*8,  INTENT(in) :: ReactionRates(:,:)
+		TYPE (XPLEX),  INTENT(in) :: ReactionRates(:,:)
 		INTEGER, INTENT(in) :: ArraySize(2)
 
 		INTEGER :: I,J
-		REAL*8	:: Temp
+		TYPE (XPLEX)	:: Temp
 
 		!! Loop over all gridcells and reactions
 		DO I = 1, ArraySize(1)
@@ -71,15 +73,17 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	FUNCTION GetAqPhaseReactionRates (Temp) RESULT (RateVec)
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: RateVec(AqPhaseReactionRateArraySize(1))
-		REAL*8 :: Temp
+		TYPE (XPLEX) :: RateVec(AqPhaseReactionRateArraySize(1))
+		TYPE (XPLEX) :: Temp
 
 		!! Internal Variables
 		INTEGER :: I, LowIndex
-		REAL*8  :: Weighting, BinWidth
+		TYPE (XPLEX)  :: Weighting, BinWidth
 
 		BinWidth  = (MaxAqPhaseRateTemp-MinAqPhaseRateTemp)/(NumbAqPhaseRateTemps-1)
 		LowIndex  = FLOOR((Temp - MinAqPhaseRateTemp)/BinWidth)

@@ -65,14 +65,18 @@
 						SetWaterVaporField 
 		USE ModelParameters
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER   :: I,FH,FHT, Q
 		LOGICAL   :: IFGAS,IFAQ,IFSOLID
 		CHARACTER(len=512) :: Token
 		CHARACTER(len=512)::CurrLine,StoreLine
-		REAL*8    :: T,P,II, RH, BRH, Num, Wind, length, width
-                REAL*8  :: lights_on_time, lights_off_time
+		TYPE (XPLEX)    :: T,P,II, RH, BRH, Num, Wind, length, width
+                TYPE (XPLEX)  :: lights_on_time, lights_off_time
                 INTEGER :: lightswitch_flag
 
 		FHT = GetFileHandle()

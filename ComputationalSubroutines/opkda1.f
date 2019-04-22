@@ -1,14 +1,14 @@
 *DECK DUMACH
-      DOUBLE PRECISION FUNCTION DUMACH ()
+      TYPE (XPLEX) FUNCTION DUMACH ()
 C***BEGIN PROLOGUE  DUMACH
 C***PURPOSE  Compute the unit roundoff of the machine.
 C***CATEGORY  R1
-C***TYPE      DOUBLE PRECISION (RUMACH-S, DUMACH-D)
+C***TYPE      TYPE (XPLEX) (RUMACH-S, DUMACH-D)
 C***KEYWORDS  MACHINE CONSTANTS
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C *Usage:
-C        DOUBLE PRECISION  A, DUMACH
+C        TYPE (XPLEX)  A, DUMACH
 C        A = DUMACH()
 C
 C *Function Return Values:
@@ -27,11 +27,15 @@ C   19930818  Added SLATEC-format prologue.  (FNF)
 C   20030707  Added DUMSUM to force normal storage of COMP.  (ACH)
 C***END PROLOGUE  DUMACH
 C
-      DOUBLE PRECISION U, COMP
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) U, COMP, XU
 C***FIRST EXECUTABLE STATEMENT  DUMACH
       U = 1.0D0
  10   U = U*0.5D0
-      CALL DUMSUM(1.0D0, U, COMP)
+      XU%r = 1.0D0
+      XU%i = 0.0D0
+      CALL DUMSUM(XU, U, COMP)
       IF (COMP .NE. 1.0D0) GO TO 10
       DUMACH = U*2.0D0
       RETURN
@@ -39,7 +43,9 @@ C----------------------- End of Function DUMACH ------------------------
       END
       SUBROUTINE DUMSUM(A,B,C)
 C     Routine to force normal storing of A + B, for DUMACH.
-      DOUBLE PRECISION A, B, C
+      USE MYTYPE
+      USE XPLEXIFY
+      TYPE (XPLEX) A, B, C
       C = A + B
       RETURN
       END
@@ -48,7 +54,7 @@ C     Routine to force normal storing of A + B, for DUMACH.
 C***BEGIN PROLOGUE  DCFODE
 C***SUBSIDIARY
 C***PURPOSE  Set ODE integrator coefficients.
-C***TYPE      DOUBLE PRECISION (SCFODE-S, DCFODE-D)
+C***TYPE      TYPE (XPLEX) (SCFODE-S, DCFODE-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -83,13 +89,15 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C***END PROLOGUE  DCFODE
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER METH
       INTEGER I, IB, NQ, NQM1, NQP1
-      DOUBLE PRECISION ELCO, TESCO
-      DOUBLE PRECISION AGAMQ, FNQ, FNQM1, PC, PINT, RAGQ,
+      TYPE (XPLEX) ELCO, TESCO
+      TYPE (XPLEX) AGAMQ, FNQ, FNQM1, PC, PINT, RAGQ,
      1   RQFAC, RQ1FAC, TSIGN, XPIN
       DIMENSION ELCO(13,12), TESCO(3,12)
       DIMENSION PC(12)
@@ -176,7 +184,7 @@ C----------------------- END OF SUBROUTINE DCFODE ----------------------
 C***BEGIN PROLOGUE  DINTDY
 C***SUBSIDIARY
 C***PURPOSE  Interpolate solution derivatives.
-C***TYPE      DOUBLE PRECISION (SINTDY-S, DINTDY-D)
+C***TYPE      TYPE (XPLEX) (SINTDY-S, DINTDY-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -206,21 +214,23 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C   010418  Reduced size of Common block /DLS001/. (ACH)
 C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C   050427  Corrected roundoff decrement in TP. (ACH)
 C***END PROLOGUE  DINTDY
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER K, NYH, IFLAG
-      DOUBLE PRECISION T, YH, DKY
+      TYPE (XPLEX) T, YH, DKY
       DIMENSION YH(NYH,*), DKY(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -229,7 +239,7 @@ C**End
      4   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      5   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, IC, J, JB, JB2, JJ, JJ1, JP1
-      DOUBLE PRECISION C, R, S, TP
+      TYPE (XPLEX) C, R, S, TP
       CHARACTER*80 MSG
 C
 C***FIRST EXECUTABLE STATEMENT  DINTDY
@@ -285,7 +295,7 @@ C----------------------- END OF SUBROUTINE DINTDY ----------------------
 C***BEGIN PROLOGUE  DPREPJ
 C***SUBSIDIARY
 C***PURPOSE  Compute and process Newton iteration matrix.
-C***TYPE      DOUBLE PRECISION (SPREPJ-S, DPREPJ-D)
+C***TYPE      TYPE (XPLEX) (SPREPJ-S, DPREPJ-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -329,22 +339,24 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890504  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C   010418  Reduced size of Common block /DLS001/. (ACH)
 C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C***END PROLOGUE  DPREPJ
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WM
+      TYPE (XPLEX) Y, YH, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),
      1   WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -354,7 +366,7 @@ C**End
      5   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, I2, IER, II, J, J1, JJ, LENP,
      1   MBA, MBAND, MEB1, MEBAND, ML, ML3, MU, NP1
-      DOUBLE PRECISION CON, DI, FAC, HL0, R, R0, SRUR, YI, YJ, YJJ,
+      TYPE (XPLEX) CON, DI, FAC, HL0, R, R0, SRUR, YI, YJ, YJJ,
      1   DVNORM
 C
 C***FIRST EXECUTABLE STATEMENT  DPREPJ
@@ -478,7 +490,7 @@ C----------------------- END OF SUBROUTINE DPREPJ ----------------------
 C***BEGIN PROLOGUE  DSOLSY
 C***SUBSIDIARY
 C***PURPOSE  ODEPACK linear system solver.
-C***TYPE      DOUBLE PRECISION (SSOLSY-S, DSOLSY-D)
+C***TYPE      TYPE (XPLEX) (SSOLSY-S, DSOLSY-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -512,20 +524,22 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C   010418  Reduced size of Common block /DLS001/. (ACH)
 C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C***END PROLOGUE  DSOLSY
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER IWM
-      DOUBLE PRECISION WM, X, TEM
+      TYPE (XPLEX) WM, X, TEM
       DIMENSION WM(*), IWM(*), X(*), TEM(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -534,7 +548,7 @@ C**End
      4   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      5   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, MEBAND, ML, MU
-      DOUBLE PRECISION DI, HL0, PHL0, R
+      TYPE (XPLEX) DI, HL0, PHL0, R
 C
 C***FIRST EXECUTABLE STATEMENT  DSOLSY
       IERSL = 0
@@ -569,7 +583,7 @@ C----------------------- END OF SUBROUTINE DSOLSY ----------------------
 C***BEGIN PROLOGUE  DSRCOM
 C***SUBSIDIARY
 C***PURPOSE  Save/restore ODEPACK COMMON blocks.
-C***TYPE      DOUBLE PRECISION (SSRCOM-S, DSRCOM-D)
+C***TYPE      TYPE (XPLEX) (SSRCOM-S, DSRCOM-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -593,17 +607,19 @@ C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
 C   921116  Deleted treatment of block /EH0001/.  (ACH)
 C   930801  Reduced Common block length by 2.  (ACH)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C   010418  Reduced Common block length by 209+12. (ACH)
 C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C   031112  Added SAVE statement for data-loaded constants.
 C***END PROLOGUE  DSRCOM
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER ISAV, JOB
       INTEGER ILS
       INTEGER I, LENILS, LENRLS
-      DOUBLE PRECISION RSAV,   RLS
+      TYPE (XPLEX) RSAV,   RLS
       DIMENSION RSAV(*), ISAV(*)
       SAVE LENRLS, LENILS
       COMMON /DLS001/ RLS(218), ILS(37)
@@ -632,7 +648,7 @@ C----------------------- END OF SUBROUTINE DSRCOM ----------------------
 C***BEGIN PROLOGUE  DSTODE
 C***SUBSIDIARY
 C***PURPOSE  Performs one step of an ODEPACK integration.
-C***TYPE      DOUBLE PRECISION (SSTODE-S, DSTODE-D)
+C***TYPE      TYPE (XPLEX) (SSTODE-S, DSTODE-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -715,15 +731,17 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C   010418  Reduced size of Common block /DLS001/. (ACH)
 C   031105  Restored 'own' variables to Common block /DLS001/, to
 C           enable interrupt/restart feature. (ACH)
 C***END PROLOGUE  DSTODE
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, PJAC, SLVS
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, ACOR, WM
+      TYPE (XPLEX) Y, YH, YH1, EWT, SAVF, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
      1   ACOR(*), WM(*), IWM(*)
       INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,
@@ -731,9 +749,9 @@ C**End
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, IREDO, IRET, J, JB, M, NCF, NEWQ
-      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
+      TYPE (XPLEX) CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,
+      TYPE (XPLEX) DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,
      1   R, RH, RHDN, RHSM, RHUP, TOLD, DVNORM
       COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12),
      1   HOLD, RMAX, TESCO(3,12),
@@ -1129,7 +1147,7 @@ C----------------------- END OF SUBROUTINE DSTODE ----------------------
 C***BEGIN PROLOGUE  DEWSET
 C***SUBSIDIARY
 C***PURPOSE  Set error weight vector.
-C***TYPE      DOUBLE PRECISION (SEWSET-S, DEWSET-D)
+C***TYPE      TYPE (XPLEX) (SEWSET-S, DEWSET-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -1144,12 +1162,14 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C***END PROLOGUE  DEWSET
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N, ITOL
       INTEGER I
-      DOUBLE PRECISION RTOL, ATOL, YCUR, EWT
+      TYPE (XPLEX) RTOL, ATOL, YCUR, EWT
       DIMENSION RTOL(*), ATOL(*), YCUR(N), EWT(N)
 C
 C***FIRST EXECUTABLE STATEMENT  DEWSET
@@ -1173,11 +1193,11 @@ C***FIRST EXECUTABLE STATEMENT  DEWSET
 C----------------------- END OF SUBROUTINE DEWSET ----------------------
       END
 *DECK DVNORM
-      DOUBLE PRECISION FUNCTION DVNORM (N, V, W)
+      TYPE (XPLEX) FUNCTION DVNORM (N, V, W)
 C***BEGIN PROLOGUE  DVNORM
 C***SUBSIDIARY
 C***PURPOSE  Weighted root-mean-square vector norm.
-C***TYPE      DOUBLE PRECISION (SVNORM-S, DVNORM-D)
+C***TYPE      TYPE (XPLEX) (SVNORM-S, DVNORM-D)
 C***AUTHOR  Hindmarsh, Alan C., (LLNL)
 C***DESCRIPTION
 C
@@ -1192,26 +1212,30 @@ C***REVISION HISTORY  (YYMMDD)
 C   791129  DATE WRITTEN
 C   890501  Modified prologue to SLATEC/LDOC format.  (FNF)
 C   890503  Minor cosmetic changes.  (FNF)
-C   930809  Renamed to allow single/double precision versions. (ACH)
+C   930809  Renamed to allow single/TYPE (XPLEX) versions. (ACH)
 C***END PROLOGUE  DVNORM
 C**End
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N,   I
-      DOUBLE PRECISION V, W,   SUM
+      TYPE (XPLEX) V, W,   NewSUM
       DIMENSION V(N), W(N)
 C
 C***FIRST EXECUTABLE STATEMENT  DVNORM
-      SUM = 0.0D0
+      NewSUM = 0.0D0
       DO 10 I = 1,N
- 10     SUM = SUM + (V(I)*W(I))**2
-      DVNORM = SQRT(SUM/N)
+ 10     NewSUM = NewSUM + (V(I)*W(I))**2
+      DVNORM = SQRT(NewSUM/N)
       RETURN
 C----------------------- END OF FUNCTION DVNORM ------------------------
       END
 *DECK DIPREP
       SUBROUTINE DIPREP (NEQ, Y, RWORK, IA, JA, IPFLAG, F, JAC)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, IA, JA, IPFLAG
-      DOUBLE PRECISION Y, RWORK
+      TYPE (XPLEX) Y, RWORK
       DIMENSION NEQ(*), Y(*), RWORK(*), IA(*), JA(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
@@ -1221,9 +1245,9 @@ C----------------------- END OF FUNCTION DVNORM ------------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION RLSS
+      TYPE (XPLEX) RLSS
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -1280,9 +1304,11 @@ C----------------------- End of Subroutine DIPREP ----------------------
 *DECK DPREP
       SUBROUTINE DPREP (NEQ, Y, YH, SAVF, EWT, FTEM, IA, JA,
      1                     WK, IWK, IPPER, F, JAC)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F,JAC
       INTEGER NEQ, IA, JA, IWK, IPPER
-      DOUBLE PRECISION Y, YH, SAVF, EWT, FTEM, WK
+      TYPE (XPLEX) Y, YH, SAVF, EWT, FTEM, WK
       DIMENSION NEQ(*), Y(*), YH(*), SAVF(*), EWT(*), FTEM(*),
      1   IA(*), JA(*), WK(*), IWK(*)
       INTEGER IOWND, IOWNS,
@@ -1293,9 +1319,9 @@ C----------------------- End of Subroutine DIPREP ----------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
+      TYPE (XPLEX) CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -1309,7 +1335,7 @@ C----------------------- End of Subroutine DIPREP ----------------------
      4   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
       INTEGER I, IBR, IER, IPIL, IPIU, IPTT1, IPTT2, J, JFOUND, K,
      1   KNEW, KMAX, KMIN, LDIF, LENIGP, LIWK, MAXG, NP1, NZSUT
-      DOUBLE PRECISION DQ, DYJ, ERWT, FAC, YJ
+      TYPE (XPLEX) DQ, DYJ, ERWT, FAC, YJ
 C-----------------------------------------------------------------------
 C This routine performs preprocessing related to the sparse linear
 C systems that must be solved if MITER = 1 or 2.
@@ -1540,6 +1566,8 @@ C----------------------- End of Subroutine DPREP -----------------------
       END
 *DECK JGROUP
       SUBROUTINE JGROUP (N,IA,JA,MAXG,NGRP,IGP,JGP,INCL,JDONE,IER)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N, IA, JA, MAXG, NGRP, IGP, JGP, INCL, JDONE, IER
       DIMENSION IA(*), JA(*), IGP(*), JGP(*), INCL(*), JDONE(*)
 C-----------------------------------------------------------------------
@@ -1562,6 +1590,7 @@ C          MAXG was insufficient.
 C
 C INCL and JDONE are working arrays of length N.
 C-----------------------------------------------------------------------
+
       INTEGER I, J, K, KMIN, KMAX, NCOL, NG
 C
       IER = 0
@@ -1604,6 +1633,8 @@ C----------------------- End of Subroutine JGROUP ----------------------
       END
 *DECK ADJLR
       SUBROUTINE ADJLR (N, ISP, LDIF)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N, ISP, LDIF
       DIMENSION ISP(*)
 C-----------------------------------------------------------------------
@@ -1629,6 +1660,8 @@ C----------------------- End of Subroutine ADJLR -----------------------
       END
 *DECK CNTNZU
       SUBROUTINE CNTNZU (N, IA, JA, NZSUT)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N, IA, JA, NZSUT
       DIMENSION IA(*), JA(*)
 C-----------------------------------------------------------------------
@@ -1663,9 +1696,11 @@ C----------------------- End of Subroutine CNTNZU ----------------------
       END
 *DECK DPRJS
       SUBROUTINE DPRJS (NEQ,Y,YH,NYH,EWT,FTEM,SAVF,WK,IWK,F,JAC)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F,JAC
       INTEGER NEQ, NYH, IWK
-      DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WK
+      TYPE (XPLEX) Y, YH, EWT, FTEM, SAVF, WK
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),
      1   WK(*), IWK(*)
       INTEGER IOWND, IOWNS,
@@ -1676,9 +1711,9 @@ C----------------------- End of Subroutine CNTNZU ----------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
+      TYPE (XPLEX) CON0, CONMIN, CCMXJ, PSMALL, RBIG, SETH
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -1691,7 +1726,7 @@ C----------------------- End of Subroutine CNTNZU ----------------------
      3   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      4   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
       INTEGER I, IMUL, J, JJ, JOK, JMAX, JMIN, K, KMAX, KMIN, NG
-      DOUBLE PRECISION CON, DI, FAC, HL0, PIJ, R, R0, RCON, RCONT,
+      TYPE (XPLEX) CON, DI, FAC, HL0, PIJ, R, R0, RCON, RCONT,
      1   SRUR, DVNORM
 C-----------------------------------------------------------------------
 C DPRJS is called to compute and process the matrix
@@ -1863,8 +1898,10 @@ C----------------------- End of Subroutine DPRJS -----------------------
       END
 *DECK DSOLSS
       SUBROUTINE DSOLSS (WK, IWK, X, TEM)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER IWK
-      DOUBLE PRECISION WK, X, TEM
+      TYPE (XPLEX) WK, X, TEM
       DIMENSION WK(*), IWK(*), X(*), TEM(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
@@ -1874,9 +1911,9 @@ C----------------------- End of Subroutine DPRJS -----------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION RLSS
+      TYPE (XPLEX) RLSS
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -1889,7 +1926,7 @@ C----------------------- End of Subroutine DPRJS -----------------------
      3   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      4   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
       INTEGER I
-      DOUBLE PRECISION DI, HL0, PHL0, R
+      TYPE (XPLEX) DI, HL0, PHL0, R
 C-----------------------------------------------------------------------
 C This routine manages the solution of the linear system arising from
 C a chord iteration.  It is called if MITER .ne. 0.
@@ -1954,10 +1991,12 @@ C        JOB  = 1 if Common is to be saved (written to RSAV/ISAV)
 C        JOB  = 2 if Common is to be restored (read from RSAV/ISAV)
 C        A call with JOB = 2 presumes a prior call with JOB = 1.
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER ISAV, JOB
       INTEGER ILS, ILSS
       INTEGER I, LENILS, LENISS, LENRLS, LENRSS
-      DOUBLE PRECISION RSAV,   RLS, RLSS
+      TYPE (XPLEX) RSAV,   RLS, RLSS
       DIMENSION RSAV(*), ISAV(*)
       SAVE LENRLS, LENILS, LENRSS, LENISS
       COMMON /DLS001/ RLS(218), ILS(37)
@@ -2118,17 +2157,19 @@ c             10n+1  insufficient storage in odrv
 c             11n+1  illegal path specification
 c
 c
-c  conversion from real to double precision
+c  conversion from real to TYPE (XPLEX)
 c
-c    change the real declarations in odrv and sro to double precision
+c    change the real declarations in odrv and sro to TYPE (XPLEX)
 c    declarations.
 c
 c-----------------------------------------------------------------------
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ia(*), ja(*),  p(*), ip(*),  isp(*),  path,  flag,
      *   v, l, head,  tmp, q
 c...  real  a(*)
-      double precision  a(*)
+      TYPE (XPLEX)  a(*)
       logical  dflag
 c
 c----initialize error flag and validate path specification
@@ -2137,21 +2178,26 @@ c----initialize error flag and validate path specification
 c
 c----allocate storage and find minimum degree ordering
       if ((path-1) * (path-2) * (path-4) .ne. 0)  go to 1
-        max = (nsp-n)/2
+        max1 = (nsp-n)/2
         v    = 1
-        l    = v     +  max
-        head = l     +  max
+        l    = v     +  max1
+        head = l     +  max1
         next = head  +  n
-        if (max.lt.n)  go to 110
+        !write (*,*) "max1", max1
+        !write (*,*) "n", n
+        if (max1.lt.n)  go to 110
 c
+        !write(*,*) "After L2187"
         call  md
-     *     (n, ia,ja, max,isp(v),isp(l), isp(head),p,ip, isp(v), flag)
+     *     (n, ia,ja, max1,isp(v),isp(l), isp(head),p,ip, isp(v), flag)
+        !write(*,*) "flag", flag
         if (flag.ne.0)  go to 100
 c
 c----allocate storage and symmetrically reorder matrix
    1  if ((path-2) * (path-3) * (path-4) * (path-5) .ne. 0)  go to 2
         tmp = (nsp+1) -      n
         q   = tmp     - (ia(n+1)-1)
+        !write (*,*) "q", q
         if (q.lt.1)  go to 110
 c
         dflag = path.eq.4 .or. path.eq.5
@@ -2170,7 +2216,7 @@ c ** error -- illegal path specified
       return
       end
       subroutine md
-     *     (n, ia,ja, max, v,l, head,last,next, mark, flag)
+     *     (n, ia,ja, max1, v,l, head,last,next, mark, flag)
 c***********************************************************************
 c  md -- minimum degree algorithm (based on element model)
 c***********************************************************************
@@ -2185,13 +2231,13 @@ c
 c
 c  additional parameters
 c
-c    max  - declared dimension of the one-dimensional arrays v and l.
-c           max must be at least  n+2k,  where k is the number of
+c    max1  - declared dimension of the one-dimensional arrays v and l.
+c           max1 must be at least  n+2k,  where k is the number of
 c           nonzeroes in the strict upper triangle of m + m-transpose
 c
-c    v    - integer one-dimensional work array.  dimension = max
+c    v    - integer one-dimensional work array.  dimension = max1
 c
-c    l    - integer one-dimensional work array.  dimension = max
+c    l    - integer one-dimensional work array.  dimension = max1
 c
 c    head - integer one-dimensional work array.  dimension = n
 c
@@ -2254,6 +2300,8 @@ c             -       .lt. mark(vk)         -
 c
 c-----------------------------------------------------------------------
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ia(*), ja(*),  v(*), l(*),  head(*), last(*), next(*),
      *   mark(*),  flag,  tag, dmin, vk,ek, tail
       equivalence  (vk,ek)
@@ -2261,7 +2309,8 @@ c
 c----initialization
       tag = 0
       call  mdi
-     *   (n, ia,ja, max,v,l, head,last,next, mark,tag, flag)
+     *   (n, ia,ja, max1,v,l, head,last,next, mark,tag, flag)
+      !write(*,*) "flag in md", flag 
       if (flag.ne.0)  return
 c
       k = 0
@@ -2309,19 +2358,24 @@ c
       return
       end
       subroutine mdi
-     *     (n, ia,ja, max,v,l, head,last,next, mark,tag, flag)
+     *     (n, ia,ja, max1,v,l, head,last,next, mark,tag, flag)
 c***********************************************************************
 c  mdi -- initialization
 c***********************************************************************
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ia(*), ja(*),  v(*), l(*),  head(*), last(*), next(*),
      *   mark(*), tag,  flag,  sfs, vi,dvi, vj
 c
 c----initialize degrees, element lists, and degree lists
+      !write(*,*) "flag", flag
       do 1 vi=1,n
         mark(vi) = 1
         l(vi) = 0
    1    head(vi) = 0
       sfs = n+1
+            !write (*,*) "max1", max1
+            !write (*,*) "sfs", sfs
 c
 c----create nonzero structure
 c----for each nonzero entry a(vi,vj)
@@ -2343,7 +2397,9 @@ c------check for previous occurrence of a(vj,vi)
             if (v(lvk).eq.vj) go to 5
    3        continue
 c----for unentered entries a(vi,vj)
-   4        if (sfs.ge.max)  go to 101
+            !write (*,*) "max1", max1
+            !write (*,*) "sfs", sfs
+   4        if (sfs.ge.max1)  go to 101
 c
 c------enter vj in element list for vi
             mark(vi) = mark(vi) + 1
@@ -2382,6 +2438,8 @@ c ** error-  insufficient storage
 c***********************************************************************
 c  mdm -- form element from uneliminated neighbors of vk
 c***********************************************************************
+      USE MYTYPE
+      USE XPLEXIFY
       integer  vk, tail,  v(*), l(*),   last(*), next(*),   mark(*),
      *   tag, s,ls,vs,es, b,lb,vb, blp,blpmax
       equivalence  (vs, es)
@@ -2437,6 +2495,8 @@ c
 c***********************************************************************
 c  mdp -- purge inactive elements and do mass elimination
 c***********************************************************************
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ek, tail,  v(*), l(*),  head(*), last(*), next(*),
      *   mark(*),  tag, free, li,vi,lvi,evi, s,ls,es, ilp,ilpmax
 c
@@ -2526,6 +2586,8 @@ c
 c***********************************************************************
 c  mdu -- update degrees of uneliminated vertices in ek
 c***********************************************************************
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ek, dmin,  v(*), l(*),  head(*), last(*), next(*),
      *   mark(*),  tag, vi,evi,dvi, s,vs,es, b,vb, ilp,ilpmax,
      *   blp,blpmax
@@ -2638,9 +2700,11 @@ c            diagonal elements at the beginning of the row
 c
 c-----------------------------------------------------------------------
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ip(*),  ia(*), ja(*),  q(*), r(*)
 c...  real  a(*),  ak
-      double precision  a(*),  ak
+      TYPE (XPLEX)  a(*),  ak
       logical  dflag
 c
 c
@@ -2866,24 +2930,26 @@ c       -           insufficient storage was available to perform the
 c       -           numeric factorization (nnfc)).
 c
 c
-c  conversion to double precision
+c  conversion to TYPE (XPLEX)
 c
-c    to convert these routines for double precision arrays..
-c    (1) use the double precision declarations in place of the real
+c    to convert these routines for TYPE (XPLEX) arrays..
+c    (1) use the TYPE (XPLEX) declarations in place of the real
 c    declarations in each subprogram, as given in comment cards.
 c    (2) change the data-loaded value of the integer  lratio
 c    in subroutine cdrv, as indicated below.
 c    (3) change e0 to d0 in the constants in statement number 10
 c    in subroutine nnfc and the line following that.
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer  r(*), c(*), ic(*),  ia(*), ja(*),  isp(*), esp,  path,
      *   flag,  d, u, q, row, tmp, ar,  umax
 c     real  a(*), b(*), z(*), rsp(*)
-      double precision  a(*), b(*), z(*), rsp(*)
+      TYPE (XPLEX)  a(*), b(*), z(*), rsp(*)
 c
 c  set lratio equal to the ratio between the length of floating point
 c  and integer array data.  e. g., lratio = 1 for (real, integer),
-c  lratio = 2 for (double precision, integer)
+c  lratio = 2 for (TYPE (XPLEX), integer)
 c
       data lratio/2/
 c
@@ -2899,8 +2965,8 @@ c******initialize and divide up temporary storage  *******************
 c
 c  ******  reorder a if necessary, call nsfc if flag is set  ***********
       if ((path-1) * (path-5) .ne. 0)  go to 5
-        max = (lratio*nsp + 1 - jl) - (n+1) - 5*n
-        jlmax = max/2
+        max1 = (lratio*nsp + 1 - jl) - (n+1) - 5*n
+        jlmax = max1/2
         q     = jl   + jlmax
         ira   = q    + (n+1)
         jra   = ira  +   n
@@ -2909,7 +2975,7 @@ c  ******  reorder a if necessary, call nsfc if flag is set  ***********
         jru   = iru  +   n
         jutmp = jru  +   n
         jumax = lratio*nsp  + 1 - jutmp
-        esp = max/lratio
+        esp = max1/lratio
         if (jlmax.le.0 .or. jumax.le.0)  go to 110
 c
         do 1 i=1,n
@@ -3177,9 +3243,11 @@ c fia   - ar    - at the kth step, ar contains the elements of the
 c       -           reordered row of a.
 c       -           size = n.
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer  ic(*), ia(*), ja(*), jar(*), p(*), flag
 c     real  a(*), ar(*)
-      double precision  a(*), ar(*)
+      TYPE (XPLEX)  a(*), ar(*)
 c
 c  ******  for each nonempty row  *******************************
       do 5 k=1,n
@@ -3269,6 +3337,8 @@ c    jmin,jmax - are the indices in  a or u  of the first and last
 c                elements to be examined in a given row.
 c                for example,  jmin=ia(k), jmax=ia(k+1)-1.
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer cend, qm, rend, rk, vj
       integer ia(*), ja(*), ira(*), jra(*), il(*), jl(*), ijl(*)
       integer iu(*), ju(*), iju(*), irl(*), jrl(*), iru(*), jru(*)
@@ -3574,13 +3644,15 @@ c    jmin, jmax - indices of the first and last positions in a row to
 c      be examined.
 c    sum - used in calculating  tmp.
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer rk,umax
       integer  r(*), c(*), ic(*), ia(*), ja(*), il(*), jl(*), ijl(*)
       integer  iu(*), ju(*), iju(*), irl(*), jrl(*), flag
 c     real  a(*), l(*), d(*), u(*), z(*), b(*), row(*)
 c     real tmp(*), lki, sum, dk
-      double precision  a(*), l(*), d(*), u(*), z(*), b(*), row(*)
-      double precision  tmp(*), lki, sum, dk
+      TYPE (XPLEX)  a(*), l(*), d(*), u(*), z(*), b(*), row(*)
+      TYPE (XPLEX)  tmp(*), lki, Newsum, dk
 c
 c  ******  initialize pointers and test storage  ***********************
       if(il(n+1)-1 .gt. lmax) go to 104
@@ -3617,14 +3689,14 @@ c  ******  place kth row of a in row  **********************************
           row(ic(ja(j))) = a(j)
    6      continue
 c  ******  initialize sum, and link through jrl  ***********************
-        sum = b(rk)
+        Newsum = b(rk)
         i = i1
         if (i .eq. 0) go to 10
 c  ******  assign the kth row of l and adjust row, sum  ****************
    7      lki = -row(i)
 c  ******  if l is not required, then comment out the following line  **
           l(irl(i)) = -lki
-          sum = sum + lki * tmp(i)
+          Newsum = Newsum + lki * tmp(i)
           jmin = iu(i)
           jmax = iu(i+1) - 1
           if (jmin .gt. jmax) go to 9
@@ -3638,7 +3710,7 @@ c  ******  assign kth row of u and diagonal d, set tmp(k)  *************
   10    if (row(k) .eq. 0.0d0) go to 108
         dk = 1.0d0 / row(k)
         d(k) = dk
-        tmp(k) = sum * dk
+        tmp(k) = Newsum * dk
         if (k .eq. n) go to 19
         jmin = iu(k)
         jmax = iu(k+1) - 1
@@ -3672,15 +3744,15 @@ c
 c  ******  solve  ux = tmp  by back substitution  **********************
       k = n
       do 22 i=1,n
-        sum =  tmp(k)
+        Newsum =  tmp(k)
         jmin = iu(k)
         jmax = iu(k+1) - 1
         if (jmin .gt. jmax)  go to 21
         mu = iju(k) - jmin
         do 20 j=jmin,jmax
-  20      sum = sum - u(j) * tmp(ju(mu+j))
-  21    tmp(k) =  sum
-        z(c(k)) =  sum
+  20      Newsum = Newsum - u(j) * tmp(ju(mu+j))
+  21    tmp(k) =  Newsum
+        z(c(k)) =  Newsum
   22    k = k-1
       flag = 0
       return
@@ -3713,9 +3785,11 @@ c  internal variables..
 c    jmin, jmax - indices of the first and last positions in a row of
 c      u or l  to be used.
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer r(*), c(*), il(*), jl(*), ijl(*), iu(*), ju(*), iju(*)
-c     real l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk, sum
-      double precision  l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk,sum
+c     real l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk, Newsum
+      TYPE (XPLEX)  l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk,Newsum
 c
 c  ******  set tmp to reordered b  *************************************
       do 1 k=1,n
@@ -3734,15 +3808,15 @@ c  ******  solve  ly = b  by forward substitution  *********************
 c  ******  solve  ux = y  by back substitution  ************************
       k = n
       do 6 i=1,n
-        sum = -tmp(k)
+        Newsum = -tmp(k)
         jmin = iu(k)
         jmax = iu(k+1) - 1
         if (jmin .gt. jmax) go to 5
         mu = iju(k) - jmin
         do 4 j=jmin,jmax
-   4      sum = sum + u(j) * tmp(ju(mu+j))
-   5    tmp(k) = -sum
-        z(c(k)) = -sum
+   4      Newsum = Newsum + u(j) * tmp(ju(mu+j))
+   5    tmp(k) = -Newsum
+        z(c(k)) = -Newsum
         k = k - 1
    6    continue
       return
@@ -3766,9 +3840,11 @@ c  internal variables..
 c    jmin, jmax - indices of the first and last positions in a row of
 c      u or l  to be used.
 c
+      USE MYTYPE
+      USE XPLEXIFY
       integer r(*), c(*), il(*), jl(*), ijl(*), iu(*), ju(*), iju(*)
-c     real l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk,sum
-      double precision l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk,sum
+c     real l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk,Newsum
+      TYPE (XPLEX) l(*), d(*), u(*), b(*), z(*), tmp(*), tmpk,Newsum
 c
 c  ******  set tmp to reordered b  *************************************
       do 1 k=1,n
@@ -3786,14 +3862,14 @@ c  ******  solve  ut y = b  by forward substitution  *******************
 c  ******  solve  lt x = y  by back substitution  **********************
       k = n
       do 6 i=1,n
-        sum = -tmp(k)
+        Newsum = -tmp(k)
         jmin = il(k)
         jmax = il(k+1) - 1
         if (jmin .gt. jmax) go to 5
         ml = ijl(k) - jmin
         do 4 j=jmin,jmax
-   4      sum = sum + l(j) * tmp(jl(ml+j))
-   5    tmp(k) = -sum * d(k)
+   4      Newsum = Newsum + l(j) * tmp(jl(ml+j))
+   5    tmp(k) = -Newsum * d(k)
         z(r(k)) = tmp(k)
         k = k - 1
    6    continue
@@ -3802,9 +3878,11 @@ c  ******  solve  lt x = y  by back substitution  **********************
 *DECK DSTODA
       SUBROUTINE DSTODA (NEQ, Y, YH, NYH, YH1, EWT, SAVF, ACOR,
      1   WM, IWM, F, JAC, PJAC, SLVS)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, PJAC, SLVS
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, ACOR, WM
+      TYPE (XPLEX) Y, YH, YH1, EWT, SAVF, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
      1   ACOR(*), WM(*), IWM(*)
       INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,
@@ -3812,9 +3890,9 @@ c  ******  solve  lt x = y  by back substitution  **********************
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER IOWND2, ICOUNT, IRFLAG, JTYP, MUSED, MXORDN, MXORDS
-      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
+      TYPE (XPLEX) CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION ROWND2, CM1, CM2, PDEST, PDLAST, RATIO,
+      TYPE (XPLEX) ROWND2, CM1, CM2, PDEST, PDLAST, RATIO,
      1   PDNORM
       COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12),
      1   HOLD, RMAX, TESCO(3,12),
@@ -3828,10 +3906,11 @@ c  ******  solve  lt x = y  by back substitution  **********************
      2   IOWND2(3), ICOUNT, IRFLAG, JTYP, MUSED, MXORDN, MXORDS
       INTEGER I, I1, IREDO, IRET, J, JB, M, NCF, NEWQ
       INTEGER LM1, LM1P1, LM2, LM2P1, NQM1, NQM2
-      DOUBLE PRECISION DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,
+      TYPE (XPLEX) DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,
      1   R, RH, RHDN, RHSM, RHUP, TOLD, DMNORM
-      DOUBLE PRECISION ALPHA, DM1,DM2, EXM1,EXM2,
-     1   PDH, PNORM, RATE, RH1, RH1IT, RH2, RM, SM1(12)
+      TYPE (XPLEX) ALPHA, DM1,DM2, EXM1,EXM2,
+     1   PDH, PNORM, RATE, RH1, RH1IT, RH2, RM
+      REAL SM1(12)
       SAVE SM1
       DATA SM1/0.5D0, 0.575D0, 0.55D0, 0.45D0, 0.35D0, 0.25D0,
      1   0.20D0, 0.15D0, 0.10D0, 0.075D0, 0.050D0, 0.025D0/
@@ -4435,9 +4514,11 @@ C----------------------- End of Subroutine DSTODA ----------------------
 *DECK DPRJA
       SUBROUTINE DPRJA (NEQ, Y, YH, NYH, EWT, FTEM, SAVF, WM, IWM,
      1   F, JAC)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, EWT, FTEM, SAVF, WM
+      TYPE (XPLEX) Y, YH, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), FTEM(*), SAVF(*),
      1   WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
@@ -4445,9 +4526,9 @@ C----------------------- End of Subroutine DSTODA ----------------------
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER IOWND2, IOWNS2, JTYP, MUSED, MXORDN, MXORDS
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION ROWND2, ROWNS2, PDNORM
+      TYPE (XPLEX) ROWND2, ROWNS2, PDNORM
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -4458,7 +4539,7 @@ C----------------------- End of Subroutine DSTODA ----------------------
      1   IOWND2(3), IOWNS2(2), JTYP, MUSED, MXORDN, MXORDS
       INTEGER I, I1, I2, IER, II, J, J1, JJ, LENP,
      1   MBA, MBAND, MEB1, MEBAND, ML, ML3, MU, NP1
-      DOUBLE PRECISION CON, FAC, HL0, R, R0, SRUR, YI, YJ, YJJ,
+      TYPE (XPLEX) CON, FAC, HL0, R, R0, SRUR, YI, YJ, YJJ,
      1   DMNORM, DFNORM, DBNORM
 C-----------------------------------------------------------------------
 C DPRJA is called by DSTODA to compute and process the matrix
@@ -4600,15 +4681,17 @@ C Do LU decomposition of P. --------------------------------------------
 C----------------------- End of Subroutine DPRJA -----------------------
       END
 *DECK DMNORM
-      DOUBLE PRECISION FUNCTION DMNORM (N, V, W)
+      TYPE (XPLEX) FUNCTION DMNORM (N, V, W)
 C-----------------------------------------------------------------------
 C This function routine computes the weighted max-norm
 C of the vector of length N contained in the array V, with weights
 C contained in the array w of length N:
 C   DMNORM = MAX(i=1,...,N) ABS(V(i))*W(i)
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N,   I
-      DOUBLE PRECISION V, W,   VM
+      TYPE (XPLEX) V, W,   VM
       DIMENSION V(N), W(N)
       VM = 0.0D0
       DO 10 I = 1,N
@@ -4618,29 +4701,31 @@ C-----------------------------------------------------------------------
 C----------------------- End of Function DMNORM ------------------------
       END
 *DECK DFNORM
-      DOUBLE PRECISION FUNCTION DFNORM (N, A, W)
+      TYPE (XPLEX) FUNCTION DFNORM (N, A, W)
 C-----------------------------------------------------------------------
 C This function computes the norm of a full N by N matrix,
 C stored in the array A, that is consistent with the weighted max-norm
 C on vectors, with weights stored in the array W:
 C   DFNORM = MAX(i=1,...,N) ( W(i) * Sum(j=1,...,N) ABS(a(i,j))/W(j) )
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N,   I, J
-      DOUBLE PRECISION A,   W, AN, SUM
+      TYPE (XPLEX) A,   W, AN, NewSUM
       DIMENSION A(N,N), W(N)
       AN = 0.0D0
       DO 20 I = 1,N
-        SUM = 0.0D0
+        NewSUM = 0.0D0
         DO 10 J = 1,N
- 10       SUM = SUM + ABS(A(I,J))/W(J)
-        AN = MAX(AN,SUM*W(I))
+ 10       NewSUM = NewSUM + ABS(A(I,J))/W(J)
+        AN = MAX(AN,NewSUM*W(I))
  20     CONTINUE
       DFNORM = AN
       RETURN
 C----------------------- End of Function DFNORM ------------------------
       END
 *DECK DBNORM
-      DOUBLE PRECISION FUNCTION DBNORM (N, A, NRA, ML, MU, W)
+      TYPE (XPLEX) FUNCTION DBNORM (N, A, NRA, ML, MU, W)
 C-----------------------------------------------------------------------
 C This function computes the norm of a banded N by N matrix,
 C stored in the array A, that is consistent with the weighted max-norm
@@ -4650,20 +4735,22 @@ C NRA is the first dimension of the A array, NRA .ge. ML+MU+1.
 C In terms of the matrix elements a(i,j), the norm is given by:
 C   DBNORM = MAX(i=1,...,N) ( W(i) * Sum(j=1,...,N) ABS(a(i,j))/W(j) )
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N, NRA, ML, MU
       INTEGER I, I1, JLO, JHI, J
-      DOUBLE PRECISION A, W
-      DOUBLE PRECISION AN, SUM
+      TYPE (XPLEX) A, W
+      TYPE (XPLEX) AN, NewSUM
       DIMENSION A(NRA,N), W(N)
       AN = 0.0D0
       DO 20 I = 1,N
-        SUM = 0.0D0
+        NewSUM = 0.0D0
         I1 = I + MU + 1
         JLO = MAX(I-ML,1)
         JHI = MIN(I+MU,N)
         DO 10 J = JLO,JHI
- 10       SUM = SUM + ABS(A(I1-J,J))/W(J)
-        AN = MAX(AN,SUM*W(I))
+ 10       NewSUM = NewSUM + ABS(A(I1-J,J))/W(J)
+        AN = MAX(AN,NewSUM*W(I))
  20     CONTINUE
       DBNORM = AN
       RETURN
@@ -4683,11 +4770,13 @@ C        JOB  = 1 if Common is to be saved (written to RSAV/ISAV)
 C        JOB  = 2 if Common is to be restored (read from RSAV/ISAV)
 C        A call with JOB = 2 presumes a prior call with JOB = 1.
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER ISAV, JOB
       INTEGER ILS, ILSA
       INTEGER I, LENRLS, LENILS, LENRLA, LENILA
-      DOUBLE PRECISION RSAV
-      DOUBLE PRECISION RLS, RLSA
+      TYPE (XPLEX) RSAV
+      TYPE (XPLEX) RLS, RLSA
       DIMENSION RSAV(*), ISAV(*)
       SAVE LENRLS, LENILS, LENRLA, LENILA
       COMMON /DLS001/ RLS(218), ILS(37)
@@ -4723,18 +4812,20 @@ C----------------------- End of Subroutine DSRCMA ----------------------
       END
 *DECK DRCHEK
       SUBROUTINE DRCHEK (JOB, G, NEQ, Y, YH,NYH, G0, G1, GX, JROOT, IRT)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL G
       INTEGER JOB, NEQ, NYH, JROOT, IRT
-      DOUBLE PRECISION Y, YH, G0, G1, GX
+      TYPE (XPLEX) Y, YH, G0, G1, GX
       DIMENSION NEQ(*), Y(*), YH(NYH,*), G0(*), G1(*), GX(*), JROOT(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER IOWND3, IOWNR3, IRFND, ITASKC, NGC, NGE
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION ROWNR3, T0, TLAST, TOUTC
+      TYPE (XPLEX) ROWNR3, T0, TLAST, TOUTC
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -4744,7 +4835,7 @@ C----------------------- End of Subroutine DSRCMA ----------------------
       COMMON /DLSR01/ ROWNR3(2), T0, TLAST, TOUTC,
      1   IOWND3(3), IOWNR3(2), IRFND, ITASKC, NGC, NGE
       INTEGER I, IFLAG, JFLAG
-      DOUBLE PRECISION HMING, T1, TEMP1, TEMP2, X
+      TYPE (XPLEX) HMING, T1, TEMP1, TEMP2, X
       LOGICAL ZROOT
 C-----------------------------------------------------------------------
 C This routine checks for the presence of a root in the vicinity of
@@ -4887,11 +4978,13 @@ C----------------------- End of Subroutine DRCHEK ----------------------
       END
 *DECK DROOTS
       SUBROUTINE DROOTS (NG, HMIN, JFLAG, X0, X1, G0, G1, GX, X, JROOT)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER NG, JFLAG, JROOT
-      DOUBLE PRECISION HMIN, X0, X1, G0, G1, GX, X
+      TYPE (XPLEX) HMIN, X0, X1, G0, G1, GX, X
       DIMENSION G0(NG), G1(NG), GX(NG), JROOT(NG)
       INTEGER IOWND3, IMAX, LAST, IDUM3
-      DOUBLE PRECISION ALPHA, X2, RDUM3
+      TYPE (XPLEX) ALPHA, X2, RDUM3
       COMMON /DLSR01/ ALPHA, X2, RDUM3(3),
      1   IOWND3(3), IMAX, LAST, IDUM3(4)
 C-----------------------------------------------------------------------
@@ -4968,7 +5061,8 @@ C          of g(x) have a root at X.  JROOT(i) is 1 if the i-th
 C          component has a root, and JROOT(i) = 0 otherwise.
 C-----------------------------------------------------------------------
       INTEGER I, IMXOLD, NXLAST
-      DOUBLE PRECISION T2, TMAX, FRACINT, FRACSUB, ZERO,HALF,TENTH,FIVE
+      TYPE (XPLEX) T2, TMAX, FRACINT, FRACSUB
+      REAL ZERO,HALF,TENTH,FIVE
       LOGICAL ZROOT, SGNCHG, XROOT
       SAVE ZERO, HALF, TENTH, FIVE
       DATA ZERO/0.0D0/, HALF/0.5D0/, TENTH/0.1D0/, FIVE/5.0D0/
@@ -5119,11 +5213,13 @@ C        JOB  = 1 if Common is to be saved (written to RSAV/ISAV)
 C        JOB  = 2 if Common is to be restored (read from RSAV/ISAV)
 C        A call with JOB = 2 presumes a prior call with JOB = 1.
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER ISAV, JOB
       INTEGER ILS, ILSA, ILSR
       INTEGER I, IOFF, LENRLS, LENILS, LENRLA, LENILA, LENRLR, LENILR
-      DOUBLE PRECISION RSAV
-      DOUBLE PRECISION RLS, RLSA, RLSR
+      TYPE (XPLEX) RSAV
+      TYPE (XPLEX) RLS, RLSA, RLSR
       DIMENSION RSAV(*), ISAV(*)
       SAVE LENRLS, LENILS, LENRLA, LENILA, LENRLR, LENILR
       COMMON /DLS001/ RLS(218), ILS(37)
@@ -5174,9 +5270,11 @@ C----------------------- End of Subroutine DSRCAR ----------------------
 *DECK DSTODPK
       SUBROUTINE DSTODPK (NEQ, Y, YH, NYH, YH1, EWT, SAVF, SAVX, ACOR,
      1   WM, IWM, F, JAC, PSOL)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, PSOL
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, SAVX, ACOR, WM
+      TYPE (XPLEX) Y, YH, YH1, EWT, SAVF, SAVX, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
      1   SAVX(*), ACOR(*), WM(*), IWM(*)
       INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,
@@ -5185,9 +5283,9 @@ C----------------------- End of Subroutine DSRCAR ----------------------
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER JPRE, JACFLG, LOCWP, LOCIWP, LSAVX, KMP, MAXL, MNEWT,
      1   NNI, NLI, NPS, NCFN, NCFL
-      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
+      TYPE (XPLEX) CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
       COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12),
      1   HOLD, RMAX, TESCO(3,12),
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -5285,7 +5383,7 @@ C METH/MITER = the method flags.  See description in driver.
 C N      = the number of first-order differential equations.
 C-----------------------------------------------------------------------
       INTEGER I, I1, IREDO, IRET, J, JB, M, NCF, NEWQ
-      DOUBLE PRECISION DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,
+      TYPE (XPLEX) DCON, DDN, DEL, DELP, DSM, DUP, EXDN, EXSM, EXUP,
      1   R, RH, RHDN, RHSM, RHUP, TOLD, DVNORM
 C
       KFLAG = 0
@@ -5680,9 +5778,11 @@ C----------------------- End of Subroutine DSTODPK ---------------------
       END
 *DECK DPKSET
       SUBROUTINE DPKSET (NEQ, Y, YSV, EWT, FTEM, SAVF, WM, IWM, F, JAC)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, IWM
-      DOUBLE PRECISION Y, YSV, EWT, FTEM, SAVF, WM
+      TYPE (XPLEX) Y, YSV, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YSV(*), EWT(*), FTEM(*), SAVF(*),
      1   WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
@@ -5691,9 +5791,9 @@ C----------------------- End of Subroutine DSTODPK ---------------------
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER JPRE, JACFLG, LOCWP, LOCIWP, LSAVX, KMP, MAXL, MNEWT,
      1   NNI, NLI, NPS, NCFN, NCFL
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -5726,7 +5826,7 @@ C         (or approximation) is now current.
 C This routine also uses Common variables EL0, H, TN, IERPJ, JCUR, NJE.
 C-----------------------------------------------------------------------
       INTEGER IER
-      DOUBLE PRECISION HL0
+      TYPE (XPLEX) HL0
 C
       IERPJ = 0
       JCUR = 1
@@ -5741,9 +5841,11 @@ C----------------------- End of Subroutine DPKSET ----------------------
       END
 *DECK DSOLPK
       SUBROUTINE DSOLPK (NEQ, Y, SAVF, X, EWT, WM, IWM, F, PSOL)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, PSOL
       INTEGER NEQ, IWM
-      DOUBLE PRECISION Y, SAVF, X, EWT, WM
+      TYPE (XPLEX) Y, SAVF, X, EWT, WM
       DIMENSION NEQ(*), Y(*), SAVF(*), X(*), EWT(*), WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
@@ -5751,9 +5853,9 @@ C----------------------- End of Subroutine DPKSET ----------------------
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER JPRE, JACFLG, LOCWP, LOCIWP, LSAVX, KMP, MAXL, MNEWT,
      1   NNI, NLI, NPS, NCFN, NCFL
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -5790,7 +5892,7 @@ C LOCWP, LOCIWP.
 C-----------------------------------------------------------------------
       INTEGER IFLAG, LB, LDL, LHES, LIOM, LGMR, LPCG, LP, LQ, LR,
      1   LV, LW, LWK, LZ, MAXLP1, NPSL
-      DOUBLE PRECISION DELTA, HL0
+      TYPE (XPLEX) DELTA, HL0
 C
       IERSL = 0
       HL0 = H*EL0
@@ -5903,9 +6005,11 @@ C----------------------- End of Subroutine DSOLPK ----------------------
       SUBROUTINE DSPIOM (NEQ, TN, Y, SAVF, B, WGHT, N, MAXL, KMP, DELTA,
      1            HL0, JPRE, MNEWT, F, PSOL, NPSL, X, V, HES, IPVT,
      2            LIOM, WP, IWP, WK, IFLAG)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, PSOL
       INTEGER NEQ,N,MAXL,KMP,JPRE,MNEWT,NPSL,IPVT,LIOM,IWP,IFLAG
-      DOUBLE PRECISION TN,Y,SAVF,B,WGHT,DELTA,HL0,X,V,HES,WP,WK
+      TYPE (XPLEX) TN,Y,SAVF,B,WGHT,DELTA,HL0,X,V,HES,WP,WK
       DIMENSION NEQ(*), Y(*), SAVF(*), B(*), WGHT(*), X(*), V(N,*),
      1   HES(MAXL,MAXL), IPVT(*), WP(*), IWP(*), WK(*)
 C-----------------------------------------------------------------------
@@ -5988,7 +6092,7 @@ C               -1 means there was a nonrecoverable error in PSOL.
 C
 C-----------------------------------------------------------------------
       INTEGER I, IER, INFO, J, K, LL, LM1
-      DOUBLE PRECISION BNRM, BNRM0, PROD, RHO, SNORMW, DNRM2, TEM
+      TYPE (XPLEX) BNRM, BNRM0, PROD, RHO, SNORMW, DNRM2, TEM
 C
       IFLAG = 0
       LIOM = 0
@@ -6118,16 +6222,18 @@ C----------------------- End of Subroutine DSPIOM ----------------------
 *DECK DATV
       SUBROUTINE DATV (NEQ, Y, SAVF, V, WGHT, FTEM, F, PSOL, Z, VTEM,
      1                WP, IWP, HL0, JPRE, IER, NPSL)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, PSOL
       INTEGER NEQ, IWP, JPRE, IER, NPSL
-      DOUBLE PRECISION Y, SAVF, V, WGHT, FTEM, Z, VTEM, WP, HL0
+      TYPE (XPLEX) Y, SAVF, V, WGHT, FTEM, Z, VTEM, WP, HL0
       DIMENSION NEQ(*), Y(*), SAVF(*), V(*), WGHT(*), FTEM(*), Z(*),
      1   VTEM(*), WP(*), IWP(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -6186,7 +6292,7 @@ C
 C In addition, this routine uses the Common variables TN, N, NFE.
 C-----------------------------------------------------------------------
       INTEGER I
-      DOUBLE PRECISION FAC, RNORM, DNRM2, TEMPN
+      TYPE (XPLEX) FAC, RNORM, DNRM2, TEMPN
 C
 C Set VTEM = D * V.
       DO 10 I = 1,N
@@ -6241,8 +6347,10 @@ C----------------------- End of Subroutine DATV ------------------------
       END
 *DECK DORTHOG
       SUBROUTINE DORTHOG (VNEW, V, HES, N, LL, LDHES, KMP, SNORMW)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER N, LL, LDHES, KMP
-      DOUBLE PRECISION VNEW, V, HES, SNORMW
+      TYPE (XPLEX) VNEW, V, HES, SNORMW
       DIMENSION VNEW(*), V(N,*), HES(LDHES,*)
 C-----------------------------------------------------------------------
 C This routine orthogonalizes the vector VNEW against the previous
@@ -6285,7 +6393,7 @@ C       SNORMW = L-2 norm of VNEW.
 C
 C-----------------------------------------------------------------------
       INTEGER I, I0
-      DOUBLE PRECISION ARG, DDOT, DNRM2, SUMDSQ, TEM, VNRM
+      TYPE (XPLEX) ARG, DDOT, DNRM2, SUMDSQ, TEM, VNRM
 C
 C Get norm of unaltered VNEW for later use. ----------------------------
       VNRM = DNRM2 (N, VNEW, 1)
@@ -6328,9 +6436,11 @@ C----------------------- End of Subroutine DORTHOG ---------------------
       SUBROUTINE DSPIGMR (NEQ, TN, Y, SAVF, B, WGHT, N, MAXL, MAXLP1,
      1  KMP, DELTA, HL0, JPRE, MNEWT, F, PSOL, NPSL, X, V, HES, Q,
      2  LGMR, WP, IWP, WK, DL, IFLAG)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, PSOL
       INTEGER NEQ,N,MAXL,MAXLP1,KMP,JPRE,MNEWT,NPSL,LGMR,IWP,IFLAG
-      DOUBLE PRECISION TN,Y,SAVF,B,WGHT,DELTA,HL0,X,V,HES,Q,WP,WK,DL
+      TYPE (XPLEX) TN,Y,SAVF,B,WGHT,DELTA,HL0,X,V,HES,Q,WP,WK,DL
       DIMENSION NEQ(*), Y(*), SAVF(*), B(*), WGHT(*), X(*), V(N,*),
      1    HES(MAXLP1,*), Q(*), WP(*), IWP(*), WK(*), DL(*)
 C-----------------------------------------------------------------------
@@ -6421,7 +6531,7 @@ C               -1 means there was a nonrecoverable error in PSOL.
 C
 C-----------------------------------------------------------------------
       INTEGER I, IER, INFO, IP1, I2, J, K, LL, LLP1
-      DOUBLE PRECISION BNRM,BNRM0,C,DLNRM,PROD,RHO,S,SNORMW,DNRM2,TEM
+      TYPE (XPLEX) BNRM,BNRM0,C,DLNRM,PROD,RHO,S,SNORMW,DNRM2,TEM
 C
       IFLAG = 0
       LGMR = 0
@@ -6564,9 +6674,11 @@ C----------------------- End of Subroutine DSPIGMR ---------------------
 *DECK DPCG
       SUBROUTINE DPCG (NEQ, TN, Y, SAVF, R, WGHT, N, MAXL, DELTA, HL0,
      1 JPRE, MNEWT, F, PSOL, NPSL, X, P, W, Z, LPCG, WP, IWP, WK, IFLAG)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, PSOL
       INTEGER NEQ, N, MAXL, JPRE, MNEWT, NPSL, LPCG, IWP, IFLAG
-      DOUBLE PRECISION TN,Y,SAVF,R,WGHT,DELTA,HL0,X,P,W,Z,WP,WK
+      TYPE (XPLEX) TN,Y,SAVF,R,WGHT,DELTA,HL0,X,P,W,Z,WP,WK
       DIMENSION NEQ(*), Y(*), SAVF(*), R(*), WGHT(*), X(*), P(*), W(*),
      1   Z(*), WP(*), IWP(*), WK(*)
 C-----------------------------------------------------------------------
@@ -6637,7 +6749,7 @@ C               -1 means there was a nonrecoverable error in PSOL.
 C
 C-----------------------------------------------------------------------
       INTEGER I, IER
-      DOUBLE PRECISION ALPHA,BETA,BNRM,PTW,RNRM,DDOT,DVNORM,ZTR,ZTR0
+      TYPE (XPLEX) ALPHA,BETA,BNRM,PTW,RNRM,DDOT,DVNORM,ZTR,ZTR0
 C
       IFLAG = 0
       NPSL = 0
@@ -6709,9 +6821,11 @@ C----------------------- End of Subroutine DPCG ------------------------
 *DECK DPCGS
       SUBROUTINE DPCGS (NEQ, TN, Y, SAVF, R, WGHT, N, MAXL, DELTA, HL0,
      1 JPRE, MNEWT, F, PSOL, NPSL, X, P, W, Z, LPCG, WP, IWP, WK, IFLAG)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, PSOL
       INTEGER NEQ, N, MAXL, JPRE, MNEWT, NPSL, LPCG, IWP, IFLAG
-      DOUBLE PRECISION TN,Y,SAVF,R,WGHT,DELTA,HL0,X,P,W,Z,WP,WK
+      TYPE (XPLEX) TN,Y,SAVF,R,WGHT,DELTA,HL0,X,P,W,Z,WP,WK
       DIMENSION NEQ(*), Y(*), SAVF(*), R(*), WGHT(*), X(*), P(*), W(*),
      1   Z(*), WP(*), IWP(*), WK(*)
 C-----------------------------------------------------------------------
@@ -6783,7 +6897,7 @@ C               -1 means there was a nonrecoverable error in PSOL.
 C
 C-----------------------------------------------------------------------
       INTEGER I, IER
-      DOUBLE PRECISION ALPHA, BETA, BNRM, PTW, RNRM, DVNORM, ZTR, ZTR0
+      TYPE (XPLEX) ALPHA, BETA, BNRM, PTW, RNRM, DVNORM, ZTR, ZTR0
 C
       IFLAG = 0
       NPSL = 0
@@ -6858,15 +6972,17 @@ C----------------------- End of Subroutine DPCGS -----------------------
       END
 *DECK DATP
       SUBROUTINE DATP (NEQ, Y, SAVF, P, WGHT, HL0, WK, F, W)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F
       INTEGER NEQ
-      DOUBLE PRECISION Y, SAVF, P, WGHT, HL0, WK, W
+      TYPE (XPLEX) Y, SAVF, P, WGHT, HL0, WK, W
       DIMENSION NEQ(*), Y(*), SAVF(*), P(*), WGHT(*), WK(*), W(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -6906,7 +7022,7 @@ C
 C In addition, this routine uses the Common variables TN, N, NFE.
 C-----------------------------------------------------------------------
       INTEGER I
-      DOUBLE PRECISION FAC, PNRM, RPNRM, DVNORM
+      TYPE (XPLEX) FAC, PNRM, RPNRM, DVNORM
 C
       PNRM = DVNORM (N, P, WGHT)
       RPNRM = 1.0D0/PNRM
@@ -6925,9 +7041,11 @@ C----------------------- End of Subroutine DATP ------------------------
 *DECK DUSOL
       SUBROUTINE DUSOL (NEQ, TN, Y, SAVF, B, WGHT, N, DELTA, HL0, MNEWT,
      1   PSOL, NPSL, X, WP, IWP, WK, IFLAG)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL PSOL
       INTEGER NEQ, N, MNEWT, NPSL, IWP, IFLAG
-      DOUBLE PRECISION TN, Y, SAVF, B, WGHT, DELTA, HL0, X, WP, WK
+      TYPE (XPLEX) TN, Y, SAVF, B, WGHT, DELTA, HL0, X, WP, WK
       DIMENSION NEQ(*), Y(*), SAVF(*), B(*), WGHT(*), X(*),
      1   WP(*), IWP(*), WK(*)
 C-----------------------------------------------------------------------
@@ -6983,7 +7101,7 @@ C               -1 means there was a nonrecoverable error in PSOL.
 C
 C-----------------------------------------------------------------------
       INTEGER I, IER
-      DOUBLE PRECISION BNRM, DVNORM
+      TYPE (XPLEX) BNRM, DVNORM
 C
       IFLAG = 0
       NPSL = 0
@@ -7028,10 +7146,12 @@ C        JOB  = 1 if Common is to be saved (written to RSAV/ISAV)
 C        JOB  = 2 if Common is to be restored (read from RSAV/ISAV)
 C        A call with JOB = 2 presumes a prior call with JOB = 1.
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER ISAV, JOB
       INTEGER ILS, ILSP
       INTEGER I, LENILP, LENRLP, LENILS, LENRLS
-      DOUBLE PRECISION RSAV,   RLS, RLSP
+      TYPE (XPLEX) RSAV,   RLS, RLSP
       DIMENSION RSAV(*), ISAV(*)
       SAVE LENRLS, LENILS, LENRLP, LENILP
       COMMON /DLS001/ RLS(218), ILS(37)
@@ -7059,8 +7179,10 @@ C----------------------- End of Subroutine DSRCPK ----------------------
       END
 *DECK DHEFA
       SUBROUTINE DHEFA (A, LDA, N, IPVT, INFO, JOB)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA, N, IPVT(*), INFO, JOB
-      DOUBLE PRECISION A(LDA,*)
+      TYPE (XPLEX) A(LDA,*)
 C-----------------------------------------------------------------------
 C     This routine is a modification of the LINPACK routine DGEFA and
 C     performs an LU decomposition of an upper Hessenberg matrix A.
@@ -7074,7 +7196,7 @@ C     DHEFA factors an upper Hessenberg matrix by elimination.
 C
 C     On entry
 C
-C        A       DOUBLE PRECISION(LDA, N)
+C        A       TYPE (XPLEX)(LDA, N)
 C                the matrix to be factored.
 C
 C        LDA     INTEGER
@@ -7113,7 +7235,7 @@ C
 C     BLAS called: DAXPY, IDAMAX
 C-----------------------------------------------------------------------
       INTEGER IDAMAX, J, K, KM1, KP1, L, NM1
-      DOUBLE PRECISION T
+      TYPE (XPLEX) T
 C
       IF (JOB .GT. 1) GO TO 80
 C
@@ -7239,8 +7361,10 @@ C----------------------- End of Subroutine DHEFA -----------------------
       END
 *DECK DHESL
       SUBROUTINE DHESL (A, LDA, N, IPVT, B)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA, N, IPVT(*)
-      DOUBLE PRECISION A(LDA,*), B(*)
+      TYPE (XPLEX) A(LDA,*), B(*)
 C-----------------------------------------------------------------------
 C This is essentially the LINPACK routine DGESL except for changes
 C due to the fact that A is an upper Hessenberg matrix.
@@ -7250,7 +7374,7 @@ C     using the factors computed by DHEFA.
 C
 C     On entry
 C
-C        A       DOUBLE PRECISION(LDA, N)
+C        A       TYPE (XPLEX)(LDA, N)
 C                the output from DHEFA.
 C
 C        LDA     INTEGER
@@ -7262,7 +7386,7 @@ C
 C        IPVT    INTEGER(N)
 C                the pivot vector from DHEFA.
 C
-C        B       DOUBLE PRECISION(N)
+C        B       TYPE (XPLEX)(N)
 C                the right hand side vector.
 C
 C     On return
@@ -7275,7 +7399,7 @@ C
 C     BLAS called: DAXPY
 C-----------------------------------------------------------------------
       INTEGER K, KB, L, NM1
-      DOUBLE PRECISION T
+      TYPE (XPLEX) T
 C
       NM1 = N - 1
 C
@@ -7307,8 +7431,10 @@ C----------------------- End of Subroutine DHESL -----------------------
       END
 *DECK DHEQR
       SUBROUTINE DHEQR (A, LDA, N, Q, INFO, IJOB)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA, N, INFO, IJOB
-      DOUBLE PRECISION A(LDA,*), Q(*)
+      TYPE (XPLEX) A(LDA,*), Q(*)
 C-----------------------------------------------------------------------
 C     This routine performs a QR decomposition of an upper
 C     Hessenberg matrix A.  There are two options available:
@@ -7322,7 +7448,7 @@ C     rotations.
 C
 C     On entry
 C
-C        A       DOUBLE PRECISION(LDA, N)
+C        A       TYPE (XPLEX)(LDA, N)
 C                the matrix to be decomposed.
 C
 C        LDA     INTEGER
@@ -7344,7 +7470,7 @@ C                The factorization can be written Q*A = R, where
 C                Q is a product of Givens rotations and R is upper
 C                triangular.
 C
-C        Q       DOUBLE PRECISION(2*N)
+C        Q       TYPE (XPLEX)(2*N)
 C                the factors c and s of each Givens rotation used
 C                in decomposing A.
 C
@@ -7359,7 +7485,7 @@ C     Modification of LINPACK, by Peter Brown, LLNL.
 C     Written 1/13/86.  This version dated 6/20/01.
 C-----------------------------------------------------------------------
       INTEGER I, IQ, J, K, KM1, KP1, NM1
-      DOUBLE PRECISION C, S, T, T1, T2
+      TYPE (XPLEX) C, S, T, T1, T2
 C
       IF (IJOB .GT. 1) GO TO 70
 C
@@ -7465,8 +7591,10 @@ C----------------------- End of Subroutine DHEQR -----------------------
       END
 *DECK DHELS
       SUBROUTINE DHELS (A, LDA, N, Q, B)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER LDA, N
-      DOUBLE PRECISION A(LDA,*), B(*), Q(*)
+      TYPE (XPLEX) A(LDA,*), B(*), Q(*)
 C-----------------------------------------------------------------------
 C This is part of the LINPACK routine DGESL with changes
 C due to the fact that A is an upper Hessenberg matrix.
@@ -7479,7 +7607,7 @@ C     using the factors computed by DHEQR.
 C
 C     On entry
 C
-C        A       DOUBLE PRECISION(LDA, N)
+C        A       TYPE (XPLEX)(LDA, N)
 C                the output from DHEQR which contains the upper
 C                triangular factor R in the QR decomposition of A.
 C
@@ -7489,11 +7617,11 @@ C
 C        N       INTEGER
 C                A is originally an (N+1) by N matrix.
 C
-C        Q       DOUBLE PRECISION(2*N)
+C        Q       TYPE (XPLEX)(2*N)
 C                The coefficients of the N givens rotations
 C                used in the QR factorization of A.
 C
-C        B       DOUBLE PRECISION(N+1)
+C        B       TYPE (XPLEX)(N+1)
 C                the right hand side vector.
 C
 C     On return
@@ -7506,7 +7634,7 @@ C
 C     BLAS called: DAXPY
 C-----------------------------------------------------------------------
       INTEGER IQ, K, KB, KP1
-      DOUBLE PRECISION C, S, T, T1, T2
+      TYPE (XPLEX) C, S, T, T1, T2
 C
 C        Minimize (b-A*x, b-A*x)
 C        First form Q*b.
@@ -7536,8 +7664,10 @@ C----------------------- End of Subroutine DHELS -----------------------
 *DECK DLHIN
       SUBROUTINE DLHIN (NEQ, N, T0, Y0, YDOT, F, TOUT, UROUND,
      1   EWT, ITOL, ATOL, Y, TEMP, H0, NITER, IER)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F
-      DOUBLE PRECISION T0, Y0, YDOT, TOUT, UROUND, EWT, ATOL, Y,
+      TYPE (XPLEX) T0, Y0, YDOT, TOUT, UROUND, EWT, ATOL, Y,
      1   TEMP, H0
       INTEGER NEQ, N, ITOL, NITER, IER
       DIMENSION NEQ(*), Y0(*), YDOT(*), EWT(*), ATOL(*), Y(*), TEMP(*)
@@ -7582,13 +7712,14 @@ C-----------------------------------------------------------------------
 C
 C Type declarations for local variables --------------------------------
 C
-      DOUBLE PRECISION AFI, ATOLI, DELYI, HALF, HG, HLB, HNEW, HRAT,
-     1     HUB, HUN, PT1, T1, TDIST, TROUND, TWO, DVNORM, YDDNRM
+      TYPE (XPLEX) AFI, ATOLI, DELYI, HG, HLB, HNEW, HRAT,
+     1     HUB, T1, TDIST, TROUND, DVNORM, YDDNRM
       INTEGER I, ITER
 C-----------------------------------------------------------------------
 C The following Fortran-77 declaration is to cause the values of the
 C listed (local) variables to be saved between calls to this integrator.
 C-----------------------------------------------------------------------
+      REAL HALF, HUN, PT1, TWO
       SAVE HALF, HUN, PT1, TWO
       DATA HALF /0.5D0/, HUN /100.0D0/, PT1 /0.1D0/, TWO /2.0D0/
 C
@@ -7670,9 +7801,11 @@ C----------------------- End of Subroutine DLHIN -----------------------
 *DECK DSTOKA
       SUBROUTINE DSTOKA (NEQ, Y, YH, NYH, YH1, EWT, SAVF, SAVX, ACOR,
      1   WM, IWM, F, JAC, PSOL)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC, PSOL
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, SAVX, ACOR, WM
+      TYPE (XPLEX) Y, YH, YH1, EWT, SAVF, SAVX, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
      1   SAVX(*), ACOR(*), WM(*), IWM(*)
       INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,
@@ -7682,10 +7815,10 @@ C----------------------- End of Subroutine DLHIN -----------------------
       INTEGER NEWT, NSFI, NSLJ, NJEV
       INTEGER JPRE, JACFLG, LOCWP, LOCIWP, LSAVX, KMP, MAXL, MNEWT,
      1   NNI, NLI, NPS, NCFN, NCFL
-      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
+      TYPE (XPLEX) CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION STIFR
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) STIFR
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
       COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12),
      1   HOLD, RMAX, TESCO(3,12),
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -7772,7 +7905,7 @@ C METH/MITER = the method flags.  See description in driver.
 C N      = the number of first-order differential equations.
 C-----------------------------------------------------------------------
       INTEGER I, I1, IREDO, IRET, J, JB, JOK, M, NCF, NEWQ, NSLOW
-      DOUBLE PRECISION DCON, DDN, DEL, DELP, DRC, DSM, DUP, EXDN, EXSM,
+      TYPE (XPLEX) DCON, DDN, DEL, DELP, DRC, DSM, DUP, EXDN, EXSM,
      1   EXUP, DFNORM, R, RH, RHDN, RHSM, RHUP, ROC, STIFF, TOLD, DVNORM
 C
       KFLAG = 0
@@ -8222,9 +8355,11 @@ C----------------------- End of Subroutine DSTOKA ----------------------
 *DECK DSETPK
       SUBROUTINE DSETPK (NEQ, Y, YSV, EWT, FTEM, SAVF, JOK, WM, IWM,
      1                  F, JAC)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL F, JAC
       INTEGER NEQ, JOK, IWM
-      DOUBLE PRECISION Y, YSV, EWT, FTEM, SAVF, WM
+      TYPE (XPLEX) Y, YSV, EWT, FTEM, SAVF, WM
       DIMENSION NEQ(*), Y(*), YSV(*), EWT(*), FTEM(*), SAVF(*),
      1   WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
@@ -8233,9 +8368,9 @@ C----------------------- End of Subroutine DSTOKA ----------------------
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER JPRE, JACFLG, LOCWP, LOCIWP, LSAVX, KMP, MAXL, MNEWT,
      1   NNI, NLI, NPS, NCFN, NCFL
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION DELT, EPCON, SQRTN, RSQRTN
+      TYPE (XPLEX) DELT, EPCON, SQRTN, RSQRTN
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -8271,7 +8406,7 @@ C         is now current (JCUR = 1) or not (JCUR = 0).
 C This routine also uses Common variables EL0, H, TN, IERPJ, JCUR, NJE.
 C-----------------------------------------------------------------------
       INTEGER IER
-      DOUBLE PRECISION HL0
+      TYPE (XPLEX) HL0
 C
       IERPJ = 0
       JCUR = 0
@@ -8299,10 +8434,12 @@ C        JOB  = 1 if Common is to be saved (written to RSAV/ISAV)
 C        JOB  = 2 if Common is to be restored (read from RSAV/ISAV)
 C        A call with JOB = 2 presumes a prior call with JOB = 1.
 C-----------------------------------------------------------------------
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER ISAV, JOB
       INTEGER ILS, ILS2, ILSR, ILSP
       INTEGER I, IOFF, LENILP, LENRLP, LENILS, LENRLS, LENILR, LENRLR
-      DOUBLE PRECISION RSAV,   RLS, RLS2, RLSR, RLSP
+      TYPE (XPLEX) RSAV,   RLS, RLS2, RLSR, RLSP
       DIMENSION RSAV(*), ISAV(*)
       SAVE LENRLS, LENILS, LENRLP, LENILP, LENRLR, LENILR
       COMMON /DLS001/ RLS(218), ILS(37)
@@ -8354,10 +8491,12 @@ C----------------------- End of Subroutine DSRCKR ----------------------
 *DECK DAINVG
       SUBROUTINE DAINVG (RES, ADDA, NEQ, T, Y, YDOT, MITER,
      1                   ML, MU, PW, IPVT, IER )
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA
       INTEGER NEQ, MITER, ML, MU, IPVT, IER
       INTEGER I, LENPW, MLP1, NROWPW
-      DOUBLE PRECISION T, Y, YDOT, PW
+      TYPE (XPLEX) T, Y, YDOT, PW
       DIMENSION Y(*), YDOT(*), PW(*), IPVT(*)
 C-----------------------------------------------------------------------
 C This subroutine computes the initial value
@@ -8416,16 +8555,18 @@ C----------------------- End of Subroutine DAINVG ----------------------
 *DECK DSTODI
       SUBROUTINE DSTODI (NEQ, Y, YH, NYH, YH1, EWT, SAVF, SAVR,
      1   ACOR, WM, IWM, RES, ADDA, JAC, PJAC, SLVS )
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA, JAC, PJAC, SLVS
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, YH1, EWT, SAVF, SAVR, ACOR, WM
+      TYPE (XPLEX) Y, YH, YH1, EWT, SAVF, SAVR, ACOR, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), YH1(*), EWT(*), SAVF(*),
      1   SAVR(*), ACOR(*), WM(*), IWM(*)
       INTEGER IOWND, IALTH, IPUP, LMAX, MEO, NQNYH, NSLP,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
+      TYPE (XPLEX) CONIT, CRATE, EL, ELCO, HOLD, RMAX, TESCO,
      2   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ CONIT, CRATE, EL(13), ELCO(13,12),
      1   HOLD, RMAX, TESCO(3,12),
@@ -8435,7 +8576,7 @@ C----------------------- End of Subroutine DAINVG ----------------------
      4   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      5   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, IREDO, IRES, IRET, J, JB, KGO, M, NCF, NEWQ
-      DOUBLE PRECISION DCON, DDN, DEL, DELP, DSM, DUP,
+      TYPE (XPLEX) DCON, DDN, DEL, DELP, DSM, DUP,
      1   ELJH, EL1H, EXDN, EXSM, EXUP,
      2   R, RH, RHDN, RHSM, RHUP, TOLD, DVNORM
 C-----------------------------------------------------------------------
@@ -8878,16 +9019,18 @@ C----------------------- End of Subroutine DSTODI ----------------------
 *DECK DPREPJI
       SUBROUTINE DPREPJI (NEQ, Y, YH, NYH, EWT, RTEM, SAVR, S, WM, IWM,
      1   RES, JAC, ADDA)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, JAC, ADDA
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, EWT, RTEM, SAVR, S, WM
+      TYPE (XPLEX) Y, YH, EWT, RTEM, SAVR, S, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), RTEM(*),
      1   S(*), SAVR(*), WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -8897,7 +9040,7 @@ C----------------------- End of Subroutine DSTODI ----------------------
      5   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, I1, I2, IER, II, IRES, J, J1, JJ, LENP,
      1   MBA, MBAND, MEB1, MEBAND, ML, ML3, MU
-      DOUBLE PRECISION CON, FAC, HL0, R, SRUR, YI, YJ, YJJ
+      TYPE (XPLEX) CON, FAC, HL0, R, SRUR, YI, YJ, YJJ
 C-----------------------------------------------------------------------
 C DPREPJI is called by DSTODI to compute and process the matrix
 C P = A - H*EL(1)*J , where J is an approximation to the Jacobian dr/dy,
@@ -9057,10 +9200,12 @@ C----------------------- End of Subroutine DPREPJI ---------------------
 *DECK DAIGBT
       SUBROUTINE DAIGBT (RES, ADDA, NEQ, T, Y, YDOT,
      1                   MB, NB, PW, IPVT, IER )
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA
       INTEGER NEQ, MB, NB, IPVT, IER
       INTEGER I, LENPW, LBLOX, LPB, LPC
-      DOUBLE PRECISION T, Y, YDOT, PW
+      TYPE (XPLEX) T, Y, YDOT, PW
       DIMENSION Y(*), YDOT(*), PW(*), IPVT(*), NEQ(*)
 C-----------------------------------------------------------------------
 C This subroutine computes the initial value
@@ -9095,16 +9240,18 @@ C----------------------- End of Subroutine DAIGBT ----------------------
 *DECK DPJIBT
       SUBROUTINE DPJIBT (NEQ, Y, YH, NYH, EWT, RTEM, SAVR, S, WM, IWM,
      1   RES, JAC, ADDA)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, JAC, ADDA
       INTEGER NEQ, NYH, IWM
-      DOUBLE PRECISION Y, YH, EWT, RTEM, SAVR, S, WM
+      TYPE (XPLEX) Y, YH, EWT, RTEM, SAVR, S, WM
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), RTEM(*),
      1   S(*), SAVR(*), WM(*), IWM(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
      2   LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, MITER,
      3   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
@@ -9114,7 +9261,7 @@ C----------------------- End of Subroutine DAIGBT ----------------------
      5   MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, NFE, NJE, NQU
       INTEGER I, IER, IIA, IIB, IIC, IPA, IPB, IPC, IRES, J, J1, J2,
      1   K, K1, LENP, LBLOX, LPB, LPC, MB, MBSQ, MWID, NB
-      DOUBLE PRECISION CON, FAC, HL0, R, SRUR
+      TYPE (XPLEX) CON, FAC, HL0, R, SRUR
 C-----------------------------------------------------------------------
 C DPJIBT is called by DSTODI to compute and process the matrix
 C P = A - H*EL(1)*J , where J is an approximation to the Jacobian dr/dy,
@@ -9257,9 +9404,11 @@ C----------------------- End of Subroutine DPJIBT ----------------------
       END
 *DECK DSLSBT
       SUBROUTINE DSLSBT (WM, IWM, X, TEM)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER IWM
       INTEGER LBLOX, LPB, LPC, MB, NB
-      DOUBLE PRECISION WM, X, TEM
+      TYPE (XPLEX) WM, X, TEM
       DIMENSION WM(*), IWM(*), X(*), TEM(*)
 C-----------------------------------------------------------------------
 C This routine acts as an interface between the core integrator
@@ -9286,8 +9435,10 @@ C----------------------- End of Subroutine DSLSBT ----------------------
       END
 *DECK DDECBT
       SUBROUTINE DDECBT (M, N, A, B, C, IP, IER)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER M, N, IP(M,N), IER
-      DOUBLE PRECISION A(M,M,N), B(M,M,N), C(M,M,N)
+      TYPE (XPLEX) A(M,M,N), B(M,M,N), C(M,M,N)
 C-----------------------------------------------------------------------
 C Block-tridiagonal matrix decomposition routine.
 C Written by A. C. Hindmarsh.
@@ -9334,7 +9485,7 @@ C External routines required: DGEFA and DGESL (from LINPACK) and
 C DDOT (from the BLAS, or Basic Linear Algebra package).
 C-----------------------------------------------------------------------
       INTEGER NM1, NM2, KM1, I, J, K
-      DOUBLE PRECISION DP, DDOT
+      TYPE (XPLEX) DP, DDOT
       IF (M .LT. 1 .OR. N .LT. 4) GO TO 210
       NM1 = N - 1
       NM2 = N - 2
@@ -9393,8 +9544,10 @@ C----------------------- End of Subroutine DDECBT ----------------------
       END
 *DECK DSOLBT
       SUBROUTINE DSOLBT (M, N, A, B, C, Y, IP)
+      USE MYTYPE
+      USE XPLEXIFY
       INTEGER M, N, IP(M,N)
-      DOUBLE PRECISION A(M,M,N), B(M,M,N), C(M,M,N), Y(M,N)
+      TYPE (XPLEX) A(M,M,N), B(M,M,N), C(M,M,N), Y(M,N)
 C-----------------------------------------------------------------------
 C Solution of block-tridiagonal linear system.
 C Coefficient matrix must have been previously processed by DDECBT.
@@ -9415,7 +9568,7 @@ C External routines required: DGESL (LINPACK) and DDOT (BLAS).
 C-----------------------------------------------------------------------
 C
       INTEGER NM1, NM2, I, K, KB, KM1, KP1
-      DOUBLE PRECISION DP, DDOT
+      TYPE (XPLEX) DP, DDOT
       NM1 = N - 1
       NM2 = N - 2
 C Forward solution sweep. ----------------------------------------------
@@ -9453,9 +9606,11 @@ C----------------------- End of Subroutine DSOLBT ----------------------
 *DECK DIPREPI
       SUBROUTINE DIPREPI (NEQ, Y, S, RWORK, IA, JA, IC, JC, IPFLAG,
      1   RES, JAC, ADDA)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, JAC, ADDA
       INTEGER NEQ, IA, JA, IC, JC, IPFLAG
-      DOUBLE PRECISION Y, S, RWORK
+      TYPE (XPLEX) Y, S, RWORK
       DIMENSION NEQ(*), Y(*), S(*), RWORK(*), IA(*), JA(*), IC(*), JC(*)
       INTEGER IOWND, IOWNS,
      1   ICF, IERPJ, IERSL, JCUR, JSTART, KFLAG, L,
@@ -9465,9 +9620,9 @@ C----------------------- End of Subroutine DSOLBT ----------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION RLSS
+      TYPE (XPLEX) RLSS
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -9524,9 +9679,11 @@ C----------------------- End of Subroutine DIPREPI ---------------------
 *DECK DPREPI
       SUBROUTINE DPREPI (NEQ, Y, S, YH, SAVR, EWT, RTEM, IA, JA, IC, JC,
      1                   WK, IWK, IPPER, RES, JAC, ADDA)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, JAC, ADDA
       INTEGER NEQ, IA, JA, IC, JC, IWK, IPPER
-      DOUBLE PRECISION Y, S, YH, SAVR, EWT, RTEM, WK
+      TYPE (XPLEX) Y, S, YH, SAVR, EWT, RTEM, WK
       DIMENSION NEQ(*), Y(*), S(*), YH(*), SAVR(*), EWT(*), RTEM(*),
      1   IA(*), JA(*), IC(*), JC(*), WK(*), IWK(*)
       INTEGER IOWND, IOWNS,
@@ -9537,9 +9694,9 @@ C----------------------- End of Subroutine DIPREPI ---------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION RLSS
+      TYPE (XPLEX) RLSS
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -9554,7 +9711,7 @@ C----------------------- End of Subroutine DIPREPI ---------------------
       INTEGER I, IBR, IER, IPIL, IPIU, IPTT1, IPTT2, J, K, KNEW, KAMAX,
      1   KAMIN, KCMAX, KCMIN, LDIF, LENIGP, LENWK1, LIWK, LJFO, MAXG,
      2   NP1, NZSUT
-      DOUBLE PRECISION ERWT, FAC, YJ
+      TYPE (XPLEX) ERWT, FAC, YJ
 C-----------------------------------------------------------------------
 C This routine performs preprocessing related to the sparse linear
 C systems that must be solved.
@@ -9891,6 +10048,8 @@ C----------------------- End of Subroutine DPREPI ----------------------
       END
 *DECK DAINVGS
       SUBROUTINE DAINVGS (NEQ, T, Y, WK, IWK, TEM, YDOT, IER, RES, ADDA)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, ADDA
       INTEGER NEQ, IWK, IER
       INTEGER IPLOST, IESP, ISTATC, IYS, IBA, IBIAN, IBJAN, IBJGP,
@@ -9898,8 +10057,8 @@ C----------------------- End of Subroutine DPREPI ----------------------
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
       INTEGER I, IMUL, J, K, KMIN, KMAX
-      DOUBLE PRECISION T, Y, WK, TEM, YDOT
-      DOUBLE PRECISION RLSS
+      TYPE (XPLEX) T, Y, WK, TEM, YDOT
+      TYPE (XPLEX) RLSS
       DIMENSION Y(*), WK(*), IWK(*), TEM(*), YDOT(*)
       COMMON /DLSS01/ RLSS(6),
      1   IPLOST, IESP, ISTATC, IYS, IBA, IBIAN, IBJAN, IBJGP,
@@ -9982,9 +10141,11 @@ C----------------------- End of Subroutine DAINVGS ---------------------
 *DECK DPRJIS
       SUBROUTINE DPRJIS (NEQ, Y, YH, NYH, EWT, RTEM, SAVR, S, WK, IWK,
      1   RES, JAC, ADDA)
+      USE MYTYPE
+      USE XPLEXIFY
       EXTERNAL RES, JAC, ADDA
       INTEGER NEQ, NYH, IWK
-      DOUBLE PRECISION Y, YH, EWT, RTEM, SAVR, S, WK
+      TYPE (XPLEX) Y, YH, EWT, RTEM, SAVR, S, WK
       DIMENSION NEQ(*), Y(*), YH(NYH,*), EWT(*), RTEM(*),
      1   S(*), SAVR(*), WK(*), IWK(*)
       INTEGER IOWND, IOWNS,
@@ -9995,9 +10156,9 @@ C----------------------- End of Subroutine DAINVGS ---------------------
      1   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,
      2   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      3   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
-      DOUBLE PRECISION ROWNS,
+      TYPE (XPLEX) ROWNS,
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND
-      DOUBLE PRECISION RLSS
+      TYPE (XPLEX) RLSS
       COMMON /DLS001/ ROWNS(209),
      1   CCMAX, EL0, H, HMIN, HMXI, HU, RC, TN, UROUND,
      2   IOWND(6), IOWNS(6),
@@ -10010,7 +10171,7 @@ C----------------------- End of Subroutine DAINVGS ---------------------
      3   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,
      4   NSLJ, NGP, NLU, NNZ, NSP, NZL, NZU
       INTEGER I, IMUL, IRES, J, JJ, JMAX, JMIN, K, KMAX, KMIN, NG
-      DOUBLE PRECISION CON, FAC, HL0, R, SRUR
+      TYPE (XPLEX) CON, FAC, HL0, R, SRUR
 C-----------------------------------------------------------------------
 C DPRJIS is called to compute and process the matrix
 C P = A - H*EL(1)*J, where J is an approximation to the Jacobian dr/dy,

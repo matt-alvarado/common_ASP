@@ -49,6 +49,8 @@ SUBROUTINE SetAqPhaseChemistry ()
 				    AqChemScale, Atmospheres
 	USE InfrastructuralCode
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 		!! Local Infrastructural Variables
@@ -60,7 +62,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 
 		!! These Local Variables Arrive From the Input Deck
 		INTEGER							 :: NumbChems
-		REAL*8, ALLOCATABLE			     :: TempMassStorage(:)
+		TYPE (XPLEX), ALLOCATABLE			     :: TempMassStorage(:)
 		CHARACTER(len=512), ALLOCATABLE  :: TempNameStorage(:)
 
 		!! Transcribe?  Use Scaffolding Code?
@@ -425,6 +427,8 @@ SUBROUTINE SetAqPhaseChemistry ()
 		USE InfrastructuralCode, ONLY : ERROR, Transcript
 		USE ModelParameters
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input Vars
@@ -509,6 +513,8 @@ SUBROUTINE SetAqPhaseChemistry ()
 										WaterEquilibriumIndex,		&
 										Metastable
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Internal Variables
@@ -516,7 +522,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 		LOGICAL				:: Scaffolding, Transcribe
 		CHARACTER (LEN=256)	:: CurrLine, FullLine
 		CHARACTER (LEN=64)	:: AssociatedForm, DissociatedForm, Token, Ion
-		REAL*8			    :: II, JJ
+		TYPE (XPLEX)			    :: II, JJ
 
 		!! And there is a file handle to be used
 		integer	:: FH
@@ -1371,7 +1377,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 
 					IF ((AqEquilibriaList(I,1) .EQ. AqEquilibriaList(J,2)+HowManyAqChems) .AND.    &
 						(AqEquilibriaList(I,3) .EQ. AqEquilibriaList(J,3)) .AND.    &
-						(1					   .EQ. AqEquilibriaList(J,4)) .AND.    &
+						(1					   .EQ. AqEquilibriaList(J,4)%r) .AND.    &
 						(AqEquilibriaList(I,5) .EQ. AqEquilibriaList(J,5)) .AND.    &
 						(AqEquilibriaList(I,8) .EQ. AqEquilibriaList(J,8)) .AND.	&
 						(AqEquilibriaList(I,8) .EQ. 0).AND.	(I .NE. J)) THEN
@@ -1393,7 +1399,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 					IF ((AqEquilibriaList(I,1) .EQ. AqEquilibriaList(J,3)+HowManyAqChems+HowManyAqCations) .AND.    &
 						(AqEquilibriaList(I,2) .EQ. AqEquilibriaList(J,2)) .AND.    &
 						(AqEquilibriaList(I,4) .EQ. AqEquilibriaList(J,4)) .AND.    &
-						(1					   .EQ. AqEquilibriaList(J,5)) .AND.    &
+						(1					   .EQ. AqEquilibriaList(J,5)%r) .AND.    &
 						(AqEquilibriaList(I,8) .EQ. AqEquilibriaList(J,8)) .AND.	&
 						(AqEquilibriaList(I,8) .EQ. 0) .AND. (I .NE. J))	THEN
 

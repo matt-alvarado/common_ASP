@@ -1,5 +1,5 @@
 !! DCDFLIB - Cumulative Density Functions 
-!! DCDFLIB is a (double precision) library of routines for 
+!! DCDFLIB is a (TYPE (XPLEX)) library of routines for 
 !! evaluating the cumulative density functions of a variety 
 !! of standard probability distributions. An unusual feature of 
 !! this library is its ability to easily compute any one parameter 
@@ -10,8 +10,6 @@
 !! DCDFLIB is attributed to Barry Brown, James Lovato, and Kathy Russell, bwb@odin.mda.uth.tmc.edu. 
 
 !! Downloaded it because am interested in the CDFNOR function
-
-
 
 function algdiv ( a, b )
 !
@@ -27,35 +25,38 @@ function algdiv ( a, b )
 !
 !  Parameters:
 !
-!    Input, double precision A, B, the arguments.
+!    Input, TYPE (XPLEX) A, B, the arguments.
 !
-!    Output, double precision ALGDIV, the value of LN(GAMMA(B)/GAMMA(A+B)).
+!    Output, TYPE (XPLEX) ALGDIV, the value of LN(GAMMA(B)/GAMMA(A+B)).
 !
-  double precision, parameter :: c0 =   0.833333333333333d-01
-  double precision, parameter :: c1 = - 0.277777777760991d-02
-  double precision, parameter :: c2 =   0.793650666825390d-03
-  double precision, parameter :: c3 = - 0.595202931351870d-03
-  double precision, parameter :: c4 =   0.837308034031215d-03
-  double precision, parameter :: c5 = - 0.165322962780713d-02
+  use MYTYPE
+  use XPLEXIFY
+
+  REAL, parameter :: c0 =   0.833333333333333d-01
+  REAL, parameter :: c1 = - 0.277777777760991d-02
+  REAL, parameter :: c2 =   0.793650666825390d-03
+  REAL, parameter :: c3 = - 0.595202931351870d-03
+  REAL, parameter :: c4 =   0.837308034031215d-03
+  REAL, parameter :: c5 = - 0.165322962780713d-02
 !
-  double precision a
-  double precision algdiv
-  double precision alnrel
-  double precision b
-  double precision c
-  double precision d
-  double precision h
-  double precision s11
-  double precision s3
-  double precision s5
-  double precision s7
-  double precision s9
-  double precision t
-  double precision u
-  double precision v
-  double precision w
-  double precision x
-  double precision x2
+  TYPE (XPLEX) a
+  TYPE (XPLEX) algdiv
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) b
+  TYPE (XPLEX) c
+  TYPE (XPLEX) d
+  TYPE (XPLEX) h
+  TYPE (XPLEX) s11
+  TYPE (XPLEX) s3
+  TYPE (XPLEX) s5
+  TYPE (XPLEX) s7
+  TYPE (XPLEX) s9
+  TYPE (XPLEX) t
+  TYPE (XPLEX) u
+  TYPE (XPLEX) v
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x2
 !
   if ( a > b ) then
     h = b / a
@@ -119,19 +120,21 @@ function alnrel ( a )
 !    ACM Transactions on Mathematical Software,
 !    Volume 18, 1993, pages 360-373.
 !
-  double precision, parameter :: p1 = - 0.129418923021993d+01
-  double precision, parameter :: p2 =   0.405303492862024d+00
-  double precision, parameter :: p3 = - 0.178874546012214d-01
-  double precision, parameter :: q1 = - 0.162752256355323d+01
-  double precision, parameter :: q2 =   0.747811014037616d+00
-  double precision, parameter :: q3 = - 0.845104217945565d-01
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: p1 = - 0.129418923021993d+01
+  REAL, parameter :: p2 =   0.405303492862024d+00
+  REAL, parameter :: p3 = - 0.178874546012214d-01
+  REAL, parameter :: q1 = - 0.162752256355323d+01
+  REAL, parameter :: q2 =   0.747811014037616d+00
+  REAL, parameter :: q3 = - 0.845104217945565d-01
 !
-  double precision a
-  double precision alnrel
-  double precision t
-  double precision t2
-  double precision w
-  double precision x
+  TYPE (XPLEX) a
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) t
+  TYPE (XPLEX) t2
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
 !
   if ( abs ( a ) <= 0.375d0 ) then
 
@@ -145,7 +148,8 @@ function alnrel ( a )
 
   else
 
-    x = 1.0d0 + dble ( a )
+    !x = 1.0d0 + dble ( a )
+    x = 1.0d0 + a
     alnrel = log ( x )
 
   end if
@@ -163,21 +167,23 @@ function apser ( a, b, x, eps )
 !     A .LE. MIN(EPS,EPS*B), B*X .LE. 1, AND X .LE. 0.5. Used when
 !     A is very small. Use only if above inequalities are satisfied.
 !
-  double precision, parameter :: g = 0.577215664901533d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: g = 0.577215664901533d0
 !
-  double precision a
-  double precision aj
-  double precision apser
-  double precision b
-  double precision bx
-  double precision c
-  double precision eps
-  double precision j
-  double precision psi
-  double precision s
-  double precision t
-  double precision tol
-  double precision x
+  TYPE (XPLEX) a
+  TYPE (XPLEX) aj
+  TYPE (XPLEX) apser
+  TYPE (XPLEX) b
+  TYPE (XPLEX) bx
+  TYPE (XPLEX) c
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) j
+  TYPE (XPLEX) psi
+  TYPE (XPLEX) s
+  TYPE (XPLEX) t
+  TYPE (XPLEX) tol
+  TYPE (XPLEX) x
 !
   bx = b * x
   t = x - bx
@@ -222,53 +228,55 @@ function beta_asym ( a, b, lambda, eps )
 !    It is assumed that LAMBDA is nonnegative and that
 !    A and B are greater than or equal to 15.
 !
-  double precision, parameter :: e0 = 1.12837916709551d0
-  double precision, parameter :: e1 = 0.353553390593274d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: e0 = 1.12837916709551d0
+  REAL, parameter :: e1 = 0.353553390593274d0
   integer, parameter :: num = 20
 !
-  double precision a
-  double precision a0(num+1)
-  double precision b
-  double precision b0(num+1)
-  double precision bcorr
-  double precision beta_asym
-  double precision bsum
-  double precision c(num+1)
-  double precision d(num+1)
-  double precision dsum
-  double precision eps
-  double precision erfc1
-  double precision f
-  double precision h
-  double precision h2
-  double precision hn
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0(num+1)
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0(num+1)
+  TYPE (XPLEX) bcorr
+  TYPE (XPLEX) beta_asym
+  TYPE (XPLEX) bsum
+  TYPE (XPLEX) c(num+1)
+  TYPE (XPLEX) d(num+1)
+  TYPE (XPLEX) dsum
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) erfc1
+  TYPE (XPLEX) f
+  TYPE (XPLEX) h
+  TYPE (XPLEX) h2
+  TYPE (XPLEX) hn
   integer i
   integer j
-  double precision j0
-  double precision j1
-  double precision lambda
+  TYPE (XPLEX) j0
+  TYPE (XPLEX) j1
+  TYPE (XPLEX) lambda
   integer m
   integer mm1
   integer mmj
   integer n
   integer np1
-  double precision r
-  double precision r0
-  double precision r1
-  double precision rlog1
-  double precision s
-  double precision sum
-  double precision t
-  double precision t0
-  double precision t1
-  double precision u
-  double precision w
-  double precision w0
-  double precision z
-  double precision z0
-  double precision z2
-  double precision zn
-  double precision znm1
+  TYPE (XPLEX) r
+  TYPE (XPLEX) r0
+  TYPE (XPLEX) r1
+  TYPE (XPLEX) rlog1
+  TYPE (XPLEX) s
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) t
+  TYPE (XPLEX) t0
+  TYPE (XPLEX) t1
+  TYPE (XPLEX) u
+  TYPE (XPLEX) w
+  TYPE (XPLEX) w0
+  TYPE (XPLEX) z
+  TYPE (XPLEX) z0
+  TYPE (XPLEX) z2
+  TYPE (XPLEX) zn
+  TYPE (XPLEX) znm1
 !
   beta_asym = 0.0d0
 
@@ -299,7 +307,7 @@ function beta_asym ( a, b, lambda, eps )
   d(1) = - c(1)
   j0 = ( 0.5d0 / e0 ) * erfc1 ( 1, z0 )
   j1 = e1
-  sum = j0 + d(1) * w0 * j1
+  newsum = j0 + d(1) * w0 * j1
 
   s = 1.0d0
   h2 = h * h
@@ -348,18 +356,18 @@ function beta_asym ( a, b, lambda, eps )
     t0 = d(n) * w * j0
     w = w0 * w
     t1 = d(np1) * w * j1
-    sum = sum + ( t0 + t1 )
+    newsum = newsum + ( t0 + t1 )
 
-    if (( abs ( t0 ) + abs ( t1 )) <= eps * sum ) then
+    if (( abs ( t0 ) + abs ( t1 )) <= eps * newsum ) then
       u = exp ( - bcorr ( a, b ) )
-      beta_asym = e0 * t * u * sum
+      beta_asym = e0 * t * u * newsum
       return
     end if
 
   end do
 
   u = exp ( - bcorr ( a, b ) )
-  beta_asym = e0 * t * u * sum
+  beta_asym = e0 * t * u * newsum
 
   return
 end
@@ -373,28 +381,30 @@ function bcorr ( a0, b0 )
 !     LN(GAMMA(A)) = (A - 0.5)*LN(A) - A + 0.5*LN(2*PI) + DEL(A).
 !     It is assumed that A0 .GE. 8 AND B0 .GE. 8.
 !
-  double precision a
-  double precision a0
-  double precision b
-  double precision b0
-  double precision bcorr
-  double precision c
-  double precision, parameter :: c0 =   0.833333333333333d-01
-  double precision, parameter :: c1 = - 0.277777777760991d-02
-  double precision, parameter :: c2 =   0.793650666825390d-03
-  double precision, parameter :: c3 = - 0.595202931351870d-03
-  double precision, parameter :: c4 =   0.837308034031215d-03
-  double precision, parameter :: c5 = - 0.165322962780713d-02
-  double precision h
-  double precision s11
-  double precision s3
-  double precision s5
-  double precision s7
-  double precision s9
-  double precision t
-  double precision w
-  double precision x
-  double precision x2
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0
+  TYPE (XPLEX) bcorr
+  TYPE (XPLEX) c
+  REAL, parameter :: c0 =   0.833333333333333d-01
+  REAL, parameter :: c1 = - 0.277777777760991d-02
+  REAL, parameter :: c2 =   0.793650666825390d-03
+  REAL, parameter :: c3 = - 0.595202931351870d-03
+  REAL, parameter :: c4 =   0.837308034031215d-03
+  REAL, parameter :: c5 = - 0.165322962780713d-02
+  TYPE (XPLEX) h
+  TYPE (XPLEX) s11
+  TYPE (XPLEX) s3
+  TYPE (XPLEX) s5
+  TYPE (XPLEX) s7
+  TYPE (XPLEX) s9
+  TYPE (XPLEX) t
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x2
 !
   a = min ( a0, b0 )
   b = max ( a0, b0 )
@@ -457,14 +467,16 @@ function beta ( a, b )
 !
 !  Parameters:
 !
-!    Input, double precision A, B, the arguments of the beta function.
+!    Input, TYPE (XPLEX) A, B, the arguments of the beta function.
 !
-!    Output, double precision BETA, the value of the beta function.
+!    Output, TYPE (XPLEX) BETA, the value of the beta function.
 !
-  double precision a
-  double precision b
-  double precision beta
-  double precision beta_log
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) b
+  TYPE (XPLEX) beta
+  TYPE (XPLEX) beta_log
 !
   beta = exp ( beta_log ( a, b ) )
 
@@ -485,26 +497,28 @@ function beta_log ( a0, b0 )
 !    ACM Trans. Math.  Software, 
 !    Volume 18, 1993, pages 360-373.
 !
-  double precision, parameter :: e = 0.918938533204673d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: e = 0.918938533204673d0
 !
-  double precision a
-  double precision a0
-  double precision algdiv
-  double precision alnrel
-  double precision b
-  double precision b0
-  double precision bcorr
-  double precision beta_log
-  double precision c
-  double precision gamma_log
-  double precision gsumln
-  double precision h
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0
+  TYPE (XPLEX) algdiv
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0
+  TYPE (XPLEX) bcorr
+  TYPE (XPLEX) beta_log
+  TYPE (XPLEX) c
+  TYPE (XPLEX) gamma_log
+  TYPE (XPLEX) gsumln
+  TYPE (XPLEX) h
   integer i
   integer n
-  double precision u
-  double precision v
-  double precision w
-  double precision z
+  TYPE (XPLEX) u
+  TYPE (XPLEX) v
+  TYPE (XPLEX) w
+  TYPE (XPLEX) z
 !
   a = min ( a0, b0 )
   b = max ( a0, b0 )
@@ -639,31 +653,33 @@ subroutine beta_ratio ( a, b, x, y, w, w1, ierr )
 !        IERR = 6  IF X = A = 0
 !        IERR = 7  IF Y = B = 0
 !
-  double precision a
-  double precision a0
-  double precision apser
-  double precision b
-  double precision b0
-  double precision beta_asym
-  double precision beta_frac
-  double precision beta_pser
-  double precision beta_up
-  double precision dpmpar
-  double precision eps
-  double precision fpser
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0
+  TYPE (XPLEX) apser
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0
+  TYPE (XPLEX) beta_asym
+  TYPE (XPLEX) beta_frac
+  TYPE (XPLEX) beta_pser
+  TYPE (XPLEX) beta_up
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) fpser
   integer ierr
   integer ierr1
   integer ind
-  double precision lambda
+  TYPE (XPLEX) lambda
   integer n
-  double precision t
-  double precision w
-  double precision w1
-  double precision x
-  double precision x0
-  double precision y
-  double precision y0
-  double precision z
+  TYPE (XPLEX) t
+  TYPE (XPLEX) w
+  TYPE (XPLEX) w1
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x0
+  TYPE (XPLEX) y
+  TYPE (XPLEX) y0
+  TYPE (XPLEX) z
 !
 !     EPS IS A MACHINE DEPendENT CONSTANT. EPS IS THE SMALLEST
 !     FLOATING POINT NUMBER FOR WHICH 1.0 + EPS .GT. 1.0
@@ -913,32 +929,34 @@ function beta_frac ( a, b, x, y, lambda, eps )
 !
 !  IT IS ASSUMED THAT  LAMBDA = (A + B)*Y - B.
 !
-  double precision a
-  double precision alpha
-  double precision an
-  double precision anp1
-  double precision b
-  double precision beta
-  double precision beta_frac
-  double precision beta_rcomp
-  double precision bn
-  double precision bnp1
-  double precision c
-  double precision c0
-  double precision c1
-  double precision e
-  double precision eps
-  double precision lambda
-  double precision n
-  double precision p
-  double precision r
-  double precision r0
-  double precision s
-  double precision t
-  double precision w
-  double precision x
-  double precision y
-  double precision yp1
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) alpha
+  TYPE (XPLEX) an
+  TYPE (XPLEX) anp1
+  TYPE (XPLEX) b
+  TYPE (XPLEX) beta
+  TYPE (XPLEX) beta_frac
+  TYPE (XPLEX) beta_rcomp
+  TYPE (XPLEX) bn
+  TYPE (XPLEX) bnp1
+  TYPE (XPLEX) c
+  TYPE (XPLEX) c0
+  TYPE (XPLEX) c1
+  TYPE (XPLEX) e
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) lambda
+  TYPE (XPLEX) n
+  TYPE (XPLEX) p
+  TYPE (XPLEX) r
+  TYPE (XPLEX) r0
+  TYPE (XPLEX) s
+  TYPE (XPLEX) t
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) y
+  TYPE (XPLEX) yp1
 !
   beta_frac = beta_rcomp ( a, b, x, y )
 
@@ -1014,40 +1032,42 @@ subroutine beta_grat ( a, b, x, y, w, eps, ierr )
 !     THAT A .GE. 15 AND B .LE. 1.  EPS IS THE TOLERANCE USED.
 !     IERR IS A VARIABLE THAT REPORTS THE STATUS OF THE RESULTS.
 !
-  double precision a
-  double precision algdiv
-  double precision alnrel
-  double precision b
-  double precision bm1
-  double precision bp2n
-  double precision c(30)
-  double precision cn
-  double precision coef
-  double precision d(30)
-  double precision dj
-  double precision eps
-  double precision gam1
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) algdiv
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) b
+  TYPE (XPLEX) bm1
+  TYPE (XPLEX) bp2n
+  TYPE (XPLEX) c(30)
+  TYPE (XPLEX) cn
+  TYPE (XPLEX) coef
+  TYPE (XPLEX) d(30)
+  TYPE (XPLEX) dj
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) gam1
   integer i
   integer ierr
-  double precision j
-  double precision l
-  double precision lnx
+  TYPE (XPLEX) j
+  TYPE (XPLEX) l
+  TYPE (XPLEX) lnx
   integer n
-  double precision n2
-  double precision nu
-  double precision p
-  double precision q
-  double precision r
-  double precision s
-  double precision sum
-  double precision t
-  double precision t2
-  double precision u
-  double precision v
-  double precision w
-  double precision x
-  double precision y
-  double precision z
+  TYPE (XPLEX) n2
+  TYPE (XPLEX) nu
+  TYPE (XPLEX) p
+  TYPE (XPLEX) q
+  TYPE (XPLEX) r
+  TYPE (XPLEX) s
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) t
+  TYPE (XPLEX) t2
+  TYPE (XPLEX) u
+  TYPE (XPLEX) v
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) y
+  TYPE (XPLEX) z
 !
   bm1 = ( b - 0.5d0 ) - 0.5d0
   nu = a + 0.5d0 * bm1
@@ -1084,7 +1104,7 @@ subroutine beta_grat ( a, b, x, y, w, eps, ierr )
   t2 = 0.25d0 * lnx * lnx
   l = w / u
   j = q / r
-  sum = j
+  newsum = j
   t = 1.0d0
   cn = 1.0d0
   n2 = 0.0d0
@@ -1107,23 +1127,23 @@ subroutine beta_grat ( a, b, x, y, w, eps, ierr )
 
     d(n) = bm1 * cn + s / n
     dj = d(n) * j
-    sum = sum + dj
+    newsum = newsum + dj
 
-    if ( sum <= 0.0d0 ) then
+    if ( newsum <= 0.0d0 ) then
       ierr = 1
       return
     end if
 
-    if ( abs ( dj ) <= eps * ( sum + l )) then
+    if ( abs ( dj ) <= eps * ( newsum + l )) then
       ierr = 0
-      w = w + u * sum
+      w = w + u * newsum
       return
     end if
 
   end do
 
   ierr = 0
-  w = w + u * sum
+  w = w + u * newsum
 
   return
 end
@@ -1137,28 +1157,30 @@ function beta_pser ( a, b, x, eps )
 !  BETA_PSER is used WHEN B .LE. 1
 !     OR B*X .LE. 0.7.  EPS IS THE TOLERANCE USED.
 !
-  double precision a
-  double precision a0
-  double precision algdiv
-  double precision apb
-  double precision b
-  double precision b0
-  double precision beta_log
-  double precision beta_pser
-  double precision c
-  double precision eps
-  double precision gam1
-  double precision gamma_ln1
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0
+  TYPE (XPLEX) algdiv
+  TYPE (XPLEX) apb
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0
+  TYPE (XPLEX) beta_log
+  TYPE (XPLEX) beta_pser
+  TYPE (XPLEX) c
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) gam1
+  TYPE (XPLEX) gamma_ln1
   integer i
   integer m
-  double precision n
-  double precision sum
-  double precision t
-  double precision tol
-  double precision u
-  double precision w
-  double precision x
-  double precision z
+  TYPE (XPLEX) n
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) t
+  TYPE (XPLEX) tol
+  TYPE (XPLEX) u
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) z
 !
   beta_pser = 0.0d0
   if ( x == 0.0d0 ) then
@@ -1238,7 +1260,7 @@ function beta_pser ( a, b, x, eps )
 !
 !  Compute the series
 !
-  sum = 0.0d0
+  newsum = 0.0d0
   n = 0.0d0
   c = 1.0d0
   tol = eps / a
@@ -1248,12 +1270,12 @@ function beta_pser ( a, b, x, eps )
   n = n + 1.0d0
   c = c * ( 0.5d0 + ( 0.5d0 - b / n )) * x
   w = c / ( a + n )
-  sum = sum + w
+  newsum = newsum + w
   if ( abs ( w ) > tol ) then
     go to 10
   end if
 
-  beta_pser = beta_pser * ( 1.0d0 + a * sum )
+  beta_pser = beta_pser * ( 1.0d0 + a * newsum )
 
   return
 end
@@ -1263,37 +1285,39 @@ function beta_rcomp1 ( mu, a, b, x, y )
 !
 !! BETA_RCOMP1 evaluates EXP(MU) * (X**A*Y**B/BETA(A,B)).
 !
-  double precision, parameter :: const = 0.398942280401433d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: const = 0.398942280401433d0
 !
-  double precision a
-  double precision a0
-  double precision apb
-  double precision b
-  double precision b0
-  double precision beta_rcomp1
-  double precision c
-  double precision e
-  double precision esum
-  double precision gam1
-  double precision gamma_ln1
-  double precision h
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0
+  TYPE (XPLEX) apb
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0
+  TYPE (XPLEX) beta_rcomp1
+  TYPE (XPLEX) c
+  TYPE (XPLEX) e
+  TYPE (XPLEX) esum
+  TYPE (XPLEX) gam1
+  TYPE (XPLEX) gamma_ln1
+  TYPE (XPLEX) h
   integer i
-  double precision lambda
-  double precision lnx
-  double precision lny
+  TYPE (XPLEX) lambda
+  TYPE (XPLEX) lnx
+  TYPE (XPLEX) lny
   integer mu
   integer n
-  double precision rlog1
-  double precision t
-  double precision u
-  double precision v
-  double precision x
-  double precision x0
-  double precision y
-  double precision y0
-  double precision z
+  TYPE (XPLEX) rlog1
+  TYPE (XPLEX) t
+  TYPE (XPLEX) u
+  TYPE (XPLEX) v
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x0
+  TYPE (XPLEX) y
+  TYPE (XPLEX) y0
+  TYPE (XPLEX) z
 
-  double precision algdiv,alnrel,bcorr,beta_log
+  TYPE (XPLEX) algdiv,alnrel,bcorr,beta_log
 !
   a0 = min ( a, b )
 
@@ -1338,7 +1362,8 @@ function beta_rcomp1 ( mu, a, b, x, y )
   if ( apb <= 1.0d0 ) then
     z = 1.0d0 + gam1(apb)
   else
-    u = dble(a) + dble(b) - 1.d0
+!    u = dble(a) + dble(b) - 1.d0
+    u = a + b - 1.d0
     z = ( 1.0d0 + gam1 ( u )) / apb
   end if
 
@@ -1425,37 +1450,39 @@ function beta_rcomp ( a, b, x, y )
 !
 !! BETA_RCOMP evaluates X**A * Y**B / BETA(A,B).
 !
-  double precision, parameter :: const = 0.398942280401433d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: const = 0.398942280401433d0
 !
-  double precision a
-  double precision a0
-  double precision algdiv
-  double precision alnrel
-  double precision apb
-  double precision b
-  double precision b0
-  double precision bcorr
-  double precision beta_log
-  double precision beta_rcomp
-  double precision c
-  double precision e
-  double precision gam1
-  double precision gamma_ln1
-  double precision h
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a0
+  TYPE (XPLEX) algdiv
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) apb
+  TYPE (XPLEX) b
+  TYPE (XPLEX) b0
+  TYPE (XPLEX) bcorr
+  TYPE (XPLEX) beta_log
+  TYPE (XPLEX) beta_rcomp
+  TYPE (XPLEX) c
+  TYPE (XPLEX) e
+  TYPE (XPLEX) gam1
+  TYPE (XPLEX) gamma_ln1
+  TYPE (XPLEX) h
   integer i
-  double precision lambda
-  double precision lnx
-  double precision lny
+  TYPE (XPLEX) lambda
+  TYPE (XPLEX) lnx
+  TYPE (XPLEX) lny
   integer n
-  double precision rlog1
-  double precision t
-  double precision u
-  double precision v
-  double precision x
-  double precision x0
-  double precision y
-  double precision y0
-  double precision z
+  TYPE (XPLEX) rlog1
+  TYPE (XPLEX) t
+  TYPE (XPLEX) u
+  TYPE (XPLEX) v
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x0
+  TYPE (XPLEX) y
+  TYPE (XPLEX) y0
+  TYPE (XPLEX) z
 !
   beta_rcomp = 0.0d0
   if ( x == 0.0d0 .or. y == 0.0d0 ) then
@@ -1586,25 +1613,27 @@ function beta_up ( a, b, x, y, n, eps )
 !
 !  EPS is the tolerance used.
 !
-  double precision a
-  double precision ap1
-  double precision apb
-  double precision b
-  double precision beta_rcomp1
-  double precision beta_up
-  double precision d
-  double precision eps
-  double precision exparg
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) ap1
+  TYPE (XPLEX) apb
+  TYPE (XPLEX) b
+  TYPE (XPLEX) beta_rcomp1
+  TYPE (XPLEX) beta_up
+  TYPE (XPLEX) d
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) exparg
   integer i
   integer k
-  double precision l
+  TYPE (XPLEX) l
   integer mu
   integer n
-  double precision r
-  double precision t
-  double precision w
-  double precision x
-  double precision y
+  TYPE (XPLEX) r
+  TYPE (XPLEX) t
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) y
 !
 !  Obtain the scaling factor EXP(-MU) AND
 !  EXP(MU)*(X**A*Y**B/BETA(A,B))/A
@@ -1730,33 +1759,33 @@ subroutine cdfbet ( which, p, q, x, y, a, b, status, bound )
 !     P <--> The integral from 0 to X of the chi-square
 !            distribution.
 !            Input range: [0, 1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: [0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !     X <--> Upper limit of integration of beta density.
 !            Input range: [0,1].
 !            Search range: [0,1]
-!                    double precision X
+!                    TYPE (XPLEX) X
 !
 !     Y <--> 1-X.
 !            Input range: [0,1].
 !            Search range: [0,1]
 !            X + Y = 1.0.
-!                    double precision Y
+!                    TYPE (XPLEX) Y
 !
 !     A <--> The first parameter of the beta density.
 !            Input range: (0, +infinity).
 !            Search range: [1D-300,1D300]
-!                    double precision A
+!                    TYPE (XPLEX) A
 !
 !     B <--> The second parameter of the beta density.
 !            Input range: (0, +infinity).
 !            Search range: [1D-300,1D300]
-!                    double precision B
+!                    TYPE (XPLEX) B
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -1776,26 +1805,28 @@ subroutine cdfbet ( which, p, q, x, y, a, b, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tol = 1.0d-8
-  double precision, parameter :: atol = 1.0d-50
-  double precision, parameter :: inf = 1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol = 1.0d-8
+  REAL, parameter :: atol = 1.0d-50
+  REAL, parameter :: inf = 1.0d300
 !
-  double precision a
-  double precision b
-  double precision bound
-  double precision fx
-  double precision p
-  double precision q
+  TYPE (XPLEX) a
+  TYPE (XPLEX) b
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) fx
+  TYPE (XPLEX) p
+  TYPE (XPLEX) q
   integer status
   integer which
-  double precision x
-  double precision xhi
-  double precision xlo
-  double precision y
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xhi
+  TYPE (XPLEX) xlo
+  TYPE (XPLEX) y
 
-  double precision cum,ccum,xy,pq
+  TYPE (XPLEX) cum,ccum,xy,pq
   logical qhi,qleft,qporq
-  double precision dpmpar
+  TYPE (XPLEX) dpmpar
 !
   if ( which < 1 ) then
     bound = 1.0d0
@@ -2097,33 +2128,33 @@ subroutine cdfbin ( which, p, q, s, xn, pr, ompr, status, bound )
 !            (Probablility of S or fewer successes in XN trials each
 !            with probability of success PR.)
 !            Input range: [0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: [0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !     S <--> The number of successes observed.
 !            Input range: [0, XN]
 !            Search range: [0, XN]
-!                    double precision S
+!                    TYPE (XPLEX) S
 !
 !     XN  <--> The number of binomial trials.
 !              Input range: (0, +infinity).
 !              Search range: [1E-300, 1E300]
-!                    double precision XN
+!                    TYPE (XPLEX) XN
 !
 !     PR  <--> The probability of success in each binomial trial.
 !              Input range: [0,1].
 !              Search range: [0,1]
-!                    double precision PR
+!                    TYPE (XPLEX) PR
 !
 !     OMPR  <--> 1-PR
 !              Input range: [0,1].
 !              Search range: [0,1]
 !              PR + OMPR = 1.0
-!                    double precision OMPR
+!                    TYPE (XPLEX) OMPR
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -2145,30 +2176,32 @@ subroutine cdfbin ( which, p, q, s, xn, pr, ompr, status, bound )
 !               Upper search bound if STATUS is 2.
 !
 !
-  double precision, parameter :: atol = 1.0d-50
-  double precision, parameter :: tol = 1.0d-8
-  double precision, parameter :: inf = 1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: atol = 1.0d-50
+  REAL, parameter :: tol = 1.0d-8
+  REAL, parameter :: inf = 1.0d300
 !
-  double precision bound
-  double precision ccum
-  double precision cum
-  double precision dpmpar
-  double precision fx
-  double precision ompr
-  double precision p
-  double precision pq
-  double precision pr
-  double precision prompr
-  double precision q
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) fx
+  TYPE (XPLEX) ompr
+  TYPE (XPLEX) p
+  TYPE (XPLEX) pq
+  TYPE (XPLEX) pr
+  TYPE (XPLEX) prompr
+  TYPE (XPLEX) q
   logical qhi
   logical qleft
   logical qporq
-  double precision s
+  TYPE (XPLEX) s
   integer status
   integer which
-  double precision xhi
-  double precision xlo
-  double precision xn
+  TYPE (XPLEX) xhi
+  TYPE (XPLEX) xlo
+  TYPE (XPLEX) xn
 !
 !     Check arguments
 !
@@ -2468,24 +2501,24 @@ subroutine cdfchi ( which, p, q, x, df, status, bound )
 !     P <--> The integral from 0 to X of the chi-square
 !            distribution.
 !            Input range: [0, 1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: (0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !     X <--> Upper limit of integration of the non-central
 !            chi-square distribution.
 !            Input range: [0, +infinity).
 !            Search range: [0,1E300]
-!                    double precision X
+!                    TYPE (XPLEX) X
 !
 !     DF <--> Degrees of freedom of the
 !             chi-square distribution.
 !             Input range: (0, +infinity).
 !             Search range: [ 1E-300, 1E300]
-!                    double precision DF
+!                    TYPE (XPLEX) DF
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -2507,26 +2540,28 @@ subroutine cdfchi ( which, p, q, x, df, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tol = 1.0d-8
-  double precision, parameter :: atol = 1.0d-50
-  double precision, parameter :: inf = 1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol = 1.0d-8
+  REAL, parameter :: atol = 1.0d-50
+  REAL, parameter :: inf = 1.0d300
 !
-  double precision bound
-  double precision ccum
-  double precision cum
-  double precision df
-  double precision dpmpar
-  double precision fx
-  double precision p
-  double precision porq
-  double precision pq
-  double precision q
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) df
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) fx
+  TYPE (XPLEX) p
+  TYPE (XPLEX) porq
+  TYPE (XPLEX) pq
+  TYPE (XPLEX) q
   logical qhi
   logical qleft
   logical qporq
   integer status
   integer which
-  double precision x
+  TYPE (XPLEX) x
 !
 !     Check arguments
 !
@@ -2760,30 +2795,30 @@ subroutine cdfchn ( which, p, q, x, df, pnonc, status, bound )
 !     P <--> The integral from 0 to X of the non-central chi-square
 !            distribution.
 !            Input range: [0, 1-1E-16).
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Q is not used by this subroutine and is only included
 !            for similarity with other cdf* routines.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !     X <--> Upper limit of integration of the non-central
 !            chi-square distribution.
 !            Input range: [0, +infinity).
 !            Search range: [0,1E300]
-!                    double precision X
+!                    TYPE (XPLEX) X
 !
 !     DF <--> Degrees of freedom of the non-central
 !             chi-square distribution.
 !             Input range: (0, +infinity).
 !             Search range: [ 1E-300, 1E300]
-!                    double precision DF
+!                    TYPE (XPLEX) DF
 !
 !     PNONC <--> Non-centrality parameter of the non-central
 !                chi-square distribution.
 !                Input range: [0, +infinity).
 !                Search range: [0,1E4]
-!                    double precision PNONC
+!                    TYPE (XPLEX) PNONC
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -2802,16 +2837,18 @@ subroutine cdfchn ( which, p, q, x, df, pnonc, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tent4=1.0d4
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tent4=1.0d4
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
 !
-  double precision bound
-  double precision df
-  double precision p,q,pnonc,x
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) df
+  TYPE (XPLEX) p,q,pnonc,x
   integer status,which
-  double precision fx,cum,ccum
+  TYPE (XPLEX) fx,cum,ccum
   logical qhi,qleft
 !
 !     Check arguments
@@ -2995,27 +3032,27 @@ subroutine cdff ( which, p, q, f, dfn, dfd, status, bound )
 !
 !       P <--> The integral from 0 to F of the f-density.
 !              Input range: [0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !       Q <--> 1-P.
 !              Input range: (0, 1].
 !              P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !       F <--> Upper limit of integration of the f-density.
 !              Input range: [0, +infinity).
 !              Search range: [0,1E300]
-!                    double precision F
+!                    TYPE (XPLEX) F
 !
 !     DFN < --> Degrees of freedom of the numerator sum of squares.
 !               Input range: (0, +infinity).
 !               Search range: [ 1E-300, 1E300]
-!                    double precision DFN
+!                    TYPE (XPLEX) DFN
 !
 !     DFD < --> Degrees of freedom of the denominator sum of squares.
 !               Input range: (0, +infinity).
 !               Search range: [ 1E-300, 1E300]
-!                    double precision DFD
+!                    TYPE (XPLEX) DFD
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -3035,16 +3072,18 @@ subroutine cdff ( which, p, q, f, dfn, dfd, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
 !
-  double precision bound
-  double precision dfd,dfn,f,p,q
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) dfd,dfn,f,p,q
   integer status,which
-  double precision pq,fx,cum,ccum
+  TYPE (XPLEX) pq,fx,cum,ccum
   logical qhi,qleft,qporq
-  double precision dpmpar
+  TYPE (XPLEX) dpmpar
 !
   if ( which < 1 ) then
     bound = 1.0d0
@@ -3297,33 +3336,33 @@ subroutine cdffnc ( which, p, q, f, dfn, dfd, phonc, status, bound )
 !
 !       P <--> The integral from 0 to F of the non-central f-density.
 !              Input range: [0,1-1E-16).
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !       Q <--> 1-P.
 !            Q is not used by this subroutine and is only included
 !            for similarity with other cdf* routines.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !       F <--> Upper limit of integration of the non-central f-density.
 !              Input range: [0, +infinity).
 !              Search range: [0,1E300]
-!                    double precision F
+!                    TYPE (XPLEX) F
 !
 !     DFN < --> Degrees of freedom of the numerator sum of squares.
 !               Input range: (0, +infinity).
 !               Search range: [ 1E-300, 1E300]
-!                    double precision DFN
+!                    TYPE (XPLEX) DFN
 !
 !     DFD < --> Degrees of freedom of the denominator sum of squares.
 !               Must be in range: (0, +infinity).
 !               Input range: (0, +infinity).
 !               Search range: [ 1E-300, 1E300]
-!                    double precision DFD
+!                    TYPE (XPLEX) DFD
 !
 !     PNONC <-> The non-centrality parameter
 !               Input range: [0,infinity)
 !               Search range: [0,1E4]
-!                    double precision PHONC
+!                    TYPE (XPLEX) PHONC
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -3343,14 +3382,16 @@ subroutine cdffnc ( which, p, q, f, dfn, dfd, phonc, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tent4=1.0d4
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tent4=1.0d4
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
 !
-  double precision bound,dfd,dfn,f,p,q,phonc
+  TYPE (XPLEX) bound,dfd,dfn,f,p,q,phonc
   integer status,which
-  double precision fx,cum,ccum
+  TYPE (XPLEX) fx,cum,ccum
   logical qhi,qleft
 !
 !     Check arguments
@@ -3554,29 +3595,29 @@ subroutine cdfgam ( which, p, q, x, shape, scale, status, bound )
 !
 !     P <--> The integral from 0 to X of the gamma density.
 !            Input range: [0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: (0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !
 !     X <--> The upper limit of integration of the gamma density.
 !            Input range: [0, +infinity).
 !            Search range: [0,1E300]
-!                    double precision X
+!                    TYPE (XPLEX) X
 !
 !     SHAPE <--> The shape parameter of the gamma density.
 !                Input range: (0, +infinity).
 !                Search range: [1E-300,1E300]
-!                  double precision SHAPE
+!                  TYPE (XPLEX) SHAPE
 !
 !
 !     SCALE <--> The scale parameter of the gamma density.
 !                Input range: (0, +infinity).
 !                Search range: (1E-300,1E300]
-!                   double precision SCALE
+!                   TYPE (XPLEX) SCALE
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -3619,18 +3660,20 @@ subroutine cdfgam ( which, p, q, x, shape, scale, status, bound )
 !     The gamma density is proportional to
 !       T**(SHAPE - 1) * EXP(- SCALE * T)
 !
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
 !
-  double precision bound
-  double precision p,q,scale,shape,x
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) p,q,scale,shape,x
   integer status,which
-  double precision xx
-  double precision fx,xscale,cum,ccum,pq,porq
+  TYPE (XPLEX) xx
+  TYPE (XPLEX) fx,xscale,cum,ccum,pq,porq
   integer ierr
   logical qhi,qleft,qporq
-  double precision dpmpar
+  TYPE (XPLEX) dpmpar
 !
 !     Check arguments
 !
@@ -3859,34 +3902,34 @@ subroutine cdfnbn ( which, p, q, s, xn, pr, ompr, status, bound )
 !     P <--> The cumulation from 0 to S of the  negative
 !            binomial distribution.
 !            Input range: [0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: (0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !     S <--> The upper limit of cumulation of the binomial distribution.
 !            There are F or fewer failures before the XNth success.
 !            Input range: [0, +infinity).
 !            Search range: [0, 1E300]
-!                    double precision S
+!                    TYPE (XPLEX) S
 !
 !     XN  <--> The number of successes.
 !              Input range: [0, +infinity).
 !              Search range: [0, 1E300]
-!                    double precision XN
+!                    TYPE (XPLEX) XN
 !
 !     PR  <--> The probability of success in each binomial trial.
 !              Input range: [0,1].
 !              Search range: [0,1].
-!                    double precision PR
+!                    TYPE (XPLEX) PR
 !
 !     OMPR  <--> 1-PR
 !              Input range: [0,1].
 !              Search range: [0,1]
 !              PR + OMPR = 1.0
-!                    double precision OMPR
+!                    TYPE (XPLEX) OMPR
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -3914,17 +3957,19 @@ subroutine cdfnbn ( which, p, q, s, xn, pr, ompr, status, bound )
 !     produces  the desired  value  of P.   The search relies  on  the
 !     monotonicity of P with the other parameter.
 !
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
 !
-  double precision bound
-  double precision p,q,pr,ompr,s,xn
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) p,q,pr,ompr,s,xn
   integer status,which
-  double precision fx,xhi,xlo,pq,prompr,cum,ccum
+  TYPE (XPLEX) fx,xhi,xlo,pq,prompr,cum,ccum
   logical qhi,qleft,qporq
 !
-  double precision dpmpar
+  TYPE (XPLEX) dpmpar
 !
 !     Check arguments
 !
@@ -4213,24 +4258,24 @@ subroutine cdfnor ( which, p, x, mean, sd, status, bound )
 !
 !     P <--> The integral from -infinity to X of the normal density.
 !            Input range: (0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: (0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !     X < --> Upper limit of integration of the normal-density.
 !             Input range: ( -infinity, +infinity)
-!                    double precision X
+!                    TYPE (XPLEX) X
 !
 !     MEAN <--> The mean of the normal density.
 !               Input range: (-infinity, +infinity)
-!                    double precision MEAN
+!                    TYPE (XPLEX) MEAN
 !
 !     SD <--> Standard Deviation of the normal density.
 !             Input range: (0, +infinity).
-!                    double precision SD
+!                    TYPE (XPLEX) SD
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -4270,12 +4315,14 @@ subroutine cdfnor ( which, p, x, mean, sd, status, bound )
 !      The normal density is proportional to
 !      exp( - 0.5 * (( X - MEAN)/SD)**2)
 !
-  double precision bound
-  double precision mean,p,q,sd,x
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) mean,p,q,sd,x
   integer status,which
-  double precision z,pq
+  TYPE (XPLEX) z,pq
 
-  double precision dinvnr,dpmpar
+  TYPE (XPLEX) dinvnr,dpmpar
 !
 !  Check.
 !
@@ -4413,22 +4460,22 @@ subroutine cdfpoi ( which, p, q, s, xlam, status, bound )
 !
 !        P <--> The cumulation from 0 to S of the poisson density.
 !               Input range: [0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !        Q <--> 1-P.
 !               Input range: (0, 1].
 !               P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !        S <--> Upper limit of cumulation of the Poisson.
 !               Input range: [0, +infinity).
 !               Search range: [0,1E300]
-!                    double precision S
+!                    TYPE (XPLEX) S
 !
 !     XLAM <--> Mean of the Poisson distribution.
 !               Input range: [0, +infinity).
 !               Search range: [0,1E300]
-!                    double precision XLAM
+!                    TYPE (XPLEX) XLAM
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -4448,16 +4495,18 @@ subroutine cdfpoi ( which, p, q, s, xlam, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
 !
-  double precision bound,p,q,s,xlam
+  TYPE (XPLEX) bound,p,q,s,xlam
   integer status,which
-  double precision fx,cum,ccum,pq
+  TYPE (XPLEX) fx,cum,ccum,pq
   logical qhi,qleft,qporq
 
-  double precision dpmpar
+  TYPE (XPLEX) dpmpar
 !
 !     Check arguments
 !
@@ -4656,22 +4705,22 @@ subroutine cdft ( which, p, q, t, df, status, bound )
 !
 !        P <--> The integral from -infinity to t of the t-density.
 !              Input range: (0,1].
-!                    double precision P
+!                    TYPE (XPLEX) P
 !
 !     Q <--> 1-P.
 !            Input range: (0, 1].
 !            P + Q = 1.0.
-!                    double precision Q
+!                    TYPE (XPLEX) Q
 !
 !        T <--> Upper limit of integration of the t-density.
 !               Input range: ( -infinity, +infinity).
 !               Search range: [ -1E300, 1E300 ]
-!                    double precision T
+!                    TYPE (XPLEX) T
 !
 !        DF <--> Degrees of freedom of the t-distribution.
 !                Input range: (0 , +infinity).
 !                Search range: [1e-300, 1E10]
-!                    double precision DF
+!                    TYPE (XPLEX) DF
 !
 !     STATUS <-- 0 if calculation completed correctly
 !               -I if input parameter number I is out of range
@@ -4691,22 +4740,24 @@ subroutine cdft ( which, p, q, t, df, status, bound )
 !
 !               Upper search bound if STATUS is 2.
 !
-  double precision, parameter :: tol=1.0d-8
-  double precision, parameter :: atol=1.0d-50
-  double precision, parameter :: inf=1.0d300
-  double precision, parameter :: maxdf=1.0d10
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: tol=1.0d-8
+  REAL, parameter :: atol=1.0d-50
+  REAL, parameter :: inf=1.0d300
+  REAL, parameter :: maxdf=1.0d10
 !
-  double precision bound
-  double precision df
-  double precision p
-  double precision q
+  TYPE (XPLEX) bound
+  TYPE (XPLEX) df
+  TYPE (XPLEX) p
+  TYPE (XPLEX) q
   integer status
-  double precision t
+  TYPE (XPLEX) t
   integer which
 
-  double precision fx,cum,ccum,pq
+  TYPE (XPLEX) fx,cum,ccum,pq
   logical qhi,qleft,qporq
-  double precision dpmpar,dt1
+  TYPE (XPLEX) dpmpar,dt1
 !
 !     Check arguments
 !
@@ -4898,30 +4949,32 @@ subroutine cumbet ( x, y, a, b, cum, ccum )
 !
 !
 !     X --> Upper limit of integration.
-!                                        X is double precision
+!                                        X is TYPE (XPLEX)
 !
 !     Y --> 1 - X.
-!                                        Y is double precision
+!                                        Y is TYPE (XPLEX)
 !
 !     A --> First parameter of the beta distribution.
-!                                        A is double precision
+!                                        A is TYPE (XPLEX)
 !
 !     B --> Second parameter of the beta distribution.
-!                                        B is double precision
+!                                        B is TYPE (XPLEX)
 !
 !     CUM <-- Cumulative incomplete beta distribution.
-!                                        CUM is double precision
+!                                        CUM is TYPE (XPLEX)
 !
 !     CCUM <-- Complement of Cumulative incomplete beta distribution.
-!                                        CCUM is double precision
+!                                        CCUM is TYPE (XPLEX)
 !
-  double precision a
-  double precision b
-  double precision ccum
-  double precision cum
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) b
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
   integer ierr
-  double precision x
-  double precision y
+  TYPE (XPLEX) x
+  TYPE (XPLEX) y
 !
   if ( x <= 0.0d0 ) then
 
@@ -4962,7 +5015,7 @@ subroutine cumbin ( s, xn, pr, ompr, cum, ccum )
 !  Parameters:
 !
 !     S --> The upper limit of cumulation of the binomial distribution.
-!                                                  S is double precision
+!                                                  S is TYPE (XPLEX)
 !
 !     XN --> The number of binomial trials.
 !                                                  XN is DOUBLE PRECISIO
@@ -4978,12 +5031,14 @@ subroutine cumbin ( s, xn, pr, ompr, cum, ccum )
 !
 !     CCUM <-- Complement of Cumulative binomial distribution.
 !                                                  CCUM is DOUBLE PRECIS
-  double precision ccum
-  double precision cum
-  double precision ompr
-  double precision pr
-  double precision s
-  double precision xn
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) ompr
+  TYPE (XPLEX) pr
+  TYPE (XPLEX) s
+  TYPE (XPLEX) xn
 !
   if ( s < xn ) then
 
@@ -5009,11 +5064,11 @@ subroutine cumchi ( x, df, cum, ccum )
 !
 !     X       --> Upper limit of integration of the
 !                 chi-square distribution.
-!                                                 X is double precision
+!                                                 X is TYPE (XPLEX)
 !
 !     DF      --> Degrees of freedom of the
 !                 chi-square distribution.
-!                                                 DF is double precision
+!                                                 DF is TYPE (XPLEX)
 !
 !     CUM <-- Cumulative chi-square distribution.
 !                                                 CUM is DOUBLE PRECISIO
@@ -5021,12 +5076,14 @@ subroutine cumchi ( x, df, cum, ccum )
 !     CCUM <-- Complement of Cumulative chi-square distribution.
 !                                                 CCUM is DOUBLE PRECISI
 !
-  double precision a
-  double precision ccum
-  double precision cum
-  double precision df
-  double precision x
-  double precision xx
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) df
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xx
 !
   a = df * 0.5d0
   xx = x * 0.5d0
@@ -5060,11 +5117,11 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
 !
 !     X       --> Upper limit of integration of the non-central
 !                 chi-square distribution.
-!                                                 X is double precision
+!                                                 X is TYPE (XPLEX)
 !
 !     DF      --> Degrees of freedom of the non-central
 !                 chi-square distribution.
-!                                                 DF is double precision
+!                                                 DF is TYPE (XPLEX)
 !
 !     PNONC   --> Non-centrality parameter of the non-central
 !                 chi-square distribution.
@@ -5080,7 +5137,7 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
 !
 !
 !     EPS     --- Convergence criterion.  The sum stops when a
-!                 term is less than EPS*SUM.
+!                 term is less than EPS*NEWSUM.
 !                                                 EPS is DOUBLE PRECISIO
 !
 !     NTIRED  --- Maximum number of terms to be evaluated
@@ -5091,41 +5148,45 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
 !                 i.e., program did not stop on NTIRED criterion.
 !                                                 QCONV is LOGICAL
 !
-  double precision adj
-  double precision ccum
-  double precision centaj
-  double precision centwt
-  double precision chid2
-  double precision cum
-  double precision df
-  double precision dfd2
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) adj
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) centaj
+  TYPE (XPLEX) centwt
+  TYPE (XPLEX) chid2
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) df
+  TYPE (XPLEX) dfd2
   double precision dg
-  double precision, parameter :: eps = 0.00001
-  double precision gamma_log
+  REAL, parameter :: eps = 0.00001
+  TYPE (XPLEX) gamma_log
   integer i
   integer icent
   integer iterb
   integer iterf
-  double precision lcntaj
-  double precision lcntwt      
-  double precision lfact
+  TYPE (XPLEX) lcntaj
+  TYPE (XPLEX) lcntwt      
+  TYPE (XPLEX) lfact
   integer, parameter :: ntired = 1000
-  double precision pcent
-  double precision pnonc
-  double precision pterm
+  TYPE (XPLEX) pcent
+  TYPE (XPLEX) pnonc
+  TYPE (XPLEX) pterm
   logical qsmall
   logical qtired
-  double precision sum
-  double precision sumadj
-  double precision term
-  double precision wt
-  double precision x
-  double precision xnonc
-  double precision xx
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) sumadj
+  TYPE (XPLEX) term
+  TYPE (XPLEX) wt
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xnonc
+  TYPE (XPLEX) xx
 !
   qtired(i) = i > ntired
-  qsmall(xx) = sum < 1.0d-20 .or. xx < eps*sum
-  dg(i) = df + 2.0d0 * dble(i)
+  qsmall(xx) = newsum < 1.0d-20 .or. xx < eps*newsum
+  dg(i) = df%r + 2.0d0 * dble(i) 
+  !MJA 20190221 worried about this, but 
+  !only way to get this implicit array to work
 
   if ( x <= 0.0d0 ) then
     cum = 0.0d0
@@ -5173,7 +5234,7 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
   lfact = gamma_log ( 1.0d0 + dfd2 )
   lcntaj = dfd2 * log ( chid2 ) - chid2 - lfact
   centaj = exp ( lcntaj )
-  sum = centwt * pcent
+  newsum = centwt * pcent
 !
 !  Sum backwards from the central term towards zero.
 !  Quit whenever either
@@ -5203,7 +5264,7 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
 !
   wt = wt * ( i / xnonc )
   term = wt * pterm
-  sum = sum + term
+  newsum = newsum + term
   i = i - 1
   iterb = iterb + 1
   go to 30
@@ -5234,7 +5295,7 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
 !
   pterm = pcent - sumadj
   term = wt * pterm
-  sum = sum + term
+  newsum = newsum + term
 !
 !  Update adjustment term for DF for next iteration
 !
@@ -5247,7 +5308,7 @@ subroutine cumchn ( x, df, pnonc, cum, ccum )
 
    80 continue
 
-  cum = sum
+  cum = newsum
   ccum = 0.5d0 + ( 0.5d0 - cum )
 
   return
@@ -5273,7 +5334,7 @@ subroutine cumf ( f, dfn, dfd, cum, ccum )
 !  Parameters:
 !
 !     F --> Upper limit of integration of the f-density.
-!                                                  F is double precision
+!                                                  F is TYPE (XPLEX)
 !
 !     DFN --> Degrees of freedom of the numerator sum of squares.
 !                                                  DFN is DOUBLE PRECISI
@@ -5287,16 +5348,18 @@ subroutine cumf ( f, dfn, dfd, cum, ccum )
 !     CCUM <-- Complement of Cumulative f distribution.
 !                                                  CCUM is DOUBLE PRECIS
 !
-  double precision ccum
-  double precision cum
-  double precision dfd
-  double precision dfn
-  double precision dsum
-  double precision f
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) dfd
+  TYPE (XPLEX) dfn
+  TYPE (XPLEX) dsum
+  TYPE (XPLEX) f
   integer ierr
-  double precision prod
-  double precision xx
-  double precision yy
+  TYPE (XPLEX) prod
+  TYPE (XPLEX) xx
+  TYPE (XPLEX) yy
 !
   if ( f <= 0.0d0 ) then
     cum = 0.0d0
@@ -5369,37 +5432,39 @@ subroutine cumfnc ( f, dfn, dfd, pnonc, cum, ccum )
 !
 !     CCUM <-- Complement of cummulative
 !
-  double precision adn
-  double precision aup
-  double precision b
-  double precision betdn
-  double precision betup
-  double precision centwt
-  double precision ccum
-  double precision cum
-  double precision dfd
-  double precision dfn
-  double precision dnterm
-  double precision dsum
-  double precision dummy
-  double precision, parameter :: eps = 0.0001
-  double precision f
-  double precision gamma_log
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) adn
+  TYPE (XPLEX) aup
+  TYPE (XPLEX) b
+  TYPE (XPLEX) betdn
+  TYPE (XPLEX) betup
+  TYPE (XPLEX) centwt
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) dfd
+  TYPE (XPLEX) dfn
+  TYPE (XPLEX) dnterm
+  TYPE (XPLEX) dsum
+  TYPE (XPLEX) dummy
+  REAL, parameter :: eps = 0.0001
+  TYPE (XPLEX) f
+  TYPE (XPLEX) gamma_log
   integer i
   integer icent
   integer ierr
-  double precision pnonc
-  double precision prod
+  TYPE (XPLEX) pnonc
+  TYPE (XPLEX) prod
   logical qsmall
-  double precision sum
-  double precision upterm
-  double precision x
-  double precision xmult
-  double precision xnonc
-  double precision xx
-  double precision yy
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) upterm
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xmult
+  TYPE (XPLEX) xnonc
+  TYPE (XPLEX) xx
+  TYPE (XPLEX) yy
 !
-  qsmall(x) = sum < 1.0d-20 .or. x < eps*sum
+  qsmall(x) = newsum < 1.0d-20 .or. x < eps*newsum
 !
   if ( f <= 0.0d0 ) then
     cum = 0.0d0
@@ -5426,6 +5491,7 @@ subroutine cumfnc ( f, dfn, dfd, pnonc, cum, ccum )
 !
 !  Compute central weight term
 !
+!  centwt = exp(-xnonc+icent*log(xnonc)-gamma_log(dble(icent+1)))
   centwt = exp(-xnonc+icent*log(xnonc)-gamma_log(dble(icent+1)))
 !
 !  Compute central incomplete beta term.
@@ -5449,7 +5515,7 @@ subroutine cumfnc ( f, dfn, dfd, pnonc, cum, ccum )
   aup = adn
   b = dfd / 2.0d0
   betup = betdn
-  sum = centwt * betdn
+  newsum = centwt * betdn
 !
 !  Now sum terms backward from icent until convergence or all done
 !
@@ -5466,7 +5532,7 @@ subroutine cumfnc ( f, dfn, dfd, pnonc, cum, ccum )
   adn = adn - 1
   dnterm = ( adn + 1 ) / (( adn + b ) * xx ) * dnterm
   betdn = betdn + dnterm
-  sum = sum + xmult * betdn
+  newsum = newsum + xmult * betdn
   go to 30
 
 40 continue
@@ -5501,12 +5567,12 @@ subroutine cumfnc ( f, dfn, dfd, pnonc, cum, ccum )
   aup = aup + 1
   upterm = ( aup + b - 2.0d0 ) * xx / ( aup - 1 ) * upterm
   betup = betup - upterm
-  sum = sum + xmult * betup
+  newsum = newsum + xmult * betup
   go to 50
 
    70 continue
 
-  cum = sum
+  cum = newsum
 
   ccum = 0.5d0 + ( 0.5d0 - cum )
 
@@ -5532,21 +5598,23 @@ subroutine cumgam ( x, a, cum, ccum )
 !  Parameters:
 !
 !     X --> The upper limit of integration of the incomplete gamma.
-!                                                X is double precision
+!                                                X is TYPE (XPLEX)
 !
 !     A --> The shape parameter of the incomplete gamma.
-!                                                A is double precision
+!                                                A is TYPE (XPLEX)
 !
 !     CUM <-- Cumulative incomplete gamma distribution.
-!                                        CUM is double precision
+!                                        CUM is TYPE (XPLEX)
 !
 !     CCUM <-- Complement of Cumulative incomplete gamma distribution.
 !                                                CCUM is DOUBLE PRECISIO
 !
-  double precision a
-  double precision ccum
-  double precision cum
-  double precision x
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) x
 !
   if ( x <= 0.0 ) then
 
@@ -5590,7 +5658,7 @@ subroutine cumnbn ( s, xn, pr, ompr, cum, ccum )
 !
 !
 !     S --> The number of failures
-!                                                  S is double precision
+!                                                  S is TYPE (XPLEX)
 !
 !     XN --> The number of successes
 !                                                  XN is DOUBLE PRECISIO
@@ -5607,12 +5675,14 @@ subroutine cumnbn ( s, xn, pr, ompr, cum, ccum )
 !     CCUM <-- Complement of Cumulative negative binomial distribution.
 !                                                  CCUM is DOUBLE PRECIS
 !
-  double precision ccum
-  double precision cum
-  double precision ompr
-  double precision pr
-  double precision s
-  double precision xn
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) ompr
+  TYPE (XPLEX) pr
+  TYPE (XPLEX) s
+  TYPE (XPLEX) xn
 !
   call cumbet ( pr, ompr, xn, s+1.d0, cum, ccum )
 
@@ -5639,13 +5709,13 @@ subroutine cumnor ( arg, result, ccum )
 !  Parameters:
 !
 !     ARG --> Upper limit of integration.
-!                                        X is double precision
+!                                        X is TYPE (XPLEX)
 !
 !     RESULT <-- Cumulative normal distribution.
-!                                        RESULT is double precision
+!                                        RESULT is TYPE (XPLEX)
 !
 !     CCUM <-- Complement of Cumulative normal distribution.
-!                                        CCUM is double precision
+!                                        CCUM is TYPE (XPLEX)
 !
 !
 ! Original Comments:
@@ -5691,19 +5761,21 @@ subroutine cumnor ( arg, result, ccum )
 !
 !  Latest modification: March 15, 1992
 !
-  double precision, parameter, dimension ( 5 ) :: a = (/ &
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter, dimension ( 5 ) :: a = (/ &
     2.2352520354606839287d00, &
     1.6102823106855587881d02, &
     1.0676894854603709582d03, &
     1.8154981253343561249d04, &
     6.5682337918207449113d-2 /)
-  double precision arg
-  double precision, parameter, dimension ( 4 ) :: b = (/ &
+  TYPE (XPLEX) arg
+  REAL, parameter, dimension ( 4 ) :: b = (/ &
     4.7202581904688241870d01, &
     9.7609855173777669322d02, &
     1.0260932208618978205d04, &
     4.5507789335026729956d04 /)
-  double precision, parameter, dimension ( 9 ) :: c = (/ &
+  REAL, parameter, dimension ( 9 ) :: c = (/ &
     3.9894151208813466764d-1, &
     8.8831497943883759412d00, &
     9.3506656132177855979d01, &
@@ -5713,8 +5785,8 @@ subroutine cumnor ( arg, result, ccum )
     1.1602651437647350124d04, &
     9.8427148383839780218d03, &
     1.0765576773720192317d-8 /)
-  double precision ccum
-  double precision, parameter, dimension ( 8 ) :: d = (/ &
+  TYPE (XPLEX) ccum
+  REAL, parameter, dimension ( 8 ) :: d = (/ &
     2.2266688044328115691d01, &
     2.3538790178262499861d02, &
     1.5193775994075548050d03, &
@@ -5723,40 +5795,40 @@ subroutine cumnor ( arg, result, ccum )
     3.4900952721145977266d04, &
     3.8912003286093271411d04, &
     1.9685429676859990727d04 /)
-  double precision del
-  double precision dpmpar
-  double precision eps
+  TYPE (XPLEX) del
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) eps
   integer i
-  double precision min
-  double precision, parameter, dimension ( 6 ) :: p = (/ &
+  TYPE (XPLEX) newmin
+  REAL, parameter, dimension ( 6 ) :: p = (/ &
     2.1589853405795699d-1, &
     1.274011611602473639d-1, &
     2.2235277870649807d-2, &
     1.421619193227893466d-3, &
     2.9112874951168792d-5, &
     2.307344176494017303d-2 /)
-  double precision, parameter, dimension ( 5 ) :: q = (/ &
+  REAL, parameter, dimension ( 5 ) :: q = (/ &
     1.28426009614491121d00, &
     4.68238212480865118d-1, &
     6.59881378689285515d-2, &
     3.78239633202758244d-3, &
     7.29751555083966205d-5 /)
-  double precision result
-  double precision, parameter :: root32 = 5.656854248d0
-  double precision, parameter :: sixten = 16.0
-  double precision temp
-  double precision, parameter :: sqrpi = 3.9894228040143267794d-1
-  double precision, parameter :: thrsh = 0.66291d0
-  double precision x
-  double precision xden
-  double precision xnum
-  double precision y
-  double precision xsq
+  TYPE (XPLEX) result
+  REAL, parameter :: root32 = 5.656854248d0
+  REAL, parameter :: sixten = 16.0
+  TYPE (XPLEX) temp
+  REAL, parameter :: sqrpi = 3.9894228040143267794d-1
+  REAL, parameter :: thrsh = 0.66291d0
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xden
+  TYPE (XPLEX) xnum
+  TYPE (XPLEX) y
+  TYPE (XPLEX) xsq
 !
 !  Machine dependent constants
 !
   eps = epsilon ( 1.0d0 ) * 0.5d0
-  min = dpmpar(2)
+  newmin = dpmpar(2)
 
   x = arg
   y = abs ( x )
@@ -5828,11 +5900,11 @@ subroutine cumnor ( arg, result, ccum )
 
   end if
 
-  if ( result < min ) then
+  if ( result < newmin ) then
     result = 0.0d0
   end if
 
-  if ( ccum < min ) then
+  if ( ccum < newmin ) then
     ccum = 0.0d0
   end if
 
@@ -5859,23 +5931,25 @@ subroutine cumpoi ( s, xlam, cum, ccum )
 !  Parameters:
 !
 !     S --> Upper limit of cumulation of the Poisson.
-!                                                  S is double precision
+!                                                  S is TYPE (XPLEX)
 !
 !     XLAM --> Mean of the Poisson distribution.
 !                                                  XLAM is DOUBLE PRECIS
 !
 !     CUM <-- Cumulative poisson distribution.
-!                                        CUM is double precision
+!                                        CUM is TYPE (XPLEX)
 !
 !     CCUM <-- Complement of Cumulative poisson distribution.
 !                                                  CCUM is DOUBLE PRECIS
 !
-  double precision ccum
-  double precision chi
-  double precision cum
-  double precision df
-  double precision s
-  double precision xlam
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) chi
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) df
+  TYPE (XPLEX) s
+  TYPE (XPLEX) xlam
 !
   df = 2.0d0 * ( s + 1.0d0 )
   chi = 2.0d0 * xlam
@@ -5899,25 +5973,27 @@ subroutine cumt ( t, df, cum, ccum )
 !
 !  Parameters:
 !
-!    Input, double precision T, the upper limit of integration of the 
+!    Input, TYPE (XPLEX) T, the upper limit of integration of the 
 !    t-density.
 !
-!    Input, double precision DF, the number of degrees of freedom of 
+!    Input, TYPE (XPLEX) DF, the number of degrees of freedom of 
 !    the t-distribution.
 !
-!    Output, double precision CUM, the cumulative t-distribution.
+!    Output, TYPE (XPLEX) CUM, the cumulative t-distribution.
 !
-!    Output, double precision CCUM, the complement of the cumulative 
+!    Output, TYPE (XPLEX) CCUM, the complement of the cumulative 
 !    t-distribution.
 !
-  double precision a
-  double precision ccum
-  double precision cum
-  double precision df
-  double precision oma
-  double precision t
-  double precision xx
-  double precision yy
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) df
+  TYPE (XPLEX) oma
+  TYPE (XPLEX) t
+  TYPE (XPLEX) xx
+  TYPE (XPLEX) yy
 !
   xx = df / ( df + t**2 )
   yy = t**2 / ( df + t**2 )
@@ -5951,22 +6027,24 @@ function eval_pol ( a, n, x )
 !
 !  Parameters:
 !
-!    Input, double precision A(0:N), coefficients of the polynomial.
+!    Input, TYPE (XPLEX) A(0:N), coefficients of the polynomial.
 !
 !    Input, integer N, length of A.
 !
-!    Input, double precision X, the point at which the polynomial 
+!    Input, TYPE (XPLEX) X, the point at which the polynomial 
 !    is to be evaluated.
 !
-!    Output, double precision EVAL_POL, the value of the polynomial at X.
+!    Output, TYPE (XPLEX) EVAL_POL, the value of the polynomial at X.
 !
+  use MYTYPE
+  use XPLEXIFY
   integer n
 !
-  double precision a(0:n)
-  double precision eval_pol
+  TYPE (XPLEX) a(0:n)
+  TYPE (XPLEX) eval_pol
   integer i
-  double precision term
-  double precision x
+  TYPE (XPLEX) term
+  TYPE (XPLEX) x
 !
   term = a(n)
   do i = n - 1, 0, -1
@@ -5995,20 +6073,22 @@ function dexpm1 ( x )
 !  Parameters:
 !
 !     X --> Argument at which exp(x)-1 desired
-!                    double precision X
+!                    TYPE (XPLEX) X
 !
-  double precision, parameter :: p1 =   0.914041914819518d-09
-  double precision, parameter :: p2 =   0.238082361044469d-01
-  double precision, parameter :: q1 = - 0.499999999085958d+00
-  double precision, parameter :: q2 =   0.107141568980644d+00
-  double precision, parameter :: q3 = - 0.119041179760821d-01
-  double precision, parameter :: q4 =   0.595130811860248d-03
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: p1 =   0.914041914819518d-09
+  REAL, parameter :: p2 =   0.238082361044469d-01
+  REAL, parameter :: q1 = - 0.499999999085958d+00
+  REAL, parameter :: q2 =   0.107141568980644d+00
+  REAL, parameter :: q3 = - 0.119041179760821d-01
+  REAL, parameter :: q4 =   0.595130811860248d-03
 !
-  double precision bot
-  double precision dexpm1
-  double precision top
-  double precision w
-  double precision x
+  TYPE (XPLEX) bot
+  TYPE (XPLEX) dexpm1
+  TYPE (XPLEX) top
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
 !
   if ( abs ( x ) <= 0.15d0 ) then
 
@@ -6045,10 +6125,10 @@ function dinvnr ( p, q )
 !  Parameters:
 !
 !     P --> The probability whose normal deviate is sought.
-!                    P is double precision
+!                    P is TYPE (XPLEX)
 !
 !     Q --> 1-P
-!                    P is double precision
+!                    P is TYPE (XPLEX)
 !
 !  Method:
 !
@@ -6056,22 +6136,24 @@ function dinvnr ( p, q )
 !     Statistical Computing, Marcel Dekker, NY , 1980 is used as a start
 !     value for the Newton method of finding roots.
 !
+  use MYTYPE
+  use XPLEXIFY  
   integer, parameter :: maxit=100
-  double precision, parameter :: eps=1.0d-13
-  double precision, parameter :: r2pi = 0.3989422804014326d0
+  REAL, parameter :: eps=1.0d-13
+  REAL, parameter :: r2pi = 0.3989422804014326d0
 !
-  double precision ccum
-  double precision cum
-  double precision dinvnr
-  double precision dx
+  TYPE (XPLEX) ccum
+  TYPE (XPLEX) cum
+  TYPE (XPLEX) dinvnr
+  TYPE (XPLEX) dx
   integer i
-  double precision p
-  double precision pp
-  double precision q
-  double precision strtx
-  double precision stvaln
-  double precision x
-  double precision xcur
+  TYPE (XPLEX) p
+  TYPE (XPLEX) pp
+  TYPE (XPLEX) q
+  TYPE (XPLEX) strtx
+  TYPE (XPLEX) stvaln
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xcur
 !
   pp = min ( p, q )
   strtx = stvaln ( pp )
@@ -6108,7 +6190,7 @@ subroutine d_swap ( x, y )
 !
 !*******************************************************************************
 !
-!! D_SWAP swaps two double precision values.
+!! D_SWAP swaps two TYPE (XPLEX) values.
 !
 !
 !  Modified:
@@ -6121,12 +6203,14 @@ subroutine d_swap ( x, y )
 !
 !  Parameters:
 !
-!    Input/output, double precision X, Y.  On output, the values of X and
+!    Input/output, TYPE (XPLEX) X, Y.  On output, the values of X and
 !    Y have been interchanged.
 !
-  double precision x
-  double precision y
-  double precision z
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) x
+  TYPE (XPLEX) y
+  TYPE (XPLEX) z
 !
   z = x
   x = y
@@ -6167,11 +6251,11 @@ subroutine dinvr ( status, x, fx, qleft, qhi )
 !                         integer STATUS
 !
 !     X <-- The value of X at which F(X) is to be evaluated.
-!                         double precision X
+!                         TYPE (XPLEX) X
 !
 !     FX --> The value of F(X) calculated when INVR returns with
 !            STATUS = 1.
-!                         double precision FX
+!                         TYPE (XPLEX) FX
 !
 !     QLEFT <-- Defined only if QMFINV returns .FALSE.  In that
 !          case it is .TRUE. If the stepping search terminated
@@ -6185,32 +6269,34 @@ subroutine dinvr ( status, x, fx, qleft, qhi )
 !          termination of the search.
 !                    QHI is LOGICAL
 !
-  double precision absstp
-  double precision abstol
-  double precision big
-  double precision fbig
-  double precision fsmall
-  double precision fx
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) absstp
+  TYPE (XPLEX) abstol
+  TYPE (XPLEX) big
+  TYPE (XPLEX) fbig
+  TYPE (XPLEX) fsmall
+  TYPE (XPLEX) fx
   integer i99999
   logical qbdd
   logical qhi
   logical qleft
   logical qup
   logical qxmon
-  double precision relstp
-  double precision reltol
+  TYPE (XPLEX) relstp
+  TYPE (XPLEX) reltol
   integer status
-  double precision x
-  double precision zabsst
-  double precision zabsto
-  double precision zbig
-  double precision zrelst
-  double precision zrelto
-  double precision zsmall
-  double precision zstpmu
-  double precision zz
+  TYPE (XPLEX) x
+  TYPE (XPLEX) zabsst
+  TYPE (XPLEX) zabsto
+  TYPE (XPLEX) zbig
+  TYPE (XPLEX) zrelst
+  TYPE (XPLEX) zrelto
+  TYPE (XPLEX) zsmall
+  TYPE (XPLEX) zstpmu
+  TYPE (XPLEX) zz
 
-  double precision small,step,stpmul,xhi,xlb,xlo,xsave,xub,yy,zx,zy
+  TYPE (XPLEX) small,step,stpmul,xhi,xlb,xlo,xsave,xub,yy,zx,zy
   logical qcond,qdum1,qdum2,qincr,qlim
 !
   save
@@ -6441,26 +6527,26 @@ entry dstinv ( zsmall, zbig, zabsst, zrelst, zstpmu, zabsto, zrelto )
 !
 !     SMALL --> The left endpoint of the interval to be
 !          searched for a solution.
-!                    SMALL is double precision
+!                    SMALL is TYPE (XPLEX)
 !
 !     BIG --> The right endpoint of the interval to be
 !          searched for a solution.
-!                    BIG is double precision
+!                    BIG is TYPE (XPLEX)
 !
 !     ABSSTP, RELSTP --> The initial step size in the search
 !          is MAX(ABSSTP,RELSTP*ABS(X)). See algorithm.
-!                    ABSSTP is double precision
-!                    RELSTP is double precision
+!                    ABSSTP is TYPE (XPLEX)
+!                    RELSTP is TYPE (XPLEX)
 !
 !     STPMUL --> When a step doesn't bound the zero, the step
 !                size is multiplied by STPMUL and another step
 !                taken.  A popular value is 2.0
-!                    double precision STPMUL
+!                    TYPE (XPLEX) STPMUL
 !
 !     ABSTOL, RELTOL --> Two numbers that determine the accuracy
 !          of the solution.  See function for a precise definition.
-!                    ABSTOL is double precision
-!                    RELTOL is double precision
+!                    ABSTOL is TYPE (XPLEX)
+!                    RELTOL is TYPE (XPLEX)
 !
 !
 !                              Method
@@ -6523,7 +6609,7 @@ function dlanor ( x )
 !  Parameters:
 !
 !      X --> Value at which cumulative normal to be evaluated
-!                     double precision X
+!                     TYPE (XPLEX) X
 !
 !
 !                              Method
@@ -6535,20 +6621,22 @@ function dlanor ( x )
 !
 !      ABS(X) must be >= 5 else there is an error stop.
 !
-  double precision, parameter :: dlsqpi = 0.91893853320467274177d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: dlsqpi = 0.91893853320467274177d0
 !
-  double precision alnrel
-  double precision approx
-  double precision, save, dimension ( 0:11 ) :: coef = (/ &
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) approx
+  REAL, save, dimension ( 0:11 ) :: coef = (/ &
     -1.0d0,  3.0d0,  -15.0d0,  105.0d0,  -945.0d0,  10395.0d0, &
     -135135.0d0,  2027025.0d0,  -34459425.0d0,  654729075.0d0, &
     -13749310575d0,  316234143225.0d0 /)
-  double precision correc
-  double precision eval_pol
-  double precision dlanor
-  double precision x
-  double precision xx
-  double precision xx2
+  TYPE (XPLEX) correc
+  TYPE (XPLEX) eval_pol
+  TYPE (XPLEX) dlanor
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xx
+  TYPE (XPLEX) xx2
 !
   xx = abs ( x )
 
@@ -6572,7 +6660,7 @@ function dpmpar ( i )
 !
 !*******************************************************************************
 !
-!! DPMPAR provides double precision machine constants.
+!! DPMPAR provides TYPE (XPLEX) machine constants.
 !
 !
 !  Author:
@@ -6592,13 +6680,15 @@ function dpmpar ( i )
 !
 !        DPMPAR(3) = B**EMAX*(1 - B**(-M)), the largest magnitude.
 !
-  double precision b
-  double precision binv
-  double precision bm1
-  double precision dpmpar
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) b
+  TYPE (XPLEX) binv
+  TYPE (XPLEX) bm1
+  TYPE (XPLEX) dpmpar
   integer i
 
-  double precision w,z
+  TYPE (XPLEX) w,z
   integer emax,emin,ibeta,m
   integer ipmpar
 !
@@ -6660,32 +6750,34 @@ function dt1 ( p, q, df )
 !
 !     P --> The p-value whose inverse from the T distribution is
 !          desired.
-!                    P is double precision
+!                    P is TYPE (XPLEX)
 !
 !     Q --> 1-P.
-!                    Q is double precision
+!                    Q is TYPE (XPLEX)
 !
 !     DF --> Degrees of freedom of the T distribution.
-!                    DF is double precision
+!                    DF is TYPE (XPLEX)
 !
 !
-  double precision coef(0:4,4)
-  double precision, parameter, dimension ( 4 ) :: denom = (/ &
+  use MYTYPE
+  use XPLEXIFY
+  REAL coef(0:4,4)
+  REAL, parameter, dimension ( 4 ) :: denom = (/ &
     4.0d0, 96.0d0, 384.0d0, 92160.0d0 /)
-  double precision denpow
-  double precision eval_pol
-  double precision df
-  double precision dinvnr
-  double precision dt1
+  TYPE (XPLEX) denpow
+  TYPE (XPLEX) eval_pol
+  TYPE (XPLEX) df
+  TYPE (XPLEX) dinvnr
+  TYPE (XPLEX) dt1
   integer i
   integer, parameter, dimension ( 4 ) :: ideg = (/ 1, 2, 3, 4 /)
-  double precision p
-  double precision q
-  double precision sum
-  double precision term
-  double precision x
-  double precision xp
-  double precision xx
+  TYPE (XPLEX) p
+  TYPE (XPLEX) q
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) term
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xp
+  TYPE (XPLEX) xx
 !
   data (coef(i,1),i=0,4)/1.0d0,1.0d0,3*0.0d0/
   data (coef(i,2),i=0,4)/3.0d0,16.0d0,5.0d0,2*0.0d0/
@@ -6695,18 +6787,18 @@ function dt1 ( p, q, df )
   x = abs ( dinvnr ( p, q ) )
   xx = x * x
 
-  sum = x
+  newsum = x
   denpow = 1.0d0
   do i = 1, 4
     term = eval_pol ( coef(0,i), ideg(i), xx ) * x
     denpow = denpow * df
-    sum = sum + term / ( denpow * denom(i) )
+    newsum = newsum + term / ( denpow * denom(i) )
   end do
 
   if ( p >= 0.5d0 ) then
-    xp = sum
+    xp = newsum
   else
-    xp = - sum
+    xp = - newsum
   end if
 
   dt1 = xp
@@ -6746,19 +6838,19 @@ subroutine dzror ( status, x, fx, xlo, xhi, qleft, qhi )
 !                         integer STATUS
 !
 !     X <-- The value of X at which F(X) is to be evaluated.
-!                         double precision X
+!                         TYPE (XPLEX) X
 !
 !     FX --> The value of F(X) calculated when ZROR returns with
 !            STATUS = 1.
-!                         double precision FX
+!                         TYPE (XPLEX) FX
 !
 !     XLO <-- When ZROR returns with STATUS = 0, XLO bounds the
 !             inverval in X containing the solution below.
-!                         double precision XLO
+!                         TYPE (XPLEX) XLO
 !
 !     XHI <-- When ZROR returns with STATUS = 0, XHI bounds the
 !             inverval in X containing the solution above.
-!                         double precision XHI
+!                         TYPE (XPLEX) XHI
 !
 !     QLEFT <-- .TRUE. if the stepping search terminated unsucessfully
 !                at XLO.  If it is .FALSE. the search terminated
@@ -6770,49 +6862,61 @@ subroutine dzror ( status, x, fx, xlo, xhi, qleft, qhi )
 !              termination of the search.
 !                    QHI is LOGICAL
 !
-  double precision a
-  double precision abstol
-  double precision b
-  double precision c
-  double precision d
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) abstol
+  TYPE (XPLEX) b
+  TYPE (XPLEX) c
+  TYPE (XPLEX) d
   integer ext
-  double precision fa
-  double precision fb
-  double precision fc
-  double precision fd
-  double precision fda
-  double precision fdb
+  TYPE (XPLEX) fa
+  TYPE (XPLEX) fb
+  TYPE (XPLEX) fc
+  TYPE (XPLEX) fd
+  TYPE (XPLEX) fda
+  TYPE (XPLEX) fdb
   logical first
-  double precision ftol
-  double precision fx
+  double precision ftol(99999)
+  TYPE (XPLEX) fx
   integer i99999
-  double precision m
-  double precision mb
-  double precision p
-  double precision q
+  TYPE (XPLEX) m
+  TYPE (XPLEX) mb
+  TYPE (XPLEX) p
+  TYPE (XPLEX) q
   logical qhi
   logical qleft
   logical qrzero
-  double precision reltol
+  TYPE (XPLEX) reltol
   integer status
-  double precision tol
-  double precision w
-  double precision x
-  double precision xhi
-  double precision xlo
-!  double precision, save :: xxhi = 0.0
-!  double precision, save :: xxlo = 0.0
-  double precision :: xxhi = 0.0
-  double precision :: xxlo = 0.0
-  double precision zabstl
-  double precision zreltl
-  double precision zx
-  double precision zxhi
-  double precision zxlo
+  TYPE (XPLEX) tol
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xhi
+  TYPE (XPLEX) xlo
+!  TYPE (XPLEX), save :: xxhi = 0.0
+!  TYPE (XPLEX), save :: xxlo = 0.0
+!  TYPE (XPLEX) :: xxhi = 0.0
+!  TYPE (XPLEX) :: xxlo = 0.0
+  TYPE (XPLEX) :: xxhi
+  TYPE (XPLEX) :: xxlo
+  TYPE (XPLEX) zabstl
+  TYPE (XPLEX) zreltl
+  TYPE (XPLEX) zx
+  TYPE (XPLEX) zxhi
+  TYPE (XPLEX) zxlo
 !
   save
+
+  xxhi%r = 0.0
+  xxhi%i = 0.0
+  xlo%r = 0.0
+  xxlo%i = 0.0
+
 !
-  ftol(zx) = 0.5d0 * max ( abstol, reltol * abs ( zx ) )
+  ftol(int(zx%r)) = 0.5d0 * max ( abstol%r, reltol%r * abs ( zx%r ) )
+  ! MJA 20190221 worried about this but only way to get ftol 
+  ! non-declared array to work
 !
   if (status>0) go to 280
   xlo = xxlo
@@ -6871,7 +6975,7 @@ subroutine dzror ( status, x, fx, xlo, xhi, qleft, qhi )
   fb = fc
   c = a
   fc = fa
-  100 tol = ftol(xlo)
+  100 tol = ftol(int(xlo))
   m = (c+b)*.5d0
   mb = m - b
   if (.not. ( abs ( mb ) > tol ) ) go to 240
@@ -6965,8 +7069,8 @@ subroutine dzror ( status, x, fx, xlo, xhi, qleft, qhi )
 !
 !    Given a function F, find XLO such that F(XLO) = 0.
 !
-!     Input condition. F is a double precision function of a single
-!     double precision argument and XLO and XHI are such that
+!     Input condition. F is a TYPE (XPLEX) function of a single
+!     TYPE (XPLEX) argument and XLO and XHI are such that
 !          F(XLO)*F(XHI)  .LE.  0.0
 !
 !     If the input condition is met, QRZERO returns .TRUE.
@@ -6986,17 +7090,17 @@ subroutine dzror ( status, x, fx, xlo, xhi, qleft, qhi )
 !
 !     XLO --> The left endpoint of the interval to be
 !           searched for a solution.
-!                    XLO is double precision
+!                    XLO is TYPE (XPLEX)
 !
 !     XHI --> The right endpoint of the interval to be
 !           for a solution.
-!                    XHI is double precision
+!                    XHI is TYPE (XPLEX)
 !
 !     ABSTOL, RELTOL --> Two numbers that determine the accuracy
 !                      of the solution.  See function for a
 !                      precise definition.
-!                    ABSTOL is double precision
-!                    RELTOL is double precision
+!                    ABSTOL is TYPE (XPLEX)
+!                    RELTOL is TYPE (XPLEX)
 !
 !
 !                              Method
@@ -7029,34 +7133,36 @@ function erf ( x )
 !! ERF evaluates the error function.
 !
 !
-  double precision, parameter :: c = 0.564189583547756d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: c = 0.564189583547756d0
 !
-  double precision, parameter, dimension ( 5 ) :: a = (/ &
+  REAL, parameter, dimension ( 5 ) :: a = (/ &
     0.771058495001320d-04, &
     -0.133733772997339d-02, &
     0.323076579225834d-01, &
     0.479137145607681d-01, &
     0.128379167095513d+00 /)
 
-  double precision ax
-  double precision, parameter, dimension ( 3 ) :: b = (/ &
+  TYPE (XPLEX) ax
+  REAL, parameter, dimension ( 3 ) :: b = (/ &
     0.301048631703895d-02, &
     0.538971687740286d-01, &
     0.375795757275549d+00 /)
-  double precision bot
-  double precision erf
-  double precision p(8)
-  double precision q(8)
-  double precision r(5)
-  double precision, parameter, dimension ( 4 ) :: s = (/ &
+  TYPE (XPLEX) bot
+  TYPE (XPLEX) erf
+  REAL p(8)
+  REAL q(8)
+  REAL r(5)
+  REAL, parameter, dimension ( 4 ) :: s = (/ &
     9.41537750555460d+01, &
     1.87114811799590d+02, &
     9.90191814623914d+01, &
     1.80124575948747d+01 /)
-  double precision t
-  double precision top
-  double precision x
-  double precision x2
+  TYPE (XPLEX) t
+  TYPE (XPLEX) top
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x2
 !
   data p(1)/-1.36864857382717d-07/,p(2)/5.64195517478974d-01/
   data p(3)/7.21175825088309d+00/,p(4)/4.31622272220567d+01/
@@ -7133,28 +7239,30 @@ function erfc1 ( ind, x )
 !    If IND is nonzero, then the value returned has been multiplied by
 !    EXP(X*X).
 !
-!    Input, double precision X, the argument of the function.
+!    Input, TYPE (XPLEX) X, the argument of the function.
 !
-!    Output, double precision ERFC1, the value of the complementary error function.
+!    Output, TYPE (XPLEX) ERFC1, the value of the complementary error function.
 !
-  double precision, parameter :: c = 0.564189583547756d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: c = 0.564189583547756d0
 !
-  double precision a(5)
-  double precision ax
-  double precision b(3)
-  double precision bot
-  double precision e
-  double precision erfc1
-  double precision exparg
+  REAL a(5)
+  TYPE (XPLEX) ax
+  REAL b(3)
+  TYPE (XPLEX) bot
+  TYPE (XPLEX) e
+  TYPE (XPLEX) erfc1
+  TYPE (XPLEX) exparg
   integer ind
-  double precision p(8)
-  double precision q(8)
-  double precision r(5)
-  double precision s(4)
-  double precision t
-  double precision top
-  double precision w
-  double precision x
+  REAL p(8)
+  REAL q(8)
+  REAL r(5)
+  REAL s(4)
+  TYPE (XPLEX) t
+  TYPE (XPLEX) top
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
 !
   data a(1)/.771058495001320d-04/
   data a(2)/-.133733772997339d-02/
@@ -7285,10 +7393,12 @@ function esum ( mu, x )
 !! ESUM evaluates EXP(MU + X).
 !
 !
-  double precision esum
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) esum
   integer mu
-  double precision w
-  double precision x
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
 !
   if ( x <= 0.0d0 ) then
     if ( mu >= 0 ) then
@@ -7335,11 +7445,13 @@ function exparg ( l )
 !    Otherwise, the largest negative argument for EXP for which the
 !    result is nonzero is desired.
 !
+  use MYTYPE
+  use XPLEXIFY
   integer b
-  double precision exparg
+  TYPE (XPLEX) exparg
   integer ipmpar
   integer l
-  double precision lnb
+  TYPE (XPLEX) lnb
   integer m
 !
 !  Get the arithmetic base.
@@ -7379,17 +7491,19 @@ function fpser ( a, b, x, eps )
 !                  SET  FPSER = X**A
 !
 !
-  double precision a
-  double precision an
-  double precision b
-  double precision c
-  double precision eps
-  double precision exparg
-  double precision fpser
-  double precision s
-  double precision t
-  double precision tol
-  double precision x
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) an
+  TYPE (XPLEX) b
+  TYPE (XPLEX) c
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) exparg
+  TYPE (XPLEX) fpser
+  TYPE (XPLEX) s
+  TYPE (XPLEX) t
+  TYPE (XPLEX) tol
+  TYPE (XPLEX) x
 !
   fpser = 1.0d0
 
@@ -7431,11 +7545,13 @@ function gam1 ( a )
 !! GAM1 computes 1 / GAMMA(A+1) - 1 for -0.5 <= A <= 1.5
 !
 !
-  double precision a
-  double precision bot
-  double precision d
-  double precision gam1
-  double precision, parameter, dimension ( 7 ) :: p = (/ &
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) bot
+  TYPE (XPLEX) d
+  TYPE (XPLEX) gam1
+  REAL, parameter, dimension ( 7 ) :: p = (/ &
      0.577215664901533d+00, &
     -0.409078193005776d+00, &
     -0.230975380857675d+00, &
@@ -7443,13 +7559,13 @@ function gam1 ( a )
      0.766968181649490d-02, &
     -0.514889771323592d-02, &
      0.589597428611429d-03 /)
-  double precision q(5)
-  double precision r(9)
-  double precision, parameter :: s1 = 0.273076135303957d+00
-  double precision, parameter :: s2 = 0.559398236957378d-01
-  double precision t
-  double precision top
-  double precision w
+  REAL q(5)
+  REAL r(9)
+  REAL, parameter :: s1 = 0.273076135303957d+00
+  REAL, parameter :: s2 = 0.559398236957378d-01
+  TYPE (XPLEX) t
+  TYPE (XPLEX) top
+  TYPE (XPLEX) w
 !
   data q(1)/.100000000000000d+01/,q(2)/.427569613095214d+00/
   data q(3)/.158451672430138d+00/,q(4)/.261132021441447d-01/
@@ -7528,18 +7644,18 @@ subroutine gamma_inc_inv ( a, x, x0, p, q, ierr )
 !
 !  Parameters:
 !
-!    Input, double precision A, the parameter in the incomplete gamma
+!    Input, TYPE (XPLEX) A, the parameter in the incomplete gamma
 !    ratio.  A must be positive.
 !
-!    Output, double precision X, the computed point for which the
+!    Output, TYPE (XPLEX) X, the computed point for which the
 !    incomplete gamma functions have the values P and Q.
 !
-!    Input, double precision X0, an optional initial approximation
+!    Input, TYPE (XPLEX) X0, an optional initial approximation
 !    for the solution X.  If the user does not want to supply an
 !    initial approximation, then X0 should be set to 0, or a negative
 !    value.
 !
-!    Input, double precision P, Q, the values of the incomplete gamma
+!    Input, TYPE (XPLEX) P, Q, the values of the incomplete gamma
 !    functions, for which the corresponding argument is desired.
 !
 !    Output, integer IERR, error flag.
@@ -7559,70 +7675,72 @@ subroutine gamma_inc_inv ( a, x, x0, p, q, ierr )
 !        approximately 0. If X0 is positive then this can occur when A is
 !        exceedingly close to X and A is extremely large (say A .GE. 1.E20).
 !
-  double precision, parameter :: a0 = 3.31125922108741d0
-  double precision, parameter :: a1 = 11.6616720288968d0
-  double precision, parameter :: a2 = 4.28342155967104d0
-  double precision, parameter :: a3 = 0.213623493715853d0
-  double precision, parameter :: b1 = 6.61053765625462d0
-  double precision, parameter :: b2 = 6.40691597760039d0
-  double precision, parameter :: b3 = 1.27364489782223d0
-  double precision, parameter :: b4 = .036117081018842d0
-  double precision, parameter :: c = 0.577215664901533d0
-  double precision, parameter :: ln10 = 2.302585d0
-  double precision, parameter :: tol = 1.0d-5
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: a0 = 3.31125922108741d0
+  REAL, parameter :: a1 = 11.6616720288968d0
+  REAL, parameter :: a2 = 4.28342155967104d0
+  REAL, parameter :: a3 = 0.213623493715853d0
+  REAL, parameter :: b1 = 6.61053765625462d0
+  REAL, parameter :: b2 = 6.40691597760039d0
+  REAL, parameter :: b3 = 1.27364489782223d0
+  REAL, parameter :: b4 = .036117081018842d0
+  REAL, parameter :: c = 0.577215664901533d0
+  REAL, parameter :: ln10 = 2.302585d0
+  REAL, parameter :: tol = 1.0d-5
 !
-  double precision a
-  double precision alnrel
-  double precision am1
-  double precision amax
-  double precision amin(2)
-  double precision ap1
-  double precision ap2
-  double precision ap3
-  double precision apn
-  double precision b
-  double precision bmin(2)
-  double precision c1
-  double precision c2
-  double precision c3
-  double precision c4
-  double precision c5
-  double precision d
-  double precision dmin(2)
-  double precision dpmpar
-  double precision e
-  double precision e2
-  double precision emin(2)
-  double precision eps
-  double precision eps0(2)
-  double precision g
-  double precision gamma_log
-  double precision gamma_ln1
-  double precision gamma
-  double precision h
+  TYPE (XPLEX) a
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) am1
+  TYPE (XPLEX) amax
+  REAL amin(2)
+  TYPE (XPLEX) ap1
+  TYPE (XPLEX) ap2
+  TYPE (XPLEX) ap3
+  TYPE (XPLEX) apn
+  TYPE (XPLEX) b
+  REAL bmin(2)
+  TYPE (XPLEX) c1
+  TYPE (XPLEX) c2
+  TYPE (XPLEX) c3
+  TYPE (XPLEX) c4
+  TYPE (XPLEX) c5
+  TYPE (XPLEX) d
+  REAL dmin(2)
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) e
+  TYPE (XPLEX) e2
+  REAL emin(2)
+  TYPE (XPLEX) eps
+  REAL eps0(2)
+  TYPE (XPLEX) g
+  TYPE (XPLEX) gamma_log
+  TYPE (XPLEX) gamma_ln1
+  TYPE (XPLEX) gamma
+  TYPE (XPLEX) h
   integer ierr
   integer iop
-  double precision p
-  double precision pn
-  double precision q
-  double precision qg
-  double precision qn
-  double precision r
-  double precision rcomp
-  double precision rta
-  double precision s
-  double precision s2
-  double precision sum
-  double precision t
-  double precision u
-  double precision w
-  double precision x
-  double precision x0
-  double precision xmax
-  double precision xmin
-  double precision xn
-  double precision y
-  double precision z
+  TYPE (XPLEX) p
+  TYPE (XPLEX) pn
+  TYPE (XPLEX) q
+  TYPE (XPLEX) qg
+  TYPE (XPLEX) qn
+  TYPE (XPLEX) r
+  TYPE (XPLEX) rcomp
+  TYPE (XPLEX) rta
+  TYPE (XPLEX) s
+  TYPE (XPLEX) s2
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) t
+  TYPE (XPLEX) u
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x0
+  TYPE (XPLEX) xmax
+  TYPE (XPLEX) xmin
+  TYPE (XPLEX) xn
+  TYPE (XPLEX) y
+  TYPE (XPLEX) z
 !
   data eps0(1)/1.d-10/
   data eps0(2)/1.d-08/
@@ -7651,7 +7769,8 @@ subroutine gamma_inc_inv ( a, x, x0, p, q, ierr )
     return
   end if
 
-  t = dble ( p ) + dble ( q ) - 1.d0
+!  t = dble ( p ) + dble ( q ) - 1.d0
+  t = p  + q  - 1.d0
 
   if ( abs ( t ) > e ) then
     ierr = - 4
@@ -7874,18 +7993,18 @@ subroutine gamma_inc_inv ( a, x, x0, p, q, ierr )
 
   apn = ap1
   t = xn / apn
-  sum = 1.0d0 + t
+  newsum = 1.0d0 + t
 
   150 continue
 
   apn = apn + 1.0d0
   t = t * ( xn / apn )
-  sum = sum + t
+  newsum = newsum + t
   if ( t > 1.0d-4 ) then
     go to 150
   end if
 
-  t = w - log ( sum )
+  t = w - log ( newsum )
   xn = exp (( xn + t ) / a )
   xn = xn * ( 1.0d0 - ( a * log ( xn ) - xn - t ) / ( a - xn ))
   go to 170
@@ -8106,21 +8225,23 @@ function gamma_log ( a )
 !    Naval Surface Weapons Center,
 !    Dahlgren, Virginia.
 !
-  double precision, parameter :: c0 =   0.833333333333333d-01
-  double precision, parameter :: c1 = - 0.277777777760991d-02
-  double precision, parameter :: c2 =   0.793650666825390d-03
-  double precision, parameter :: c3 = - 0.595202931351870d-03
-  double precision, parameter :: c4 =   0.837308034031215d-03
-  double precision, parameter :: c5 = - 0.165322962780713d-02
-  double precision, parameter :: d  =   0.418938533204673d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: c0 =   0.833333333333333d-01
+  REAL, parameter :: c1 = - 0.277777777760991d-02
+  REAL, parameter :: c2 =   0.793650666825390d-03
+  REAL, parameter :: c3 = - 0.595202931351870d-03
+  REAL, parameter :: c4 =   0.837308034031215d-03
+  REAL, parameter :: c5 = - 0.165322962780713d-02
+  REAL, parameter :: d  =   0.418938533204673d0
 !
-  double precision a
-  double precision gamma_log
-  double precision gamma_ln1
+  TYPE (XPLEX) a
+  TYPE (XPLEX) gamma_log
+  TYPE (XPLEX) gamma_ln1
   integer i
   integer n
-  double precision t
-  double precision w
+  TYPE (XPLEX) t
+  TYPE (XPLEX) w
 !
   if ( a <= 0.8d0 ) then
 
@@ -8162,37 +8283,39 @@ function gamma_ln1 ( a )
 !! GAMMA_LN1 evaluates LN(GAMMA(1 + A)) FOR -0.2 .LE. A .LE. 1.25
 !
 !
-  double precision, parameter :: p0 =   0.577215664901533d+00
-  double precision, parameter :: p1 =   0.844203922187225d+00
-  double precision, parameter :: p2 = - 0.168860593646662d+00
-  double precision, parameter :: p3 = - 0.780427615533591d+00
-  double precision, parameter :: p4 = - 0.402055799310489d+00
-  double precision, parameter :: p5 = - 0.673562214325671d-01
-  double precision, parameter :: p6 = - 0.271935708322958d-02
-  double precision, parameter :: q1 =   0.288743195473681d+01
-  double precision, parameter :: q2 =   0.312755088914843d+01
-  double precision, parameter :: q3 =   0.156875193295039d+01
-  double precision, parameter :: q4 =   0.361951990101499d+00
-  double precision, parameter :: q5 =   0.325038868253937d-01
-  double precision, parameter :: q6 =   0.667465618796164d-03
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: p0 =   0.577215664901533d+00
+  REAL, parameter :: p1 =   0.844203922187225d+00
+  REAL, parameter :: p2 = - 0.168860593646662d+00
+  REAL, parameter :: p3 = - 0.780427615533591d+00
+  REAL, parameter :: p4 = - 0.402055799310489d+00
+  REAL, parameter :: p5 = - 0.673562214325671d-01
+  REAL, parameter :: p6 = - 0.271935708322958d-02
+  REAL, parameter :: q1 =   0.288743195473681d+01
+  REAL, parameter :: q2 =   0.312755088914843d+01
+  REAL, parameter :: q3 =   0.156875193295039d+01
+  REAL, parameter :: q4 =   0.361951990101499d+00
+  REAL, parameter :: q5 =   0.325038868253937d-01
+  REAL, parameter :: q6 =   0.667465618796164d-03
 !
-  double precision a
-  double precision bot
-  double precision gamma_ln1
-  double precision, parameter :: r0 = 0.422784335098467d+00
-  double precision, parameter :: r1 = 0.848044614534529d+00
-  double precision, parameter :: r2 = 0.565221050691933d+00
-  double precision, parameter :: r3 = 0.156513060486551d+00
-  double precision, parameter :: r4 = 0.170502484022650d-01
-  double precision, parameter :: r5 = 0.497958207639485d-03
-  double precision, parameter :: s1 = 0.124313399877507d+01
-  double precision, parameter :: s2 = 0.548042109832463d+00
-  double precision, parameter :: s3 = 0.101552187439830d+00
-  double precision, parameter :: s4 = 0.713309612391000d-02
-  double precision, parameter :: s5 = 0.116165475989616d-03
-  double precision top
-  double precision w
-  double precision x
+  TYPE (XPLEX) a
+  TYPE (XPLEX) bot
+  TYPE (XPLEX) gamma_ln1
+  REAL, parameter :: r0 = 0.422784335098467d+00
+  REAL, parameter :: r1 = 0.848044614534529d+00
+  REAL, parameter :: r2 = 0.565221050691933d+00
+  REAL, parameter :: r3 = 0.156513060486551d+00
+  REAL, parameter :: r4 = 0.170502484022650d-01
+  REAL, parameter :: r5 = 0.497958207639485d-03
+  REAL, parameter :: s1 = 0.124313399877507d+01
+  REAL, parameter :: s2 = 0.548042109832463d+00
+  REAL, parameter :: s3 = 0.101552187439830d+00
+  REAL, parameter :: s4 = 0.713309612391000d-02
+  REAL, parameter :: s5 = 0.116165475989616d-03
+  TYPE (XPLEX) top
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
 !
   if ( a < 0.6d0 ) then
 
@@ -8234,33 +8357,35 @@ function gamma ( a )
 !    Naval Surface Weapons Center,
 !    Dahlgren, Virginia.
 !
-  double precision, parameter :: d = 0.41893853320467274178d0
-  double precision, parameter :: pi = 3.1415926535898d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: d = 0.41893853320467274178d0
+  REAL, parameter :: pi = 3.1415926535898d0
 !
-  double precision a
-  double precision bot
-  double precision dpmpar
-  double precision exparg
-  double precision g
-  double precision gamma
+  TYPE (XPLEX) a
+  TYPE (XPLEX) bot
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) exparg
+  TYPE (XPLEX) g
+  TYPE (XPLEX) gamma
   integer i
   integer j
-  double precision lnx
+  TYPE (XPLEX) lnx
   integer m
   integer n
-  double precision p(7)
-  double precision q(7)
-  double precision, parameter :: r1 = 0.820756370353826d-03
-  double precision, parameter :: r2 = -0.595156336428591d-03
-  double precision, parameter :: r3 = 0.793650663183693d-03
-  double precision, parameter :: r4 = -0.277777777770481d-02
-  double precision, parameter :: r5 = 0.833333333333333d-01
-  double precision s
-  double precision t
-  double precision top
-  double precision w
-  double precision x
-  double precision z
+  REAL p(7)
+  REAL q(7)
+  REAL, parameter :: r1 = 0.820756370353826d-03
+  REAL, parameter :: r2 = -0.595156336428591d-03
+  REAL, parameter :: r3 = 0.793650663183693d-03
+  REAL, parameter :: r4 = -0.277777777770481d-02
+  REAL, parameter :: r5 = 0.833333333333333d-01
+  TYPE (XPLEX) s
+  TYPE (XPLEX) t
+  TYPE (XPLEX) top
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) z
 !
   data p(1)/.539637273585445d-03/,p(2)/.261939260042690d-02/
   data p(3)/.204493667594920d-01/,p(4)/.730981088720487d-01/
@@ -8376,7 +8501,7 @@ function gamma ( a )
 
     end if
 !
-!  Compute the modified asymptotic sum.
+!  Compute the modified asymptotic newsum.
 !
     t = 1.0d0 / ( x * x )
 
@@ -8389,7 +8514,8 @@ function gamma ( a )
     z = x
     g = ( d + g ) + ( z - 0.5d0 ) * ( lnx - 1.d0 )
     w = g
-    t = g - dble ( w )
+!    t = g - dble ( w )
+    t = g - w
   
     if ( w > 0.99999d0 * exparg ( 0 ) ) then
       return
@@ -8420,11 +8546,11 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 !
 !  Parameters:
 !
-!    Input, double precision A, X, the arguments of the incomplete
+!    Input, TYPE (XPLEX) A, X, the arguments of the incomplete
 !    gamma ratio.  A and X must be nonnegative.  A and X cannot
 !    both be zero.
 !
-!    Output, double precision ANS, QANS.  On normal output,
+!    Output, TYPE (XPLEX) ANS, QANS.  On normal output,
 !    ANS = P(A,X) and QANS = Q(A,X).  However, ANS is set to 2 if
 !    A or X is negative, or both are 0, or when the answer is
 !    computationally indeterminate because A is extremely large
@@ -8435,85 +8561,87 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 !    1, to within 1 unit of the 6-th significant digit, 
 !    otherwise, to within 1 unit of the 3rd significant digit.
 !
-  double precision, parameter :: alog10 = 2.30258509299405d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: alog10 = 2.30258509299405d0
 !
-  double precision a
-  double precision a2n
-  double precision a2nm1
-  double precision acc
-  double precision acc0(3)
-  double precision am0
-  double precision amn
-  double precision an
-  double precision an0
-  double precision ans
-  double precision apn
-  double precision b2n
-  double precision b2nm1
-  double precision big(3)
-  double precision c
-  double precision c0
-  double precision c1
-  double precision c2
-  double precision c3
-  double precision c4
-  double precision c5
-  double precision c6
-  double precision cma
-  double precision d0(13)
-  double precision d1(12)
-  double precision d2(10)
-  double precision d3(8)
-  double precision d4(6)
-  double precision d5(4)
-  double precision d6(2)
-  double precision d10
-  double precision d20
-  double precision d30
-  double precision d40
-  double precision d50
-  double precision d60
-  double precision d70
-  double precision dpmpar
-  double precision e
-  double precision e0
-  double precision e00(3)
-  double precision erf
-  double precision erfc1
-  double precision g
-  double precision gam1
-  double precision gamma
-  double precision h
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a2n
+  TYPE (XPLEX) a2nm1
+  TYPE (XPLEX) acc
+  REAL acc0(3)
+  TYPE (XPLEX) am0
+  TYPE (XPLEX) amn
+  TYPE (XPLEX) an
+  TYPE (XPLEX) an0
+  TYPE (XPLEX) ans
+  TYPE (XPLEX) apn
+  TYPE (XPLEX) b2n
+  TYPE (XPLEX) b2nm1
+  REAL big(3)
+  TYPE (XPLEX) c
+  TYPE (XPLEX) c0
+  TYPE (XPLEX) c1
+  TYPE (XPLEX) c2
+  TYPE (XPLEX) c3
+  TYPE (XPLEX) c4
+  TYPE (XPLEX) c5
+  TYPE (XPLEX) c6
+  TYPE (XPLEX) cma
+  REAL d0(13)
+  REAL d1(12)
+  REAL d2(10)
+  REAL d3(8)
+  REAL d4(6)
+  REAL d5(4)
+  REAL d6(2)
+  REAL d10
+  REAL d20
+  REAL d30
+  REAL d40
+  REAL d50
+  REAL d60
+  REAL d70
+  TYPE (XPLEX) dpmpar
+  TYPE (XPLEX) e
+  TYPE (XPLEX) e0
+  REAL e00(3)
+  TYPE (XPLEX) erf
+  TYPE (XPLEX) erfc1
+  TYPE (XPLEX) g
+  TYPE (XPLEX) gam1
+  TYPE (XPLEX) gamma
+  TYPE (XPLEX) h
   integer i
   integer ind
   integer iop
-  double precision j
-  double precision l
+  TYPE (XPLEX) j
+  TYPE (XPLEX) l
   integer m
   integer n
   integer n_max
-  double precision qans
-  double precision r
-  double precision rexp
-  double precision rlog
-  double precision, parameter :: rt2pin = 0.398942280401433d0
-  double precision rta
-  double precision, parameter :: rtpi = 1.77245385090552d0
-  double precision rtx
-  double precision s
-  double precision sum
-  double precision t
-  double precision t1
-  double precision tol
-  double precision twoa
-  double precision u
-  double precision w
-  double precision wk(20)
-  double precision x
-  double precision x0
-  double precision x00(3)
-  double precision y
-  double precision z
+  TYPE (XPLEX) qans
+  TYPE (XPLEX) r
+  TYPE (XPLEX) rexp
+  TYPE (XPLEX) rlog
+  REAL, parameter :: rt2pin = 0.398942280401433d0
+  TYPE (XPLEX) rta
+  REAL, parameter :: rtpi = 1.77245385090552d0
+  TYPE (XPLEX) rtx
+  TYPE (XPLEX) s
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) t
+  TYPE (XPLEX) t1
+  TYPE (XPLEX) tol
+  TYPE (XPLEX) twoa
+  TYPE (XPLEX) u
+  TYPE (XPLEX) w
+  TYPE (XPLEX) wk(20)
+  TYPE (XPLEX) x
+  TYPE (XPLEX) x0
+  REAL x00(3)
+  TYPE (XPLEX) y
+  TYPE (XPLEX) z
 !
 !     ALOG10 = LN(10)
 !     RT2PIN = 1/SQRT(2*PI)
@@ -8652,7 +8780,7 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 
 70    continue
 
-  sum = t
+  newsum = t
 
   tol = 0.5d0 * acc
 
@@ -8660,7 +8788,7 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 
   apn = apn + 1.0d0
   t = t * ( x / apn )
-  sum = sum + t
+  newsum = newsum + t
   if ( t > tol ) then
     go to 80
   end if
@@ -8668,10 +8796,10 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
   n_max = n - 1
   do m = 1, n_max
     n = n - 1
-    sum = sum + wk(n)
+    newsum = newsum + wk(n)
   end do
 
-  ans = ( r / a ) * ( 1.0d0 + sum )
+  ans = ( r / a ) * ( 1.0d0 + newsum )
   qans = 0.5d0 + ( 0.5d0 - ans )
   return
 !
@@ -8695,14 +8823,14 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 
   120 continue
 
-  sum = t
+  newsum = t
 
   130 continue
 
   if ( abs ( t ) > acc ) then
     amn = amn - 1.0d0
     t = t * ( amn / x )
-    sum = sum + t
+    newsum = newsum + t
     go to 130
   end if
 
@@ -8711,9 +8839,9 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
   n_max = n - 1
   do m = 1, n_max
     n = n - 1
-    sum = sum + wk(n)
+    newsum = newsum + wk(n)
   end do
-  qans = ( r / x ) * ( 1.0d0 + sum )
+  qans = ( r / x ) * ( 1.0d0 + newsum )
   ans = 0.5d0 + ( 0.5d0 - qans )
   return
 !
@@ -8723,7 +8851,7 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 
   an = 3.0d0
   c = x
-  sum = x / ( a + 3.0d0 )
+  newsum = x / ( a + 3.0d0 )
   tol = 3.0d0 * acc / ( a + 1.0d0 )
 
   170 continue
@@ -8731,12 +8859,12 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
   an = an + 1.0d0
   c = - c * ( x / an )
   t = c / ( a + an )
-  sum = sum + t
+  newsum = newsum + t
   if ( abs ( t ) > tol ) then
     go to 170
   end if
 
-  j = a * x * (( sum / 6.0d0 - 0.5d0 / ( a + 2.0d0 )) * x + 1.0d0 &
+  j = a * x * (( newsum / 6.0d0 - 0.5d0 / ( a + 2.0d0 )) * x + 1.0d0 &
     / ( a + 1.0d0 ))
 
   z = a * log ( x )
@@ -8773,8 +8901,8 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 !
 210   continue
 
-  sum = exp ( - x )
-  t = sum
+  newsum = exp ( - x )
+  t = newsum
   n = 1
   c = 0.0d0
   go to 230
@@ -8782,7 +8910,7 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
 220   continue
 
   rtx = sqrt ( x )
-  sum = erfc1 ( 0, rtx )
+  newsum = erfc1 ( 0, rtx )
   t = exp ( - x ) / ( rtpi * rtx )
   n = 0
   c = - 0.5d0
@@ -8793,13 +8921,13 @@ subroutine gamma_inc ( a, x, ans, qans, ind )
     n = n + 1
     c = c + 1.0d0
     t = ( x * t ) / c
-    sum = sum + t
+    newsum = newsum + t
     go to 230
   end if
 
   240 continue
 
-  qans = sum
+  qans = newsum
   ans = 0.5d0 + ( 0.5d0 - qans )
   return
 !
@@ -8995,34 +9123,36 @@ subroutine gamma_rat1 ( a, x, r, p, q, eps )
 !     It is assumed that A .LE. 1.  EPS is the tolerance to be used.
 !     The input argument R has the value E**(-X)*X**A/GAMMA(A).
 !
-  double precision a
-  double precision a2n
-  double precision a2nm1
-  double precision am0
-  double precision an
-  double precision an0
-  double precision b2n
-  double precision b2nm1
-  double precision c
-  double precision cma
-  double precision eps
-  double precision erf
-  double precision erfc1
-  double precision g
-  double precision gam1
-  double precision h
-  double precision j
-  double precision l
-  double precision p
-  double precision q
-  double precision r
-  double precision rexp
-  double precision sum
-  double precision t
-  double precision tol
-  double precision w
-  double precision x
-  double precision z
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) a2n
+  TYPE (XPLEX) a2nm1
+  TYPE (XPLEX) am0
+  TYPE (XPLEX) an
+  TYPE (XPLEX) an0
+  TYPE (XPLEX) b2n
+  TYPE (XPLEX) b2nm1
+  TYPE (XPLEX) c
+  TYPE (XPLEX) cma
+  TYPE (XPLEX) eps
+  TYPE (XPLEX) erf
+  TYPE (XPLEX) erfc1
+  TYPE (XPLEX) g
+  TYPE (XPLEX) gam1
+  TYPE (XPLEX) h
+  TYPE (XPLEX) j
+  TYPE (XPLEX) l
+  TYPE (XPLEX) p
+  TYPE (XPLEX) q
+  TYPE (XPLEX) r
+  TYPE (XPLEX) rexp
+  TYPE (XPLEX) newsum
+  TYPE (XPLEX) t
+  TYPE (XPLEX) tol
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) z
 !
   if ( a * x == 0.0d0 ) then
 
@@ -9060,7 +9190,7 @@ subroutine gamma_rat1 ( a, x, r, p, q, eps )
 
   an = 3.0d0
   c = x
-  sum = x / ( a + 3.0d0 )
+  newsum = x / ( a + 3.0d0 )
   tol = 0.1d0 * eps / ( a + 1.0d0 )
 
    20 continue
@@ -9068,12 +9198,12 @@ subroutine gamma_rat1 ( a, x, r, p, q, eps )
   an = an + 1.0d0
   c = - c * ( x / an )
   t = c / ( a + an )
-  sum = sum + t
+  newsum = newsum + t
   if ( abs ( t ) > tol ) then
     go to 20
   end if
 
-  j = a * x * ((sum/6.0d0-0.5d0/ (a+2.0d0))*x+1.0d0/ (a+1.0d0))
+  j = a * x * ((newsum/6.0d0-0.5d0/ (a+2.0d0))*x+1.0d0/ (a+1.0d0))
 
   z = a * log ( x )
   h = gam1 ( a )
@@ -9152,14 +9282,17 @@ function gsumln ( a, b )
 !  GSUMLN is used FOR 1 .LE. A .LE. 2  AND  1 .LE. B .LE. 2
 !
 !
-  double precision a
-  double precision alnrel
-  double precision b
-  double precision gamma_ln1
-  double precision gsumln
-  double precision x
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) a
+  TYPE (XPLEX) alnrel
+  TYPE (XPLEX) b
+  TYPE (XPLEX) gamma_ln1
+  TYPE (XPLEX) gsumln
+  TYPE (XPLEX) x
 !
-  x = dble ( a ) + dble ( b ) - 2.d0
+!  x = dble ( a ) + dble ( b ) - 2.d0
+  x = a  +  b  - 2.d0
 
   if ( x <= 0.25d0 ) then
     gsumln = gamma_ln1 ( 1.0d0 + x )
@@ -9197,7 +9330,7 @@ function ipmpar ( i )
 !
 !  FLOATING-POINT NUMBERS.
 !
-!     IT IS ASSUMED THAT THE SINGLE AND double precision FLOATING
+!     IT IS ASSUMED THAT THE SINGLE AND TYPE (XPLEX) FLOATING
 !     POINT ARITHMETICS HAVE THE SAME BASE, SAY B, AND THAT THE
 !     NONZERO NUMBERS ARE REPRESENTED IN THE FORM
 !
@@ -9387,7 +9520,7 @@ function ipmpar ( i )
 !     data imach(10) /  127 /
 !
 !     Machine constants for the HP 2100
-!     3 WORD double precision OPTION WITH FTN4
+!     3 WORD TYPE (XPLEX) OPTION WITH FTN4
 !
 !     data imach( 1) /    2 /
 !     data imach( 2) /   15 /
@@ -9401,7 +9534,7 @@ function ipmpar ( i )
 !     data imach(10) /  127 /
 !
 !     Machine constants for the HP 2100
-!     4 WORD double precision OPTION WITH FTN4
+!     4 WORD TYPE (XPLEX) OPTION WITH FTN4
 !
 !     data imach( 1) /    2 /
 !     data imach( 2) /   15 /
@@ -9618,18 +9751,20 @@ function psi ( xx )
 !    Output, real PSI, the value of the psi function.  PSI is assigned
 !    the value 0 when the psi function is undefined.
 !
-  double precision, parameter :: dx0 = 1.461632144968362341262659542325721325d0
-  double precision, parameter :: piov4 = 0.785398163397448d0
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: dx0 = 1.461632144968362341262659542325721325d0
+  REAL, parameter :: piov4 = 0.785398163397448d0
 !
-  double precision aug
-  double precision den
-  double precision dpmpar
+  TYPE (XPLEX) aug
+  TYPE (XPLEX) den
+  TYPE (XPLEX) dpmpar
   integer i
   integer ipmpar
   integer m
   integer n
   integer nq
-  double precision, parameter, dimension ( 7 ) :: p1 = (/ &
+  REAL, parameter, dimension ( 7 ) :: p1 = (/ &
    0.895385022981970d-02, &
    0.477762828042627d+01, &
    0.142441585084029d+03, &
@@ -9638,19 +9773,19 @@ function psi ( xx )
    0.413810161269013d+04, &
    0.130560269827897d+04/)
 
-  double precision p2(4)
-  double precision psi
-  double precision q1(6)
-  double precision q2(4)
-  double precision sgn
-  double precision upper
-  double precision w
-  double precision x
-  double precision xmax1
-  double precision xmx0
-  double precision xsmall
-  double precision xx
-  double precision z
+  REAL p2(4)
+  TYPE (XPLEX) psi
+  REAL q1(6)
+  REAL q2(4)
+  TYPE (XPLEX) sgn
+  TYPE (XPLEX) upper
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
+  TYPE (XPLEX) xmax1
+  TYPE (XPLEX) xmx0
+  TYPE (XPLEX) xsmall
+  TYPE (XPLEX) xx
+  TYPE (XPLEX) z
 !
 !  Coefficients for rational approximation of
 !  PSI(X) / (X - X0),  0.5 .LE. X .LE. 3.0
@@ -9786,7 +9921,8 @@ function psi ( xx )
     end do
 
     den = ( upper + p1(7) ) / ( den + q1(6) )
-    xmx0 = dble ( x ) - dx0
+!    xmx0 = dble ( x ) - dx0
+    xmx0 = x - dx0
     psi = den * xmx0 + aug
 !
 !  3.0 < X < XMAX1
@@ -9824,17 +9960,19 @@ function rcomp ( a, x )
 !
 !     RT2PIN = 1/SQRT(2*PI)
 ! 
-  double precision, parameter :: rt2pin = 0.398942280401433d0
+  USE MYTYPE
+  USE XPLEXIFY
+  REAL, parameter :: rt2pin = 0.398942280401433d0
 !
-  double precision a
-  double precision gam1
-  double precision gamma
-  double precision rcomp
-  double precision rlog
-  double precision t
-  double precision t1
-  double precision u
-  double precision x
+  TYPE (XPLEX) a
+  TYPE (XPLEX) gam1
+  TYPE (XPLEX) gamma
+  TYPE (XPLEX) rcomp
+  TYPE (XPLEX) rlog
+  TYPE (XPLEX) t
+  TYPE (XPLEX) t1
+  TYPE (XPLEX) u
+  TYPE (XPLEX) x
 !
   if ( a < 20.0d0 ) then
 
@@ -9877,20 +10015,22 @@ function rexp ( x )
 !
 !  Parameters:
 !
-!    Input, double precision X, the argument of the function.
+!    Input, TYPE (XPLEX) X, the argument of the function.
 !
-!    Output, double precision REXP, the value of EXP(X)-1.
+!    Output, TYPE (XPLEX) REXP, the value of EXP(X)-1.
 !
-  double precision, parameter :: p1 =   0.914041914819518d-09
-  double precision, parameter :: p2 =   0.238082361044469d-01
-  double precision, parameter :: q1 = - 0.499999999085958d+00
-  double precision, parameter :: q2 =   0.107141568980644d+00
-  double precision, parameter :: q3 = - 0.119041179760821d-01
-  double precision, parameter :: q4 =   0.595130811860248d-03
+  USE MYTYPE
+  USE XPLEXIFY
+  REAL, parameter :: p1 =   0.914041914819518d-09
+  REAL, parameter :: p2 =   0.238082361044469d-01
+  REAL, parameter :: q1 = - 0.499999999085958d+00
+  REAL, parameter :: q2 =   0.107141568980644d+00
+  REAL, parameter :: q3 = - 0.119041179760821d-01
+  REAL, parameter :: q4 =   0.595130811860248d-03
 !
-  double precision rexp
-  double precision w
-  double precision x
+  TYPE (XPLEX) rexp
+  TYPE (XPLEX) w
+  TYPE (XPLEX) x
 !
   if ( abs ( x ) <= 0.15d0 ) then
 
@@ -9924,25 +10064,27 @@ function rlog ( x )
 !
 !  Parameters:
 !
-!    Input, double precision X, the argument of the function.
+!    Input, TYPE (XPLEX) X, the argument of the function.
 !
-!    Output, double precision RLOG, the value of the function.
+!    Output, TYPE (XPLEX) RLOG, the value of the function.
 !
-  double precision, parameter :: a  =   0.566749439387324d-01
-  double precision, parameter :: b  =   0.456512608815524d-01
-  double precision, parameter :: p0 =   0.333333333333333d+00
-  double precision, parameter :: p1 = - 0.224696413112536d+00
-  double precision, parameter :: p2 =   0.620886815375787d-02
-  double precision, parameter :: q1 = - 0.127408923933623d+01
-  double precision, parameter :: q2 =   0.354508718369557d+00
+  USE MYTYPE
+  USE XPLEXIFY
+  REAL, parameter :: a  =   0.566749439387324d-01
+  REAL, parameter :: b  =   0.456512608815524d-01
+  REAL, parameter :: p0 =   0.333333333333333d+00
+  REAL, parameter :: p1 = - 0.224696413112536d+00
+  REAL, parameter :: p2 =   0.620886815375787d-02
+  REAL, parameter :: q1 = - 0.127408923933623d+01
+  REAL, parameter :: q2 =   0.354508718369557d+00
 !
-  double precision r
-  double precision rlog
-  double precision t
-  double precision u
-  double precision w
-  double precision w1
-  double precision x
+  TYPE (XPLEX) r
+  TYPE (XPLEX) rlog
+  TYPE (XPLEX) t
+  TYPE (XPLEX) u
+  TYPE (XPLEX) w
+  TYPE (XPLEX) w1
+  TYPE (XPLEX) x
 !
   if ( x < 0.61d0 ) then
 
@@ -9953,7 +10095,8 @@ function rlog ( x )
 
     if ( x < 0.82d0 ) then
 
-      u = dble ( x ) - 0.7d0
+!      u = dble ( x ) - 0.7d0
+      u =  x  - 0.7d0
       u = u / 0.7d0
       w1 = a - u * 0.3d0
 
@@ -9964,7 +10107,8 @@ function rlog ( x )
 
     else if ( x < 1.57d0 ) then
 
-      u = 0.75d0 * dble ( x ) - 1.d0
+!      u = 0.75d0 * dble ( x ) - 1.d0
+      u = 0.75d0 *  x  - 1.d0
       w1 = b + u / 3.0d0
 
     end if
@@ -9990,21 +10134,23 @@ function rlog1 ( x )
 !! RLOG1 evaluates the function X - LN(1 + X)
 !
 !
-  double precision, parameter :: a = 0.566749439387324d-01
-  double precision, parameter :: b = 0.456512608815524d-01
-  double precision, parameter :: p0 = 0.333333333333333d+00
-  double precision, parameter :: p1 = -0.224696413112536d+00
-  double precision, parameter :: p2 = 0.620886815375787d-02
-  double precision, parameter :: q1 = -0.127408923933623d+01
-  double precision, parameter :: q2 = 0.354508718369557d+00
+  use MYTYPE
+  use XPLEXIFY
+  REAL, parameter :: a = 0.566749439387324d-01
+  REAL, parameter :: b = 0.456512608815524d-01
+  REAL, parameter :: p0 = 0.333333333333333d+00
+  REAL, parameter :: p1 = -0.224696413112536d+00
+  REAL, parameter :: p2 = 0.620886815375787d-02
+  REAL, parameter :: q1 = -0.127408923933623d+01
+  REAL, parameter :: q2 = 0.354508718369557d+00
 !
-  double precision h
-  double precision r
-  double precision rlog1
-  double precision t
-  double precision w
-  double precision w1
-  double precision x
+  TYPE (XPLEX) h
+  TYPE (XPLEX) r
+  TYPE (XPLEX) rlog1
+  TYPE (XPLEX) t
+  TYPE (XPLEX) w
+  TYPE (XPLEX) w1
+  TYPE (XPLEX) x
 !
   if (x<-0.39d0 .or. x>0.57d0) go to 40
   if (x<-0.18d0) go to 10
@@ -10018,12 +10164,14 @@ function rlog1 ( x )
 
 10    continue
 
-  h = dble ( x ) + 0.3d0
+!  h = dble ( x ) + 0.3d0
+  h = x  + 0.3d0
   h = h / 0.7d0
   w1 = a - h * 0.3d0
   go to 30
 
-   20 h = 0.75d0 * dble ( x ) - 0.25d0
+!   20 h = 0.75d0 * dble ( x ) - 0.25d0
+   20 h = 0.75d0 *  x  - 0.25d0
   w1 = b + h / 3.0d0
 !
 !  Series expansion.
@@ -10062,51 +10210,52 @@ function stvaln ( p )
 !
 !  Parameters:
 !
-!     Input, double precision P, the probability whose normal deviate 
+!     Input, TYPE (XPLEX) P, the probability whose normal deviate 
 !     is sought.
 !
-!     Output, double precision STVALN, the normal deviate whose probability
+!     Output, TYPE (XPLEX) STVALN, the normal deviate whose probability
 !     is P.
 !
-  double precision eval_pol
-  double precision p
-  double precision sign
-  double precision stvaln
+  use MYTYPE
+  use XPLEXIFY
+  TYPE (XPLEX) eval_pol
+  TYPE (XPLEX) p
+  TYPE (XPLEX) newsign
+  TYPE (XPLEX) stvaln
 
-  double precision, parameter, dimension(0:4) :: xden = (/ &
+  REAL, parameter, dimension(0:4) :: xden = (/ &
     0.993484626060d-1, &
     0.588581570495d0, &
     0.531103462366d0, &
     0.103537752850d0, &
     0.38560700634d-2 /)
 
-  double precision, parameter, dimension(0:4) :: xnum = (/ &
+  REAL, parameter, dimension(0:4) :: xnum = (/ &
     -0.322232431088d0, &
     -1.000000000000d0, &
     -0.342242088547d0, &
     -0.204231210245d-1, &
     -0.453642210148d-4 /)
 
-  double precision y
-  double precision z
+  TYPE (XPLEX) y
+  TYPE (XPLEX) z
 !
   if ( p <= 0.5d0 ) then
 
-    sign = -1.0d0
+    newsign = -1.0d0
     z = p
 
   else
 
-    sign = 1.0d0
+    newsign = 1.0d0
     z = 1.0d0 - p
 
   end if
 
   y = sqrt ( - 2.0d0 * log ( z ) )
   stvaln = y + eval_pol ( xnum, 4, y ) / eval_pol ( xden, 4, y )
-  stvaln = sign * stvaln
+  stvaln = newsign * stvaln
 
   return
 end
-
 

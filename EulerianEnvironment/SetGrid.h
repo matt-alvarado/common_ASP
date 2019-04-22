@@ -28,6 +28,8 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	SUBROUTINE SetGrids ()
 
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 
 	  CALL SetGridPointVolumes
@@ -43,6 +45,8 @@
 
 	  USE ModelParameters, ONLY : DomainX, DomainY, DomainZ
 	
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 
 	  GridPointVolume = DomainX*DomainY*DomainZ

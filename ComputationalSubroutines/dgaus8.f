@@ -8,13 +8,13 @@ C            algorithm.  Intended primarily for high accuracy
 C            integration or integration of smooth functions.
 C***LIBRARY   SLATEC
 C***CATEGORY  H2A1A1
-C***TYPE      DOUBLE PRECISION (GAUS8-S, DGAUS8-D)
+C***TYPE      TYPE (XPLEX) (GAUS8-S, DGAUS8-D)
 C***KEYWORDS  ADAPTIVE QUADRATURE, AUTOMATIC INTEGRATOR,
 C             GAUSS QUADRATURE, NUMERICAL INTEGRATION
 C***AUTHOR  Jones, R. E., (SNLA)
 C***DESCRIPTION
 C
-C     Abstract  *** a DOUBLE PRECISION routine ***
+C     Abstract  *** a TYPE (XPLEX) routine ***
 C        DGAUS8 integrates real functions of one variable over finite
 C        intervals using an adaptive 8-point Legendre-Gauss algorithm.
 C        DGAUS8 is intended primarily for high accuracy integration
@@ -22,14 +22,14 @@ C        or integration of smooth functions.
 C
 C        The maximum number of significant digits obtainable in ANS
 C        is the smaller of 18 and the number of digits carried in
-C        double precision arithmetic.
+C        TYPE (XPLEX) arithmetic.
 C
 C     Description of Arguments
 C
-C        Input--* FUN, A, B, ERR are DOUBLE PRECISION *
+C        Input--* FUN, A, B, ERR are TYPE (XPLEX) *
 C        FUN - name of external function to be integrated.  This name
 C              must be in an EXTERNAL statement in the calling program.
-C              FUN must be a DOUBLE PRECISION function of one DOUBLE
+C              FUN must be a TYPE (XPLEX) function of one DOUBLE
 C              PRECISION argument.  The value of the argument to FUN
 C              is the variable of integration which ranges from A to B.
 C	   Q   - is a dummy second argument passed to FUN.  (Added by HDS in 2002)
@@ -38,7 +38,7 @@ C        B   - upper limit of integration (may be less than A)
 C        ERR - is a requested pseudorelative error tolerance.  Normally
 C              pick a value of ABS(ERR) so that DTOL .LT. ABS(ERR) .LE.
 C              1.0D-3 where DTOL is the larger of 1.0D-18 and the
-C              double precision unit roundoff D1MACH(4).  ANS will
+C              TYPE (XPLEX) unit roundoff D1MACH(4).  ANS will
 C              normally have no more error than ABS(ERR) times the
 C              integral of the absolute value of FUN(X).  Usually,
 C              smaller values of ERR yield more accuracy and require
@@ -50,7 +50,7 @@ C              ERR must be a variable (not a constant) in this case.
 C              Note also that the user must reset the value of ERR
 C              before making any more calls that use the variable ERR.
 C
-C        Output--* ERR,ANS are double precision *
+C        Output--* ERR,ANS are TYPE (XPLEX) *
 C        ERR - will be an estimate of the absolute error in ANS if the
 C              input value of ERR was negative.  (ERR is unchanged if
 C              the input value of ERR was non-negative.)  The estimated
@@ -78,14 +78,20 @@ C   900315  CALLs to XERROR changed to CALLs to XERMSG.  (THJ)
 C   900326  Removed duplicate information from DESCRIPTION section.
 C           (WRB)
 C***END PROLOGUE  DGAUS8
+      use MYTYPE
+      use XPLEXIFY
       INTEGER IERR, K, KML, KMX, L, LMN, LMX, LR, MXL, NBITS,
      1 NIB, NLMN, NLMX
       INTEGER I1MACH
-      DOUBLE PRECISION A,AA,AE,ANIB,ANS,AREA,B,C,CE,EE,EF,
-     1 EPS, ERR, EST, GL, GLR, GR, HH, Q(3), Stoich(4), Charge(4), SQ2, 
-     2 TOL, VL, VR, W1, W2, W3, W4, X1, X2, X3, X4, X, H
-      DOUBLE PRECISION D1MACH, G8, FUN
+
+      TYPE (XPLEX) :: A,AA,AE,ANIB,ANS,AREA,B,C,CE,EE,EF,
+     1 EPS, ERR, EST, GL, GLR, GR, HH, Q(3), Stoich(4), Charge(4), 
+     2 TOL, VL, VR,  X, H
+!      Double Precision D1MACH, G8, FUN !MJA 20190221 worried about this but need to allow implicit array
+      TYPE (XPLEX)  :: D1MACH, G8, Temp1, Temp2
+      TYPE (XPLEX), External :: FUN
       DIMENSION AA(60), HH(60), LR(60), VL(60), GR(60)
+      DOUBLE PRECISION X1, X2, X3, X4, W1, W2, W3, W4, SQ2
       SAVE X1, X2, X3, X4, W1, W2, W3, W4, SQ2,
      1 NLMN, KMX, KML
       DATA X1, X2, X3, X4/
@@ -96,14 +102,6 @@ C***END PROLOGUE  DGAUS8
      2     2.22381034453374471D-01,     1.01228536290376259D-01/
       DATA SQ2/1.41421356D0/
       DATA NLMN/1/,KMX/5000/,KML/6/
-      G8(X,H)=H*((W1*(FUN(X-X1*H,Q,Stoich,Charge) + 
-     1				FUN(X+X1*H,Q,Stoich,Charge))
-     2           +W2*(FUN(X-X2*H,Q,Stoich,Charge) + 
-     3				FUN(X+X2*H,Q,Stoich,Charge)))
-     4          +(W3*(FUN(X-X3*H,Q,Stoich,Charge) + 
-     5				FUN(X+X3*H,Q,Stoich,Charge))
-     6           +W4*(FUN(X-X4*H,Q,Stoich,Charge) + 
-     7                FUN(X+X4*H,Q,Stoich,Charge))))
 C***FIRST EXECUTABLE STATEMENT  DGAUS8
 C
 C     Initialize
@@ -135,7 +133,9 @@ C
       AA(1) = A
       LR(1) = 1
       L = 1
-      EST = G8(AA(L)+2.0D0*HH(L),2.0D0*HH(L))
+      Temp1 = AA(L)+2.0D0*HH(L)
+      Temp2 = 2.0D0*HH(L)
+      EST = G8(Temp1,Temp2,FUN,Q,Stoich,Charge)
       K = 8
       AREA = ABS(EST)
       EF = 0.5D0
@@ -143,15 +143,19 @@ C
 C
 C     Compute refined estimates, estimate the error, etc.
 C
-   20 GL = G8(AA(L)+HH(L),HH(L))
-      GR(L) = G8(AA(L)+3.0D0*HH(L),HH(L))
+   20 Temp1 = AA(L)+HH(L)
+      Temp2 = HH(L)
+      GL = G8(Temp1,Temp2,FUN,Q,Stoich,Charge)
+      Temp1 = AA(L)+3.0D0*HH(L)
+      Temp2 = HH(L)
+      GR(L) = G8(Temp1,Temp2,FUN,Q,Stoich,Charge)
       K = K + 16
       AREA = AREA + (ABS(GL)+ABS(GR(L))-ABS(EST))
 C     IF (L .LT .LMN) GO TO 11
       GLR = GL + GR(L)
       EE = ABS(EST-GLR)*EF
       AE = MAX(EPS*AREA,TOL*ABS(GLR))
-      IF (EE-AE) 40, 40, 50
+      IF (EE%r-AE%r) 40, 40, 50
    30 MXL = 1
    40 CE = CE + (EST-GLR)
       IF (LR(L)) 60, 60, 80
@@ -205,6 +209,35 @@ C
   140 IF (ERR .LT. 0.0D0) ERR = CE
       RETURN
       END
+
+      TYPE (XPLEX) Function G8(X,H,FUN,Q,Stoich,Charge)
+	USE XPLEXIFY
+        USE MYTYPE
+	IMPLICIT NONE
+
+	!! External Variables
+	TYPE (XPLEX), INTENT(IN)  :: X, H, Q(3), Stoich(4), Charge(4)
+        TYPE (XPLEX), EXTERNAL :: FUN
+      DOUBLE PRECISION X1, X2, X3, X4, W1, W2, W3, W4
+      SAVE X1, X2, X3, X4, W1, W2, W3, W4
+      DATA X1, X2, X3, X4/
+     1     1.83434642495649805D-01,     5.25532409916328986D-01,
+     2     7.96666477413626740D-01,     9.60289856497536232D-01/
+      DATA W1, W2, W3, W4/
+     1     3.62683783378361983D-01,     3.13706645877887287D-01,
+     2     2.22381034453374471D-01,     1.01228536290376259D-01/
+  
+        G8=H*((W1*(FUN(X-X1*H,Q,Stoich,Charge) + 
+     1				FUN(X+X1*H,Q,Stoich,Charge))
+     2           +W2*(FUN(X-X2*H,Q,Stoich,Charge) + 
+     3				FUN(X+X2*H,Q,Stoich,Charge)))
+     4          +(W3*(FUN(X-X3*H,Q,Stoich,Charge) + 
+     5				FUN(X+X3*H,Q,Stoich,Charge))
+     6           +W4*(FUN(X-X4*H,Q,Stoich,Charge) + 
+     7                FUN(X+X4*H,Q,Stoich,Charge))))
+        RETURN
+      END FUNCTION G8
+
 *DECK I1MACH
       INTEGER FUNCTION I1MACH (I)
 C***BEGIN PROLOGUE  I1MACH
@@ -790,7 +823,7 @@ C     DATA IMACH(15) /      -1021 /
 C     DATA IMACH(16) /       1024 /
 C
 C     MACHINE CONSTANTS FOR THE HP 2100
-C     3 WORD DOUBLE PRECISION OPTION WITH FTN4
+C     3 WORD TYPE (XPLEX) OPTION WITH FTN4
 C
 C     DATA IMACH( 1) /          5 /
 C     DATA IMACH( 2) /          6 /
@@ -810,7 +843,7 @@ C     DATA IMACH(15) /       -128 /
 C     DATA IMACH(16) /        127 /
 C
 C     MACHINE CONSTANTS FOR THE HP 2100
-C     4 WORD DOUBLE PRECISION OPTION WITH FTN4
+C     4 WORD TYPE (XPLEX) OPTION WITH FTN4
 C
 C     DATA IMACH( 1) /          5 /
 C     DATA IMACH( 2) /          6 /
@@ -1863,12 +1896,12 @@ C
  9030 FORMAT (1X)
       END
 *DECK D1MACH
-      DOUBLE PRECISION FUNCTION D1MACH (I)
+      TYPE (XPLEX) FUNCTION D1MACH (I)
 C***BEGIN PROLOGUE  D1MACH
 C***PURPOSE  Return floating point machine dependent constants.
 C***LIBRARY   SLATEC
 C***CATEGORY  R1
-C***TYPE      DOUBLE PRECISION (R1MACH-S, D1MACH-D)
+C***TYPE      TYPE (XPLEX) (R1MACH-S, D1MACH-D)
 C***KEYWORDS  MACHINE CONSTANTS
 C***AUTHOR  Fox, P. A., (Bell Labs)
 C           Hall, A. D., (Bell Labs)
@@ -1891,7 +1924,7 @@ C   D1MACH( 3) = B**(-T), the smallest relative spacing.
 C   D1MACH( 4) = B**(1-T), the largest relative spacing.
 C   D1MACH( 5) = LOG10(B)
 C
-C   Assume double precision numbers are represented in the T-digit,
+C   Assume TYPE (XPLEX) numbers are represented in the T-digit,
 C   base-B form
 C
 C              sign (B**E)*( (X(1)/B) + ... + (X(T)/B**T) )
@@ -1935,18 +1968,21 @@ C   010817  Elevated IEEE to highest importance; see next set of
 C           comments below.  (DWL)
 C***END PROLOGUE  D1MACH
 C
+      use MYTYPE
+      use XPLEXIFY
       INTEGER SMALL(4)
       INTEGER LARGE(4)
       INTEGER RIGHT(4)
       INTEGER DIVER(4)
-      INTEGER LOG10(4)
+      INTEGER NEWLOG10(4)
 C
 C Initial data here correspond to the IEEE standard.  The values for
 C DMACH(1), DMACH(3) and DMACH(4) are slight upper bounds.  The value
 C for DMACH(2) is a slight lower bound.  The value for DMACH(5) is
 C a 20-digit approximation.  If one of the sets of initial data below
 C is preferred, do the necessary commenting and uncommenting. (DWL)
-      DOUBLE PRECISION DMACH(5)
+
+      REAL DMACH(5)
       DATA DMACH / 2.23D-308, 1.79D+308, 1.111D-16, 2.222D-16,
      1             0.30102999566398119521D0 /
       SAVE DMACH
@@ -1955,7 +1991,7 @@ C
       EQUIVALENCE (DMACH(2),LARGE(1))
       EQUIVALENCE (DMACH(3),RIGHT(1))
       EQUIVALENCE (DMACH(4),DIVER(1))
-      EQUIVALENCE (DMACH(5),LOG10(1))
+      EQUIVALENCE (DMACH(5),NEWLOG10(1))
 C
 C     MACHINE CONSTANTS FOR THE AMIGA
 C     ABSOFT FORTRAN COMPILER USING THE 68020/68881 COMPILER OPTION
@@ -2169,7 +2205,7 @@ C     DATA DIVER(1), DIVER(2) / Z00003CD0, Z00000000 /
 C     DATA LOG10(1), LOG10(2) / Z44133FF3, Z79FF509F /
 C
 C     MACHINE CONSTANTS FOR THE ELXSI 6400
-C     (ASSUMING REAL*8 IS THE DEFAULT DOUBLE PRECISION)
+C     (ASSUMING TYPE (XPLEX) IS THE DEFAULT TYPE (XPLEX))
 C
 C     DATA SMALL(1), SMALL(2) / '00100000'X,'00000000'X /
 C     DATA LARGE(1), LARGE(2) / '7FEFFFFF'X,'FFFFFFFF'X /
@@ -2202,7 +2238,7 @@ C     DATA DMACH(4) / Z'3CB0000000000000' /
 C     DATA DMACH(5) / Z'3FD34413509F79FF' /
 C
 C     MACHINE CONSTANTS FOR THE HP 2100
-C     THREE WORD DOUBLE PRECISION OPTION WITH FTN4
+C     THREE WORD TYPE (XPLEX) OPTION WITH FTN4
 C
 C     DATA SMALL(1), SMALL(2), SMALL(3) / 40000B,       0,       1 /
 C     DATA LARGE(1), LARGE(2), LARGE(3) / 77777B, 177777B, 177776B /
@@ -2211,7 +2247,7 @@ C     DATA DIVER(1), DIVER(2), DIVER(3) / 40000B,       0,    276B /
 C     DATA LOG10(1), LOG10(2), LOG10(3) / 46420B,  46502B,  77777B /
 C
 C     MACHINE CONSTANTS FOR THE HP 2100
-C     FOUR WORD DOUBLE PRECISION OPTION WITH FTN4
+C     FOUR WORD TYPE (XPLEX) OPTION WITH FTN4
 C
 C     DATA SMALL(1), SMALL(2) /  40000B,       0 /
 C     DATA SMALL(3), SMALL(4) /       0,       1 /
@@ -2243,7 +2279,7 @@ C     DATA DIVER(1), DIVER(2) / Z34100000, Z00000000 /
 C     DATA LOG10(1), LOG10(2) / Z41134413, Z509F79FF /
 C
 C     MACHINE CONSTANTS FOR THE IBM PC
-C     ASSUMES THAT ALL ARITHMETIC IS DONE IN DOUBLE PRECISION
+C     ASSUMES THAT ALL ARITHMETIC IS DONE IN TYPE (XPLEX)
 C     ON 8088, I.E., NOT IN 80 BIT FORM FOR THE 8087.
 C
 C     DATA SMALL(1) / 2.23D-308  /

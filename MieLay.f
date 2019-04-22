@@ -58,7 +58,7 @@ c    unity.
 c    For too-large particles, internal array sizes will be inadequate,
 c    but this generates an error message and an abort.  
 
-c    It is highly recommended to use the DOUBLE PRECISION version of 
+c    It is highly recommended to use the TYPE (XPLEX) version of 
 c    this program, called 'DMiLay', on machines with 32-bit floating-
 c    point arithmetic (e.g. all IEEE arithmetic machines).  'DMiLay' 
 c    is also available on the network.  'MieLay' may be adequate but
@@ -111,7 +111,7 @@ c          mainly so that innermost loops are over the first
 c          dimension of all arrays
 c    ** polishing and declaration standardization using NAG Fortran
 c          Tool nag_decs
-c    ** creation of a DOUBLE PRECISION version using NAG Fortran
+c    ** creation of a TYPE (XPLEX) version using NAG Fortran
 c          Tool nag_apt
 c    ** certification by 'flint' (Fortran 'lint', for C folks)
 
@@ -127,7 +127,7 @@ c         (an awkward and confusing hangover from the old Dave code)
 c    ** phrase program in terms of size parameters and eliminate
 c         input argument WVNO
 c    ** develop special-case formulas for Rcore-->0 for any Rshell,
-c         and for Rshell-->0 (comparing single and double precision 
+c         and for Rshell-->0 (comparing single and TYPE (XPLEX) 
 c         versions showed larger and larger differences as size
 c         parameter fell below about 1.E-2, esp. for gQsc); the
 c         layered sphere formulae are ill-conditioned in this limit 

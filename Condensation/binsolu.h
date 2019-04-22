@@ -24,25 +24,27 @@
 
 !This function calculates the water content (in mol/particle) caused by the
 !hydrophilic oprganic using Kappa param
-REAL*8 FUNCTION HydrophilicOrganicWaterContent(InParticle, Temp, RH)
+TYPE (XPLEX) FUNCTION HydrophilicOrganicWaterContent(InParticle, Temp, RH)
       
         USE Chemistry,  ONLY : Kappa, AqOrgDensity, AqOrgMolecularMass,&
                                AqMolecularMass, HowManyAqOrgChems 
 	
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
         !External Variables
-        REAL*8 :: Temp, RH
+        TYPE (XPLEX) :: Temp, RH
         TYPE(Particle),POINTER :: InParticle
 
         !Internal Variables
         INTEGER :: I
-        REAL*8 :: Sum 
-        REAL*8, ALLOCATABLE :: MOLALRH(:), ORGCONC(:)
+        TYPE (XPLEX) :: NewSum 
+        TYPE (XPLEX), ALLOCATABLE :: MOLALRH(:), ORGCONC(:)
 
         ALLOCATE(MOLALRH(1:HowManyAqOrgChems),ORGCONC(1:HowManyAqOrgChems))
 
-	Sum = 0.0
+	NewSum = 0.0
 	DO I = 1, HowManyAqOrgChems
                 IF (Kappa(I) .GT. 1.0e-5) THEN !For very small kappa, no water is associated with the organic
                    !Assume water density = 1.0 g/cm3
@@ -52,14 +54,14 @@ REAL*8 FUNCTION HydrophilicOrganicWaterContent(InParticle, Temp, RH)
  		   ORGCONC(I) = InParticle%AqOrgChems(I)*InParticle%NumberofParticles !Mol org/cm3
 
                    !ZSR formula
-		   Sum = Sum + (ORGCONC(I)/MOLALRH(I)) !g H2O /cm3 air
+		   NewSum = NewSum + (ORGCONC(I)/MOLALRH(I)) !g H2O /cm3 air
 		ENDIF	
 	END DO
 
 	
-	Sum = Sum/AqMolecularMass(1) !Water content in mol/cm3 air
+	NewSum = NewSum/AqMolecularMass(1) !Water content in mol/cm3 air
 	!WRITE(*,*) "Water mass: ", AqMolecularMass(1)
-	HydrophilicOrganicWaterContent = Sum/InParticle%NumberofParticles !water content in mol/particle
+	HydrophilicOrganicWaterContent = NewSum/InParticle%NumberofParticles !water content in mol/particle
 	!WRITE(*,*) "OrgWater: ", HydrophilicOrganicWaterContent*InParticle%NumberofParticles, "RH: ", RH
 
 END FUNCTION HydrophilicOrganicWaterContent

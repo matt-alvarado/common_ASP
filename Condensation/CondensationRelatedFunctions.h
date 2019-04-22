@@ -99,13 +99,15 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! The THERMAL VELOCITY of SOME NON-WATER CHEMICAL !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetThermalVelocity (ChemIndex)
+TYPE (XPLEX) FUNCTION GetThermalVelocity (ChemIndex)
 
 	USE ModelParameters,	 ONLY : ThmVelFac, &
                                         Avogadro
 	USE Chemistry,	         ONLY : GasMolecularMass
 	USE GridPointFields,     ONLY : GetTemp
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -156,15 +158,17 @@ FUNCTION CondensationRateCoefficients (ReactionNumb, NumbLinks)
 					ThermoBulkMode,			&
 					IgnoreCorrectionstoDiffusivity
 
+    USE XPLEXIFY
+       USE MYTYPE
     IMPLICIT NONE
 
 	!! Define input and output variables
 	INTEGER	:: ReactionNumb, NumbLinks
-	REAL*8	:: CondensationRateCoefficients(NumbLinks)
+	TYPE (XPLEX)	:: CondensationRateCoefficients(NumbLinks)
 
 	TYPE(Particle),POINTER :: Current
 	INTEGER ::  I, ChemIndex
-	REAL*8  ::      AirDensity,		&
+	TYPE (XPLEX)  ::      AirDensity,		&
 			AirTemp,		&
 			Cpm,			&	! Moist specific heat
 			Dv,			&	! Diffusion Coeffienct
@@ -372,13 +376,15 @@ END FUNCTION  CondensationRateCoefficients
 !! sure to convert to the weird      !!
 !! pressure units.		     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION HenrysLaw (Temperature, DissolutionRxn)
+TYPE (XPLEX) FUNCTION HenrysLaw (Temperature, DissolutionRxn)
 
 	USE ModelParameters, ONLY : EqCoeffTref 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: Temperature, TempRatio
+	TYPE (XPLEX)  :: Temperature, TempRatio
 	INTEGER :: DissolutionRxn
 
 	TempRatio = EqCoeffTref / Temperature
@@ -400,7 +406,7 @@ END FUNCTION HenrysLaw
 !! other species, it is a simple correction based on the kelvin !!
 !! effect.							!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
+TYPE (XPLEX) FUNCTION SatVapPressRatio (InParticle , ChemIndex )
 
 	USE Chemistry,	ONLY :	HowManyGasChems,	&
 				HowManyAqChems,		&
@@ -419,6 +425,8 @@ REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
 
 	USE InfrastructuralCode, ONLY : ERROR,real2str
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -427,8 +435,8 @@ REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
 
 	!! Internal Variables
 	INTEGER :: I
-	REAL*8  :: Radiative, XX, YY, dRdV
-	real*8  :: ii,jj,kk
+	TYPE (XPLEX)  :: Radiative, XX, YY, dRdV
+	TYPE (XPLEX)  :: ii,jj,kk
 	
 	!! Thermo Mode doesn't use this correction
 	IF (ThermoBulkMode) THEN
@@ -452,7 +460,7 @@ REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
 !! a Gorbunov and Hamilton type approach.		!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			  ! CMB: floating-point inequality mod
-			  if (dabs(inparticle%insolubleradius) .le. 1.0e-40) then
+			  if (abs(inparticle%insolubleradius) .le. 1.0e-40) then
               !IF (InParticle%InsolubleRadius .EQ. 0.) THEN	
 
                  !! The Kelvin Effect is abstracted to a function 
@@ -470,7 +478,7 @@ REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
                  !! If this is the Kohler Example, there may 
                  !! be problems if we use Fletcher's Approx.
 				 ! CMB (AER, Inc): floating-point inequality mod
-				 if (dabs(inparticle%insolubleradius) .le. 1.0e-40 .or. &
+				 if (abs(inparticle%insolubleradius) .le. 1.0e-40 .or. &
                  !IF (InParticle%InsolubleRadius .EQ. 0. .OR. & 
                       CosContactAngle+1. .LT. 0.0000001) THEN
 
@@ -482,8 +490,8 @@ REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
 
                     !! This is a problem, meaning either no
                     !! or negative volume for the embryo
-					! CMB: double precision
-					if ((dabs(CosContactAngle - 1.) .lt. 0.0000001) .and. &
+					! CMB: TYPE (XPLEX)
+					if ((abs(CosContactAngle - 1.) .lt. 0.0000001) .and. &
                     !IF ((ABS(CosContactAngle -1.)<0.0000001) .AND.			&
                          (InParticle%InsolubleRadius .GE. InParticle%EffectiveRadius))   &
                          CALL ERROR("In SUBROUTINE SatVapPressRatio (), a water "// &
@@ -506,7 +514,7 @@ REAL*8 FUNCTION SatVapPressRatio (InParticle , ChemIndex )
 	!! S' from Gorbunov and Hamilton, 1997 using their eq. (21) except
 	!! we do not assume that the density of the solution is the density
 	!! of water (we use the calculated density)
-                 SatVapPressRatio = DEXP(						&
+                 SatVapPressRatio = EXP(						&
                       InParticle%SurfaceTension / Rstar / InParticle%Temperature *	&
                       2.*Pi * InParticle%InsolubleRadius *				&
                       WaterMolecMass / InParticle%SolutionDensity * dRdV *		&
@@ -555,28 +563,30 @@ SUBROUTINE EquilibrateDissolutionReaction (GasPhaseBurden, WhichRxn, &
 					Transcript,			&
 					ERROR, WARN
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER, INTENT(IN) :: WhichRxn
-        REAL*8, INTENT(IN)  :: Temperature, OptErrorTolerance, &
+        TYPE (XPLEX), INTENT(IN)  :: Temperature, OptErrorTolerance, &
                                WaterSatBurden, GasPhaseBurden2
 	TYPE(PARTICLE),POINTER :: InParticle
 
         !These are both in and out
         INTEGER             :: ReturnType
-	REAL*8              :: GasPhaseBurden
+	TYPE (XPLEX)              :: GasPhaseBurden
 
 	!! Local Variables
 	INTEGER :: I, GG, RxnType
-	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients, &
+	TYPE (XPLEX)  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients, &
                    ErrorTolerance, DissociatedScaling, DissociatedExp
 
 	!! SCSCSCSCSC
 	LOGICAL :: Scaffolding = .FALSE. ! .TRUE.
 
 	! CMB (AER): floating-point inequality check
-	if (dabs(inparticle%numberofparticles) .le. 1.0e-40 .or. inparticle%dry) return
+	if (abs(inparticle%numberofparticles) .le. 1.0e-40 .or. inparticle%dry) return
 	!IF (InParticle%NumberOfParticles .EQ. 0. .OR. InParticle%Dry) RETURN
 
         !WRITE(*,*) "Entering EquilibrateDissolutionReaction, Reaction # ", WhichRxn
@@ -924,7 +934,7 @@ END SUBROUTINE EquilibrateDissolutionReaction
 
 !! This should only be used in the context of EquilibrateDissolutionReaction!  
 !! Otherwise there is no check for lack of the species.
-REAL*8 FUNCTION DissolutionEquilibriumConstantsRatio (GasPhaseBurden, &
+TYPE (XPLEX) FUNCTION DissolutionEquilibriumConstantsRatio (GasPhaseBurden, &
                        WhichRxn, Temperature, InParticle,	&
 			GasPhaseBurden2, WaterSatBurden)
 
@@ -936,16 +946,18 @@ REAL*8 FUNCTION DissolutionEquilibriumConstantsRatio (GasPhaseBurden, &
 
 	USE InfrastructuralCode, ONLY : Error, INT2STR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichRxn, ReactionType
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: GasPhaseBurden, Temperature
-	REAL*8 :: GasPhaseBurden2, WaterSatBurden 
+	TYPE (XPLEX) :: GasPhaseBurden, Temperature
+	TYPE (XPLEX) :: GasPhaseBurden2, WaterSatBurden 
 
 	!! Internal Variables
-	REAL*8	:: Eq, ExpA, ExpB, P1, P2, MeanAct ! AwPow,
+	TYPE (XPLEX)	:: Eq, ExpA, ExpB, P1, P2, MeanAct ! AwPow,
         INTEGER :: IonA, IonB
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1026,7 +1038,7 @@ REAL*8 FUNCTION DissolutionEquilibriumConstantsRatio (GasPhaseBurden, &
 
 	!! If the solution is set to blow up, then establish a large artificial value.
 	! CMB (AER, Inc): floating-point equality mods
-	if (dabs(GasPhaseBurden) .le. 1.0e-40 .or. (dabs(Eq) .le. 1.0e-40 .and. WhichRxn .ne. 1)) then
+	if (abs(GasPhaseBurden) .le. 1.0e-40 .or. (abs(Eq) .le. 1.0e-40 .and. WhichRxn .ne. 1)) then
 	!IF (GasPhaseBurden .EQ. 0. .OR. (Eq .EQ. 0. .AND. WhichRxn .NE. 1)) THEN
 		DissolutionEquilibriumConstantsRatio = 1.e12
 		RETURN
@@ -1075,8 +1087,8 @@ REAL*8 FUNCTION DissolutionEquilibriumConstantsRatio (GasPhaseBurden, &
 
 		IonA = FLOOR(DissolutionData(WhichRxn,8))
 		IonB = FLOOR(DissolutionData(WhichRxn,9))
-		ExpA = ANINT(10000.*(DissolutionData(WhichRxn,8)-FLOOR(DissolutionData(WhichRxn,8))))
-		ExpB = ANINT(10000.*(DissolutionData(WhichRxn,9)-FLOOR(DissolutionData(WhichRxn,9))))
+		ExpA = NINT(10000.*(DissolutionData(WhichRxn,8)-FLOOR(DissolutionData(WhichRxn,8))))
+		ExpB = NINT(10000.*(DissolutionData(WhichRxn,9)-FLOOR(DissolutionData(WhichRxn,9))))
 
 		IF (InParticle%AqChems(INT(DissolutionData(WhichRxn,2))) .LE. 0) THEN
 			DissolutionEquilibriumConstantsRatio = 1.e12
@@ -1182,6 +1194,8 @@ SUBROUTINE EquilibrateSulfate()
 					ReynoldsNumber
 	USE	ModelParameters
 		
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Internal Variables
@@ -1189,13 +1203,13 @@ SUBROUTINE EquilibrateSulfate()
                    HeteroBins, H2SO4GasIndex, SO4AqIndex,         &
                    HNO3GasIndex, NumAqChems, &
 	           NH3GasIndex, HAqIndex, status
-	real*8  :: ii, jj, kk, Dum1, Dum2
-	real*8  ::  Mgas, Temp, H2SO4Conc, TransferSum, &
+	TYPE (XPLEX)  :: ii, jj, kk, Dum1, Dum2
+	TYPE (XPLEX)  ::  Mgas, Temp, H2SO4Conc, TransferSum, &
 	            FractionofSulfate, Knudsen, InvKn, AccomCoeff, &
 				omega, Re, GasMeanFreePath, DynamVisc, Dens, &
 				Dv, Sc, DumNum, VentFac, Total
 
-	REAL*8, ALLOCATABLE	::	Chem(:), NumConc(:), SulfTrans(:)
+	TYPE (XPLEX), ALLOCATABLE	::	Chem(:), NumConc(:), SulfTrans(:)
 
 	TYPE(Particle), POINTER :: CurrentParticle
 
@@ -1380,16 +1394,18 @@ SUBROUTINE EquilibrateGasSolidReactions(GasPhaseBurden, WhichRxn, &
 					AerosolModes
 	USE	ModelParameters
 		
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichRxn, ReturnType
-	REAL*8 :: GasPhaseBurden, Temperature
-	REAL*8 :: OptErrorTolerance, GasPhaseBurden2
+	TYPE (XPLEX) :: GasPhaseBurden, Temperature
+	TYPE (XPLEX) :: OptErrorTolerance, GasPhaseBurden2
 
 	!! Local Variables
 	INTEGER :: I, status
-	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients, &
+	TYPE (XPLEX)  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients, &
                    ErrorTolerance, DissociatedScaling, DissociatedExp
 	LOGICAL :: WaterRxn
 
@@ -1398,12 +1414,12 @@ SUBROUTINE EquilibrateGasSolidReactions(GasPhaseBurden, WhichRxn, &
 
 	integer :: j, k, l, seedarray(2),q, r, OutFH(4), NumBins,  &
 	           Gas, Aq
-	real*8  :: jj, kk, P1, P2, Eq, Total
-	real*8  ::  Mgas, Temp, AreaSum, SolidSum, NewSolidSum, &
+	TYPE (XPLEX)  :: jj, kk, P1, P2, Eq, Total
+	TYPE (XPLEX)  ::  Mgas, Temp, AreaSum, SolidSum, NewSolidSum, &
 	            DeltaSolid, FractionofMass, ZeroCheck, &
 				RemainingSolidtoEvaporate
 
-	REAL*8, ALLOCATABLE	::	Chem(:), NumConc(:), SurfArea(:)
+	TYPE (XPLEX), ALLOCATABLE	::	Chem(:), NumConc(:), SurfArea(:)
 
 	TYPE(Particle), POINTER :: Current
 
@@ -1825,6 +1841,8 @@ SUBROUTINE EquilibrateGridPoint(EquilibrateWater, &
 
 	USE InfrastructuralCode, ONLY : ERROR, WARN, INT2STR, REAL2STR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -1835,9 +1853,9 @@ SUBROUTINE EquilibrateGridPoint(EquilibrateWater, &
 	LOGICAL , PARAMETER :: Scaffolding = .FALSE.
 	LOGICAL :: Equilibrated, RxnEquilibrated, LocalEquilibrateWater, &
                    LocalWaterOpenSystem, LocalInorgOnly
-	REAL*8  :: GasPhaseBurden, GasPhaseBurden2, Temperature, &
+	TYPE (XPLEX)  :: GasPhaseBurden, GasPhaseBurden2, Temperature, &
                    II, TotalMoles, WaterSatBurden, OrgWaterContent, InitWater, &
-                   StoreGasPhaseBurden, RH, StoreRH, StoreAeroWater
+                   StoreGasPhaseBurden, RH, StoreRH, StoreAeroWater, GasBurden2, OptErrorTol
 	INTEGER :: I, J, K, L, M, Q, HowManyLinks, ReturnType, OrgRxnIndex, &
                    AqRxnIndex, StoreReturn, DissRxnMin, DissRxnMax
 	TYPE(Particle),POINTER :: Current
@@ -1907,10 +1925,12 @@ SUBROUTINE EquilibrateGridPoint(EquilibrateWater, &
 		    !Equilibrate gas-solid reactions (Type 6) using surface area to remove non-uniqueness problem
                     IF (DissolutionData(I,11) .EQ. 6.) THEN
 			RxnEquilibrated = .TRUE.
+                        OptErrorTol%r = AqThermoEquilibriumError/2.
+                        OptErrorTol%i = 0.
                         CALL EquilibrateGasSolidReactions( GasPhaseBurden, &
                              I, Temperature, ReturnType, &
 		             GasPhaseBurden2 = GasPhaseBurden2, &
-                             OptErrorTolerance=AqThermoEquilibriumError/2.)
+                             OptErrorTolerance=OptErrorTol)
 			IF (ReturnType .NE. 2) THEN
                            RxnEquilibrated = .FALSE.
                            Equilibrated    = .FALSE.
@@ -1999,10 +2019,14 @@ SUBROUTINE EquilibrateGridPoint(EquilibrateWater, &
                            WaterSatBurden = GetSatVapBurden ()
                            IF (Scaffolding) WRITE(*,*) "Before EquilibrateDissolutionReaction", GasPhaseBurden
                            StoreGasPhaseBurden = GasPhaseBurden
+                           GasBurden2%r = 0.0
+                           GasBurden2%i = 0.0
+                           OptErrorTol%r = AqThermoEquilibriumError/2.
+                           OptErrorTol%i = 0.
                            CALL EquilibrateDissolutionReaction (GasPhaseBurden, I, &
                                          Current, Temperature, ReturnType, &
-                                         WaterSatBurden=WaterSatBurden, GasPhaseBurden2=0.0, &
-                                         OptErrorTolerance=AqThermoEquilibriumError/2.)	
+                                         WaterSatBurden=WaterSatBurden, GasPhaseBurden2=GasBurden2, &
+                                         OptErrorTolerance=OptErrorTol)	
 			  
                            IF (Scaffolding) WRITE(*,*) "Middle EquilibrateDissolutionReaction", GasPhaseBurden
                            !! If the GasPhaseBurden has changed by less than 0.5%, force 
@@ -2101,9 +2125,11 @@ SUBROUTINE EquilibrateGridPoint(EquilibrateWater, &
 			!Equilibrate one hydrophobic organic reaction for one particle
                         !WRITE(*,*) "Before Org Eq"
                         StoreGasPhaseBurden=GasPhaseBurden
+                        OptErrorTol%r = AqThermoEquilibriumError/2.
+                        OptErrorTol%i = 0.
 			CALL EquilibrateHydrophobicReaction (GasPhaseBurden, OrgRxnIndex, &
                              Current, Temperature, ReturnType, &
-                             OptErrorTolerance=AqThermoEquilibriumError/2.)		
+                             OptErrorTolerance=OptErrorTol)		
                         !!If gas burden changes by less than 0.5%, force ReturnType = 2
                         IF(ABS(StoreGasPhaseBurden-GasPhaseBurden)/StoreGasPhaseBurden .LT. 0.005) &
                                   ReturnType = 2
@@ -2158,9 +2184,11 @@ SUBROUTINE EquilibrateGridPoint(EquilibrateWater, &
 						
                         !Equilibrate one reaction
                         StoreGasPhaseBurden=GasPhaseBurden
+                        OptErrorTol%r = AqThermoEquilibriumError/2.
+                        OptErrorTol%i = 0.0
 			CALL EquilibrateHydrophilicReaction (GasPhaseBurden, AqRxnIndex, &
                              Current, Temperature, ReturnType, &
-                             OptErrorTolerance=AqThermoEquilibriumError/2.)				
+                             OptErrorTolerance=OptErrorTol)				
                         !!If gas burden changes by less than 0.5%, force ReturnType = 2
                         IF(ABS(StoreGasPhaseBurden-GasPhaseBurden)/StoreGasPhaseBurden .LT. 0.005) &
                                   ReturnType = 2
@@ -2231,6 +2259,8 @@ SUBROUTINE EqAllWater(Current, ReturnType, OpenSystem)
 					ReplaceGridCellChemBurden, &
 					GetRelativeHumidity, &
 					GetGasBurden	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -2240,9 +2270,9 @@ SUBROUTINE EqAllWater(Current, ReturnType, OpenSystem)
 
 	!! Internal Variables
 	LOGICAL :: Equilibrated
-	REAL*8  :: OrgWaterContent, InorgWaterContent, CalcWater, EqRatio
-	REAL*8  :: GasWaterContent, Temperature, RH, DeltaWater
-	REAL*8  :: Qnumer, Qdenom, dX, Z_MFI, NewBurden, ErrorTolerance, &
+	TYPE (XPLEX)  :: OrgWaterContent, InorgWaterContent, CalcWater, EqRatio
+	TYPE (XPLEX)  :: GasWaterContent, Temperature, RH, DeltaWater
+	TYPE (XPLEX)  :: Qnumer, Qdenom, dX, Z_MFI, NewBurden, ErrorTolerance, &
 				Upper, Lower, Initial, Final
 	INTEGER :: I
 	LOGICAL :: ForceEquilibrium, Scaffolding
@@ -2391,6 +2421,8 @@ SUBROUTINE EquilibrateInternallyatGridPoint(EquilibrateWater, WaterOpenSystem)
 
 	USE InfrastructuralCode, ONLY : ERROR, WARN, INT2STR, REAL2STR,Transcript
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -2399,9 +2431,9 @@ SUBROUTINE EquilibrateInternallyatGridPoint(EquilibrateWater, WaterOpenSystem)
 	!! Internal Variables
 	LOGICAL :: Equilibrated, RxnEquilibrated, LocalEquilibrateWater
 	LOGICAL :: LocalWaterOpenSystem, ParticleEquilibrated
-	REAL*8  :: Temperature, II
+	TYPE (XPLEX)  :: Temperature, II
 	INTEGER :: I, K, HowManyLinks, ReturnType
-	REAL*4  :: etimearray(2), etime
+	TYPE (XPLEX)  :: etimearray(2), etime, opterrortol
 	TYPE(Particle),POINTER :: Current
 
 	LocalEquilibrateWater = EquilibrateWater
@@ -2456,8 +2488,11 @@ SUBROUTINE EquilibrateInternallyatGridPoint(EquilibrateWater, WaterOpenSystem)
 			IF(ReturnType .NE. 2 .AND. K .LE. 5) ParticleEquilibrated = .FALSE.
 			!WRITE(*,*) "InOrganicReturnType", ReturnType	
 			
+
+                        OptErrorTol%r = AqThermoEquilibriumError/2.
+                        OptErrorTol%i = 0.0
 			CALL EquilibrateOrganicParticle (Current, Temperature, ReturnType, &
-                             OptErrorTolerance=AqThermoEquilibriumError/2.)
+                             OptErrorTolerance=OptErrorTol)
 			IF(ReturnType .NE. 2) ParticleEquilibrated = .FALSE.
 			!WRITE(*,*) "OrganicReturnType", ReturnType	
 			
@@ -2484,68 +2519,4 @@ SUBROUTINE EquilibrateInternallyatGridPoint(EquilibrateWater, WaterOpenSystem)
 	RETURN
 END SUBROUTINE EquilibrateInternallyatGridPoint
 
-
-REAL*8 FUNCTION RidderMethod(func,x1,x2,xacc)
-!!This is a root-finder based on Ridder's Method for root finding
-!!from Sec. 9.2, pp. 351-352 of 
-!!"Numerical Recipies in FORTRAN: The Art of Scientific Computing"
-!! 2nd ed. by W.H. Press et al. (ISBN:0 521 43064 X)
-!! x1 and x2 are boundaries around the root, while xacc is the required accuracy
-!! func is the function we are trying to zero
-	USE InfrastructuralCode, ONLY : ERROR
-	
-	IMPLICIT NONE
-
-	!External variables
-	REAL*8 :: x1, x2, xacc, func
-	EXTERNAL func
-	 
-	!Internal variables
-	INTEGER :: J
-	REAL fh,fl,fm,fnew,s,xh,xl,xm,xnew
-
-	fl = func(x1)
-	fh = func(x2)
-	IF ((fl .GT. 0. .AND. fh .LT. 0.) .OR. (fh .GT. 0. .AND. fl .LT. 0.)) THEN
-		xl = x1
-		xh = x2
-		RidderMethod = -1.0e30 !An unlikely dummy value
-		DO J = 1, 100 !Only 100 iterations allowed!
-			xm = 0.5*(xl+xh)
-			fm = func(xm)
-			s = sqrt(fm**2-fl*fh)
-			IF (s .eq. 0.) RETURN
-			xnew = xm + (xm-xl)*(sign(1., fl-fh)*fm/s)
-			IF (abs(xnew-RidderMethod) .le. xacc) RETURN
-			RidderMethod = xnew
-			fnew = func(RidderMethod)
-			IF (fnew .eq. 0.) RETURN
-			IF (sign(fm,fnew) .ne. fm) THEN
-				xl = xm
-				fl = fm
-				xh = RidderMethod
-				fh = fnew
-			ELSE IF (sign(fl,fnew) .ne. fl) THEN
-				xh = RidderMethod
-				fh = fnew
-			ELSE IF (sign(fh,fnew) .ne. fh) THEN
-				xl = RidderMethod
-				fl = fnew
-			ELSE
-				CALL ERROR("RidderMethod - this shouldn't happen.")
-			END IF
-			IF (abs(xh-xl) .le. xacc) RETURN
-		END DO
-		CALL ERROR("Ridder Method exceeded the maximum number of iterations")
-	
-	ELSE IF (fl .EQ. 0.) THEN
-		RidderMethod = x1
-	ELSE IF (fh .EQ. 0.) THEN
-		RidderMethod = x2
-	ELSE
-		CALL ERROR("No Root found in brackets in RidderMethod.")
-	END IF
-	RETURN
-
-END FUNCTION RidderMethod
 

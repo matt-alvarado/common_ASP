@@ -35,7 +35,7 @@
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! This file contains the following functions and subroutines:		!!
-!! 1. REAL*8 FUNCTION CollisionEfficiency (Particle1, Particle2)	!!
+!! 1. TYPE (XPLEX) FUNCTION CollisionEfficiency (Particle1, Particle2)	!!
 !! 2. SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)            !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -58,19 +58,21 @@ INCLUDE "CoagulationKernels.h"
 !! Calculate the Collision Efficiency 
 !! using formula from Jacobson, "Fundamentals of Atmospheric Modeling"
 !! , 2nd ed., p. 510 (2005)
-REAL*8 FUNCTION CollisionEfficiency (Particle1, Particle2)
+TYPE (XPLEX) FUNCTION CollisionEfficiency (Particle1, Particle2)
 
 	USE Aerosols,	ONLY : Particle, TerminalVelocity, ReynoldsNumber
 
 	USE ModelParameters, ONLY : g
 	USE InfrastructuralCode, ONLY : Error
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	TYPE(Particle), POINTER :: Particle1, Particle2
 
 	!! Internal Variables
-	REAL*8  :: Stokes, Reynolds, Ev, Ea
+	TYPE (XPLEX)  :: Stokes, Reynolds, Ev, Ea
 
 	!From Jacobson, "Fundamentals of Atmospheric Modeling", p. 510
 	IF(Particle2%EffectiveRadius .GE. Particle1%EffectiveRadius) THEN
@@ -144,21 +146,23 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 					 AqPhaseChemicalNames
 	USE OutputRoutines
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8, INTENT(IN)  :: TimeStep
+	TYPE (XPLEX), INTENT(IN)  :: TimeStep
 
 	!! Internal Variables
 	INTEGER	:: HowManyLinks, I, J, K, L, M, Q, Count, JJ
 
-	REAL*8	:: AA, BB, II, LL, Kfac, &
+	TYPE (XPLEX)	:: AA, BB, II, LL, Kfac, &
 		   BigV, LowerSum, UpperSum, InnerSum, TotalAqOrgVolConc, & 
                    TotalOrgVolConc, TotalAqVolConc, &
 		   InVolConc, OutVolConc, SolnSum, AvgSolutionDensity, & 
                    OutSumVolumeConc, InSumVolumeConc, StoreDensity, Monokernel
 
-	REAL*8, ALLOCATABLE	:: CoagArray(:,:), SingleParticleVolume(:), &
+	TYPE (XPLEX), ALLOCATABLE	:: CoagArray(:,:), SingleParticleVolume(:), &
                                    VolumeConc(:), &
 				   VolumeFractions(:,:,:), NumConc(:), &
                                    AqVolConc(:,:), &

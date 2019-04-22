@@ -90,90 +90,92 @@
 !! This one holds all of the physical constants that are used in the code
 MODULE ModelParameters
 
+        use MYTYPE
+        use XPLEXIFY
 	!! These parameters set the scaling of internal representations of
 	!! Length, Mass, and the like
 	!!
 	!! BUT DON'T CHANGE THEM!!! DEBUGGING THESE SUCKS.  I KNOW THAT THE CHEMSCALES 
 	!! WORK BUT I HAVEN'T YET (02/13/04) DEBUGGED THE OTHER BUGGERS.
 	!!
-	real*8, parameter :: LengthScale = 1.			 ! The lengthscale defines the scale at which we make internal
-	real*8, parameter :: MassScale   = 1.			 ! Convert from grams to g/MassScale
-	real*8, parameter :: ChemScale   = 1.			 ! Convert from ppb to ppb/MassScale
-	real*8, parameter :: AqChemScale = ChemScale	 ! Convert to scaled moles DON"T CHANGE -- I SCREWED UP BY NOT 
+	REAL*8, parameter :: LengthScale = 1.			 ! The lengthscale defines the scale at which we make internal
+	REAL*8, parameter :: MassScale   = 1.			 ! Convert from grams to g/MassScale
+	REAL*8, parameter :: ChemScale   = 1.			 ! Convert from ppb to ppb/MassScale
+	REAL*8, parameter :: AqChemScale = ChemScale	 ! Convert to scaled moles DON"T CHANGE -- I SCREWED UP BY NOT 
 													 ! SCALING MOLALITY AND BY CONFUSING CHEMSCALE AND AQCHEMSCALE
-	real*8, parameter :: Pressurescale = MassScale / LengthScale
+	REAL*8, parameter :: Pressurescale = MassScale / LengthScale
 !! Do not provide this service for pressure.  It is not written into the code and it will only screw things
 !! up to convert everything to non-milibars.  mb = 1., absolutely
-!!!	real*8, parameter :: PressureScale = 1.	 ! Convert from milibars to mb / PressureScale
+!!!	REAL*8, parameter :: PressureScale = 1.	 ! Convert from milibars to mb / PressureScale
 
 	!! These parameters may be used to specify which length scale is specified, and 
 	!! converts those units to the working scale, defined in centimeters multiplied by the 
 	!! LengthScale specified above.
-	real*8, parameter :: kilograms	         = MassScale * 1.d3
-	real*8, parameter :: grams		 = MassScale * 1.		! Base Mass is Grams
+	REAL*8, parameter :: kilograms	         = MassScale * 1.d3
+	REAL*8, parameter :: grams		 = MassScale * 1.		! Base Mass is Grams
 
-	real*8, parameter :: km			 = LengthScale * 1.d5
-	real*8, parameter :: m			 = LengthScale * 100.
-	real*8, parameter :: cm			 = LengthScale * 1.		! Base Length is Centimeters
-	real*8, parameter :: mm			 = LengthScale * 0.1
-	real*8, parameter :: micron		 = LengthScale * 1.d-4
-	real*8, parameter :: nm			 = LengthScale * 1.d-7
-	real*8, parameter :: Angstrom	         = LengthScale * 1.d-8
-	real*8, parameter :: fermi		 = LengthScale * 1.d-13
+	REAL*8, parameter :: km			 = LengthScale * 1.d5
+	REAL*8, parameter :: m			 = LengthScale * 100.
+	REAL*8, parameter :: cm			 = LengthScale * 1.		! Base Length is Centimeters
+	REAL*8, parameter :: mm			 = LengthScale * 0.1
+	REAL*8, parameter :: micron		 = LengthScale * 1.d-4
+	REAL*8, parameter :: nm			 = LengthScale * 1.d-7
+	REAL*8, parameter :: Angstrom	         = LengthScale * 1.d-8
+	REAL*8, parameter :: fermi		 = LengthScale * 1.d-13
 
-	real*8, parameter :: mile		 = LengthScale * 160938.
-	real*8, parameter :: yard		 = LengthScale * 91.44
-	real*8, parameter :: foot		 = LengthScale * 30.48
-	real*8, parameter :: inch		 = LengthScale * 2.540
+	REAL*8, parameter :: mile		 = LengthScale * 160938.
+	REAL*8, parameter :: yard		 = LengthScale * 91.44
+	REAL*8, parameter :: foot		 = LengthScale * 30.48
+	REAL*8, parameter :: inch		 = LengthScale * 2.540
 
 	!! Convert Gas Phase Chemistry variables to ppb
-	real*8, parameter :: ppb		 = ChemScale * 1.
-	real*8, parameter :: ppt		 = ChemScale * 0.001
-	real*8, parameter :: ppm		 = ChemScale * 1000.
-	real*8, parameter :: ppbscale    = ChemScale * 1.d-9
+	REAL*8, parameter :: ppb		 = ChemScale * 1.
+	REAL*8, parameter :: ppt		 = ChemScale * 0.001
+	REAL*8, parameter :: ppm		 = ChemScale * 1000.
+	REAL*8, parameter :: ppbscale    = ChemScale * 1.d-9
 
 	!! Convert Aqueous Phase Chemistry variables to Moles
-	real*8, parameter :: moles		 = AqChemScale * 1.
+	REAL*8, parameter :: moles		 = AqChemScale * 1.
 
-	real*8, parameter :: seconds = 1.
-	real*8, parameter :: minutes = seconds * 60.
-	real*8, parameter :: hours   = minutes * 60.
-	real*8, parameter :: days    = hours * 24.
+	REAL*8, parameter :: seconds = 1.
+	REAL*8, parameter :: minutes = seconds * 60.
+	REAL*8, parameter :: hours   = minutes * 60.
+	REAL*8, parameter :: days    = hours * 24.
 
 	!! Don't scale these with a pressure scale.  It's too much to convert back and forth, Since it's often used in 
 	!! the conversion routines of other quantities and would add extra overhead.  The internal calculation is based
 	!! on milibars and nothing else.
-	real*8, parameter :: mbar		 = 1.*Pressurescale		 ! Base Pressure is Milibars  
-	real*8, parameter :: mbars		 = 1.*Pressurescale		 ! synonymns
-	real*8, parameter :: Atmospheres = 1013.25*Pressurescale !  (all factors from Iribarne and Godson)
-	real*8, parameter :: Pa			 = 0.01*Pressurescale    ! kg / m / s^2
-	real*8, parameter :: DynCm2		 = Pressurescale	     !	grams / cm			! Dynes per CM^2
-	real*8, parameter :: DynCm		 = grams 
-	real*8, parameter :: kPa		 = 10.*PressureScale
+	REAL*8, parameter :: mbar		 = 1.*Pressurescale		 ! Base Pressure is Milibars  
+	REAL*8, parameter :: mbars		 = 1.*Pressurescale		 ! synonymns
+	REAL*8, parameter :: Atmospheres = 1013.25*Pressurescale !  (all factors from Iribarne and Godson)
+	REAL*8, parameter :: Pa			 = 0.01*Pressurescale    ! kg / m / s^2
+	REAL*8, parameter :: DynCm2		 = Pressurescale	     !	grams / cm			! Dynes per CM^2
+	REAL*8, parameter :: DynCm		 = grams 
+	REAL*8, parameter :: kPa		 = 10.*PressureScale
 
 	!! Don't scale energies either.  Base energy is JOULES
-	real*8, parameter :: joules		  = 1.*kilograms*m*m	 ! Base energy is JOULES (J = Kg m2 s-2)
-	real*8, parameter :: ergs		  = 1.d-7*joules		 ! One Joule = 1.d7 ergs
+	REAL*8, parameter :: joules		  = 1.*kilograms*m*m	 ! Base energy is JOULES (J = Kg m2 s-2)
+	REAL*8, parameter :: ergs		  = 1.d-7*joules		 ! One Joule = 1.d7 ergs
 
 
 	!!!!!!!!!!!!!!!!!!!!!!!!
 	!! Physical constants !!
 	!!!!!!!!!!!!!!!!!!!!!!!!
-	real*8, parameter  :: pi=3.1415926535898				  ! Pi
-	real*8, parameter  :: EulerMass=.577215664901532860606512 ! Euler-Mascheroni Constant
-	real*8, parameter  :: kB=1.3807d-16 * grams * cm * cm	  ! Boltzmann's Constant (g cm^2 / s^2 K molec)
-	real*8, parameter  :: AirMolecMass=4.8096d-26 * kilograms ! average mass of an air molecule (g)
-	real*8, parameter  :: WaterMolecMass=18.016*grams/moles
-	real*8, parameter  :: eps=0.622							  ! thermodynamic epsilon (see Jacobson, eqn 2.28 (2nd ed. )
-	real*8, parameter  :: Rdry=2870.4 * cm * cm * cm * mbar & ! Gas Constant for Dry air (cm^3 * mb / g K)
+	REAL*8, parameter  :: pi=3.1415926535898				  ! Pi
+	REAL*8, parameter  :: EulerMass=.577215664901532860606512 ! Euler-Mascheroni Constant
+	REAL*8, parameter  :: kB=1.3807d-16 * grams * cm * cm	  ! Boltzmann's Constant (g cm^2 / s^2 K molec)
+	REAL*8, parameter  :: AirMolecMass=4.8096d-26 * kilograms ! average mass of an air molecule (g)
+	REAL*8, parameter  :: WaterMolecMass=18.016*grams/moles
+	REAL*8, parameter  :: eps=0.622							  ! thermodynamic epsilon (see Jacobson, eqn 2.28 (2nd ed. )
+	REAL*8, parameter  :: Rdry=2870.4 * cm * cm * cm * mbar & ! Gas Constant for Dry air (cm^3 * mb / g K)
 							/ grams
-	real*8, parameter  :: g=981. * cm 						  ! gravity g in cm / s^2
-	real*8, parameter  :: Avogadro=6.0221367d23				  ! Avogardo's Number
-	real*8, parameter  :: Cpd=1004.67 * joules / kilograms	  ! specific heat of dry air at constant P (J / kg K) at 298 K
-	real*8, parameter  :: CpV = 1865.1 * joules / kilograms	  ! specific heat of water vapor at constant P (J / kg K) at 298 K
-	real*8, parameter  :: Rstar=8.3145 * kilograms * m * m / moles ! Universal Gas Constant (Kg m2 / s2 mole K)
-	real*8, parameter  :: RstarMB=8.3145*10000. * cm * cm * cm * mbar / moles ! Universal Gas Constant (cm3 mb / mole / K)
-	real*8, parameter  :: ThmVelFac = 1.87508d-08 !(8*kB / Pi )**0.5 ! The constant leading factor of the thermal velocity of air
+	REAL*8, parameter  :: g=981. * cm 						  ! gravity g in cm / s^2
+	REAL*8, parameter  :: Avogadro=6.0221367d23				  ! Avogardo's Number
+	REAL*8, parameter  :: Cpd=1004.67 * joules / kilograms	  ! specific heat of dry air at constant P (J / kg K) at 298 K
+	REAL*8, parameter  :: CpV = 1865.1 * joules / kilograms	  ! specific heat of water vapor at constant P (J / kg K) at 298 K
+	REAL*8, parameter  :: Rstar=8.3145 * kilograms * m * m / moles ! Universal Gas Constant (Kg m2 / s2 mole K)
+	REAL*8, parameter  :: RstarMB=8.3145*10000. * cm * cm * cm * mbar / moles ! Universal Gas Constant (cm3 mb / mole / K)
+	REAL*8, parameter  :: ThmVelFac = 1.87508d-08 !(8*kB / Pi )**0.5 ! The constant leading factor of the thermal velocity of air
 															  ! (retreival function in "Temperature.f90" file in Eulerian
 															  ! Environment folder).
 	REAL*8, PARAMETER  :: ThermalAccommodationCoeff = 0.96
@@ -235,19 +237,19 @@ MODULE ModelParameters
 	!! If WaterContentPrecision number is too large, then equilibrium water content may oscillate grandly, 
 	!! preventing AqThermoEquilibriumError from being satisfied 
 
-	REAL*8 :: WaterContentPrecision = 0.001   !! The Relative Humidity and Water Activity must be within this amount, or LSODES 
+	REAL*8, Parameter :: WaterContentPrecision = 0.001   !! The Relative Humidity and Water Activity must be within this amount, or LSODES 
 											   !! uses this as the error tolerance...
 	LOGICAL, PARAMETER :: OpenSystemForCondensation = .FALSE.
 	LOGICAL			   :: DissolutionEquilibriumOrFlux		! False is equilibrium, True is flux
-	REAL*8            :: AverageAerosolDensity  != 1.5 * grams / cm / cm / cm
+	TYPE (XPLEX)            :: AverageAerosolDensity  != 1.5 * grams / cm / cm / cm
 	REAL*8, PARAMETER :: SmallestAerosolPossible = 0.0015 * micron   ! Any electrolyte sphere below this size doesn't take up water
 																	! If this is too small, say O(0.001 microns), there will be 
 																	! only O(100) molecules of water and the condensation routine 
 																	! will make this go negative...
 	REAL*8, PARAMETER :: MinimumWater  = 5.0e-21   ! If particle water content is this small (mol/particle), ignore aqueous equilibrium
-	REAL*8, Parameter :: CosContactAngle = 0.      !Cosine of contact angle of water embryo with insoluble sphere														
-	REAL*8, Parameter :: CoagKernel = 1.0e-9   !Kernel in cm3/s for constant kernel cases
-	REAL*8 :: InversionHeight ! = 1.0*km !Height of inversion layer (stored as cm)
+	REAL*8, parameter :: CosContactAngle = 0.      !Cosine of contact angle of water embryo with insoluble sphere														
+	REAL*8, parameter :: CoagKernel = 1.0e-9   !Kernel in cm3/s for constant kernel cases
+	TYPE (XPLEX) :: InversionHeight ! = 1.0*km !Height of inversion layer (stored as cm)
 	
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! The extent of the physical DOMAIN is the same for all grids	!!
@@ -257,19 +259,19 @@ MODULE ModelParameters
 	!! The origin is at 0,0,0, and the domain stretches this far in	!!
 	!! each direction.						!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 :: DomainX, DomainY, DomainZ
+	TYPE (XPLEX) :: DomainX, DomainY, DomainZ
 
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! The SECTIONAL REPRESENTATION has	    !!
 	!! several parameters, allocated here	    !!
 	!! and defined in SetSectionalParameters()  !!
-	REAL*8  :: LagrSectSizeCutoff,	&
+	TYPE (XPLEX)  :: LagrSectSizeCutoff,	&
 	           LowestBinCutoff
 	INTEGER :: HowManyBins
 	LOGICAL :: StochasticOrNot
-	REAL*8, ALLOCATABLE  :: BinEdges(:,:)
-	REAL*8  :: BinRadiusRatio
+	TYPE (XPLEX), ALLOCATABLE  :: BinEdges(:,:)
+	TYPE (XPLEX)  :: BinRadiusRatio
 	LOGICAL :: LagrangianOrNot !! Are we tracking lagrangian aerosol or does everything go into a section?
 	LOGICAL :: MONODISPERSE !! Are the aerosol monodisperse?
 	LOGICAL :: AmmoniaFlux !!Is ammonia dissolution a flux (1) or eq(0) process?
@@ -282,14 +284,14 @@ MODULE ModelParameters
 	!! allocated here.                                       !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	INTEGER              :: NumbInsolTypes
-	REAL*8, ALLOCATABLE  :: InsolRadii(:)
-	REAL*8, ALLOCATABLE  :: InsolDensity(:)
-	REAL*8, ALLOCATABLE  :: InsolContactAngle(:)
+	TYPE (XPLEX), ALLOCATABLE  :: InsolRadii(:)
+	TYPE (XPLEX), ALLOCATABLE  :: InsolDensity(:)
+	TYPE (XPLEX), ALLOCATABLE  :: InsolContactAngle(:)
 	
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!Added to allow user to input Background RH in main input deck!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 :: Back_RH
+	TYPE (XPLEX) :: Back_RH
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!Set Model Run Type using logical variables (MJA, 11/06/2012) !!
@@ -308,49 +310,49 @@ MODULE ModelParameters
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!Set start time, run length, and time steps (MJA, 11/06/2012) !!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-        REAL*8  :: UTCStartTime, RunLength, ChemStep, MixStep, CondStep, CoagStep, PhotoEndTime
+        TYPE (XPLEX)  :: UTCStartTime, RunLength, ChemStep, MixStep, CondStep, CoagStep, PhotoEndTime
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!Set Lagrangian Parecl Parameters (MJA, 11/06/2012)           !!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        REAL*8  :: b_mix, hetero_num, hetero_rad  
+        TYPE (XPLEX)  :: b_mix, hetero_num, hetero_rad  
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!Set Eulerian Box Parameters (MJA, 11/06/2012)                !!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        REAL*8  :: windspeed, boxlength, boxwidth, fire_co_emis    
+        TYPE (XPLEX)  :: windspeed, boxlength, boxwidth, fire_co_emis    
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!Set Lightswitch Parameters (MJA, 08/07/2017)                !!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        REAL*8  :: lights_on, lights_off
+        TYPE (XPLEX)  :: lights_on, lights_off
         INTEGER :: light_flag
 
 	!!!!!!! DEFINE SUBROUTINES !!!!!!!
 	CONTAINS
 
 ! 23 September 2016 CMB: Add these functions so that InitializeASP() can work properly
-    real*8 function getHowManyBins()
+    TYPE (XPLEX) function getHowManyBins()
         getHowManyBins = HowManyBins
         return
     end function
-    real*8 function getHowManyAqChems()
+    TYPE (XPLEX) function getHowManyAqChems()
         getHowManyAqChems = HowManyAqChems
         return
     end function
-    real*8 function getHowManyAqCations()
+    TYPE (XPLEX) function getHowManyAqCations()
         getHowManyAqCations = HowManyAqCations
         return
     end function     
-    real*8 function getHowManyAqAnions()
+    TYPE (XPLEX) function getHowManyAqAnions()
         getHowManyAqAnions = HowManyAqAnions
         return
     end function
-    real*8 function getHowManyOrgChems()
+    TYPE (XPLEX) function getHowManyOrgChems()
         getHowManyOrgChems = HowManyOrgChems
         return
     end function
-    real*8 function getHowManyAqOrgChems()
+    TYPE (XPLEX) function getHowManyAqOrgChems()
         getHowManyAqOrgChems = HowManyAqOrgChems
         return
     end function
@@ -362,6 +364,10 @@ MODULE ModelParameters
         !! so that concentrations are per cm^3
 	SUBROUTINE SetDomainSize ()
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		DomainX = 1*cm
@@ -373,8 +379,12 @@ MODULE ModelParameters
 
 	SUBROUTINE SetBackgroundRH (BRH)
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
-		REAL*8 :: BRH
+		TYPE (XPLEX) :: BRH
 
 		Back_RH = BRH
 
@@ -383,6 +393,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetDissolutionEquilibriumOrFlux(Input)
 
+	  USE XPLEXIFY
+       USE MYTYPE
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 	  INTEGER :: Input
 
@@ -400,8 +414,12 @@ MODULE ModelParameters
         !! in the Model !!
 	SUBROUTINE SetSectionalParameters (inLagrSectSizeCutoff,inLowestBinCutoff,inHowManyBins, inLagrangianOrNot)
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
-		REAL*8  :: inLagrSectSizeCutoff,inLowestBinCutoff
+		TYPE (XPLEX)  :: inLagrSectSizeCutoff,inLowestBinCutoff
 		INTEGER :: inHowManyBins
 		LOGICAL :: inLagrangianOrNot
 
@@ -478,42 +496,70 @@ MODULE ModelParameters
 	!! of the various microphysical routines !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	SUBROUTINE SetCondensationFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoCondensationFlag = InFlag
 	END SUBROUTINE SetCondensationFlag
 
 	SUBROUTINE SetDissolutionFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoDissolutionFlag = InFlag
 	END SUBROUTINE SetDissolutionFlag
 
 	SUBROUTINE SetHydrophobicOrgDissolutionFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoHydrophobicOrgDissolutionFlag = InFlag
 	END SUBROUTINE SetHydrophobicOrgDissolutionFlag
 
 	SUBROUTINE SetHydrophilicOrgDissolutionFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoHydrophilicOrgDissolutionFlag = InFlag
 	END SUBROUTINE SetHydrophilicOrgDissolutionFlag
 	
 	SUBROUTINE SetCoagulationFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoCoagulationFlag = InFlag
 	END SUBROUTINE SetCoagulationFlag
 
 	SUBROUTINE SetGasChemistryFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoGasChemistryFlag = InFlag
 	END SUBROUTINE SetGasChemistryFlag
 
 	SUBROUTINE SetAqChemistryFlag(InFlag)
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		LOGICAL :: InFlag
 		DoAqChemistryFlag = InFlag
@@ -525,6 +571,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetWaterEquilibriumIndex(WEI)
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		INTEGER :: WEI
 
@@ -535,6 +585,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetTranscriptFH(FH)
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 		INTEGER :: FH
 
@@ -544,6 +598,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetInputDeckSubDir(iInputDeckSubDir)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		CHARACTER*(*) :: iInputDeckSubDir
@@ -554,6 +612,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetOutputDeckSubDir(iOutputDeckSubDir)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		CHARACTER*(*) :: iOutputDeckSubDir
@@ -563,6 +625,10 @@ MODULE ModelParameters
 	
 	SUBROUTINE SetHowManyVariousAqChems(iHowManyAqChems, iHowManyAqCations, iHowManyAqAnions)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iHowManyAqChems, iHowManyAqCations, iHowManyAqAnions
@@ -575,6 +641,10 @@ MODULE ModelParameters
 	
 	SUBROUTINE SetHowManyOrgChems(iHowManyOrgChems)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iHowManyOrgChems
@@ -586,6 +656,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetHowManyAqOrgChems(iHowManyAqOrgChems)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iHowManyAqOrgChems
@@ -596,6 +670,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetProtonIndex(iProtonIndex)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iProtonIndex
@@ -606,6 +684,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetHydroxyIndex(iHydroxyIndex)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iHydroxyIndex
@@ -616,6 +698,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetMonodisperse(iMonodisperse)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		LOGICAL :: iMonodisperse
@@ -626,6 +712,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetConstantKernel(iConstantKernel)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		LOGICAL :: iConstantKernel
@@ -636,6 +726,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetMetastable(iMetastable)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		LOGICAL :: iMetastable
@@ -646,6 +740,8 @@ MODULE ModelParameters
 
 	SUBROUTINE SetAmmoniaFlux(iAmmoniaFlux)
 		
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		LOGICAL :: iAmmoniaFlux
@@ -656,6 +752,8 @@ MODULE ModelParameters
 
 	SUBROUTINE SetIgnoreDiffuseCorrect(iDiffuseCorrect)
 		
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		LOGICAL :: iDiffuseCorrect
@@ -666,16 +764,23 @@ MODULE ModelParameters
 
 	SUBROUTINE SetInitialDens(iDens)
 		
+		USE XPLEXIFY
+                 USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: iDens
+		Real*8 :: iDens
 
-		AverageAerosolDensity = iDens * grams / cm / cm / cm
+		AverageAerosolDensity%r = iDens * grams / cm / cm / cm
+                AverageAerosolDensity%i = 0.0
 
 	END SUBROUTINE SetInitialDens
 
 	SUBROUTINE SetLagrangianParcelModel(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -690,6 +795,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetEulerianBoxModel(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -704,6 +813,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetSmogChamberModel(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -718,6 +831,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetOpticalPropertiesModel(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -732,6 +849,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetThermoTest(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -746,6 +867,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetCoagTest(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -760,6 +885,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetCondTest(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -774,6 +903,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetSubroutineModel(iMod)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: iMod
@@ -787,93 +920,133 @@ MODULE ModelParameters
 
 	SUBROUTINE SetStartTime(UTC)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: UTC
+		TYPE (XPLEX) :: UTC
 
 		UTCStartTime = UTC
 	END SUBROUTINE SetStartTime
 
 	SUBROUTINE SetRunLength(time)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: time !!In min
+		TYPE (XPLEX) :: time !!In min
 
 		RunLength = time
 	END SUBROUTINE SetRunLength
 
 	SUBROUTINE SetChemStep(step)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: step !!in sec
+		TYPE (XPLEX) :: step !!in sec
 
 		ChemStep = step
 	END SUBROUTINE SetChemStep
 
 	SUBROUTINE SetMixStep(step)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: step !!in sec
+		TYPE (XPLEX) :: step !!in sec
 
 		MixStep = step
 	END SUBROUTINE SetMixStep
 
 	SUBROUTINE SetCondStep(step)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: step !!in sec
+		TYPE (XPLEX) :: step !!in sec
 
 		CondStep = step
 	END SUBROUTINE SetCondStep
 
 	SUBROUTINE SetCoagStep(step)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: step !!in sec
+		TYPE (XPLEX) :: step !!in sec
 
 		CoagStep = step
 	END SUBROUTINE SetCoagStep
 
 	SUBROUTINE SetInversionHeight(height)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: height !!in km
+		TYPE (XPLEX) :: height !!in km
 
 		InversionHeight = height
 	END SUBROUTINE SetInversionHeight
 
 	SUBROUTINE SetHetero(num, rad)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: num !!in cm-3
-		REAL*8 :: rad !!in um
+		TYPE (XPLEX) :: num !!in cm-3
+		TYPE (XPLEX) :: rad !!in um
 		hetero_num = num
                 hetero_rad = rad/1.0e6 !Convert to m
 	END SUBROUTINE SetHetero
 
 	SUBROUTINE SetLagrangianMix(mix)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: mix !!in s
+		TYPE (XPLEX) :: mix !!in s
 
 		b_mix = mix
 	END SUBROUTINE SetLagrangianMix
 
 	SUBROUTINE SetEulerianBox(wind,length,width, fireCO)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: wind !!in m/s
-		REAL*8 :: length, width !!in km
-                REAL*8 :: fireCO !!in kg/s
+		TYPE (XPLEX) :: wind !!in m/s
+		TYPE (XPLEX) :: length, width !!in km
+                TYPE (XPLEX) :: fireCO !!in kg/s
 
 		windspeed = wind
 		boxlength = length
@@ -883,6 +1056,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetIncludeAerosols(flag)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: flag 
@@ -895,6 +1072,10 @@ MODULE ModelParameters
 
 	SUBROUTINE SetPhotoFlag(flag)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		INTEGER :: flag 
@@ -907,18 +1088,26 @@ MODULE ModelParameters
 
 	SUBROUTINE SetPhotoEndTime(UTC)
 		
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
-		REAL*8 :: UTC
+		TYPE (XPLEX) :: UTC
 
 		PhotoEndTime = UTC
 	END SUBROUTINE SetPhotoEndTime
 
         SUBROUTINE LightSwitchParams(lightswitch_flag, lights_on_time, lights_off_time)
 
+                USE XPLEXIFY
+       USE MYTYPE
+                USE XPLEXIFY
+       USE MYTYPE
                 IMPLICIT NONE
 
-                REAL*8  :: lights_on_time, lights_off_time
+                TYPE (XPLEX)  :: lights_on_time, lights_off_time
                 INTEGER :: lightswitch_flag
                 
                 light_flag = lightswitch_flag

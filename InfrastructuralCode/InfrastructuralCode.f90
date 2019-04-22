@@ -50,8 +50,8 @@ PUBLIC ::  GetLine,              &
            ReturnFileHandle,     &
            GetParticleID,        &
            SetParticleID,        &
-           EOF,                  &
-           IsNaN
+           EOF !,                  &
+!           IsNaN
 
 !! This is the current file handle
 INTEGER :: FH
@@ -71,6 +71,8 @@ INCLUDE "Counters.h"
 ! CMB: Modify to account for floating-point issues?
 ! Nah, keep this for now.
 logical function IsNaN(a)
+   USE XPLEXIFY
+       USE MYTYPE
    IMPLICIT NONE
    real ::  a
 !   if (a + 1.0 .eq. a) then

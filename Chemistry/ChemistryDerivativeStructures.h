@@ -38,12 +38,12 @@
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	TYPE ChemTerm
 		integer					    :: WhichChem
-		real*8						:: Stoich
+		TYPE (XPLEX)						:: Stoich
 		type (ChemTerm), pointer    :: Next
 	END TYPE ChemTerm
 
 	TYPE DiffEqTerm
-		real*8						:: LeadingFactor ! Contains + or -, as appropriate, and stoichiometric coeff
+		TYPE (XPLEX)						:: LeadingFactor ! Contains + or -, as appropriate, and stoichiometric coeff
 		integer						:: ReactionNumber
 		type (ChemTerm), pointer	:: DerefChem
 		type (DiffEqTerm), pointer  :: Next

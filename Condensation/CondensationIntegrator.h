@@ -159,31 +159,33 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 	use chemistry, only : getTimestepIndex, getParcelIndex
 	! end cmb add
 
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
         ! CMB (AER, Inc): Add parameters
-        real*8, parameter :: tempThresh = 273.15
-        real*8, parameter :: rhThresh = 0.2
+        REAL*8, parameter :: tempThresh = 273.15
+        REAL*8, parameter :: rhThresh = 0.2
         ! end CMB
 
 	!! External Variables
-	REAL*8  :: TimeStepSize		!! Should be in Seconds
+	TYPE (XPLEX)  :: TimeStepSize		!! Should be in Seconds
 	INTEGER :: NumTimeSteps
 
 	!! Internal Variables
 	INTEGER :: I, ReturnType
-	REAL*8  :: InitialBurden(10), CondTime
-	REAL*4  :: etimearray(2)
+	TYPE (XPLEX)  :: InitialBurden(10), CondTime
+	TYPE (XPLEX)  :: etimearray(2)
 	LOGICAL :: EmptyGridCell
 	TYPE(Particle), POINTER :: FirstParticle, CurrentParticle
 	
 	! CMB (AER, Inc): floating-point equality issue
-	real*8 :: filler_value
+	TYPE (XPLEX) :: filler_value
 	!filler_value = 1.0E-64
 	! end CMB add
 
         ! CMB (AER, Inc): Add getters for temp and RH
-        real*8 :: tempK, relativeHumidity
+        TYPE (XPLEX) :: tempK, relativeHumidity
         
         tempK = GetTemp()
         relativeHumidity = GetRelativeHumidity()
@@ -453,14 +455,16 @@ SUBROUTINE DissolutionFactors (WhichRxn, HowManyLinks, Temperature, &
 
 	USE InfrastructuralCode, ONLY : Error, Int2Str
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables, in
 	INTEGER :: WhichRxn, HowManyLinks
-	REAL*8  :: Temperature
+	TYPE (XPLEX)  :: Temperature
 
 	!! External Variables, out
-	REAL*8  :: SoverH(HowManyLinks), SoverH2(HowManyLinks), &
+	TYPE (XPLEX)  :: SoverH(HowManyLinks), SoverH2(HowManyLinks), &
                    InitialConcs1(HowManyLinks), &
 	           InitialConcs2(HowManyLinks), InitialConcs3(HowManyLinks),&
                    RealFlag(HowManyLinks), GasSaturationConc(HowManyLinks)
@@ -468,7 +472,7 @@ SUBROUTINE DissolutionFactors (WhichRxn, HowManyLinks, Temperature, &
 
 	!! Internal Variables
 	INTEGER :: InternalHowManyLinks, I, J, Allocation_Error, GasChemIndex
-	REAL*8  :: II, H2SO4AqIndex, AnionSatConc,  NH4SaturationConc
+	TYPE (XPLEX)  :: II, H2SO4AqIndex, AnionSatConc,  NH4SaturationConc
 
 	TYPE(Particle), POINTER :: CurrentParticle
 
@@ -648,8 +652,8 @@ SUBROUTINE DissolutionFactors (WhichRxn, HowManyLinks, Temperature, &
 
                    IonA = FLOOR(DissolutionData(WhichRxn,8))
                    IonB = FLOOR(DissolutionData(WhichRxn,9))
-                   ExpA = ANINT(10000.*(DissolutionData(WhichRxn,8)-FLOOR(DissolutionData(WhichRxn,8))))
-                   ExpB = ANINT(10000.*(DissolutionData(WhichRxn,9)-FLOOR(DissolutionData(WhichRxn,9))))
+                   ExpA = NINT(10000.*(DissolutionData(WhichRxn,8)-FLOOR(DissolutionData(WhichRxn,8))))
+                   ExpB = NINT(10000.*(DissolutionData(WhichRxn,9)-FLOOR(DissolutionData(WhichRxn,9))))
 
                    IF (CurrentParticle%AqChems(INT(DissolutionData(WhichRxn,2))) .LE. 0) THEN
                       CALL ERROR ("A dissolution reaction (specified in Dissolution.in) specifies that the gas "// &
@@ -688,8 +692,8 @@ SUBROUTINE DissolutionFactors (WhichRxn, HowManyLinks, Temperature, &
 
                    IonA = FLOOR(DissolutionData(WhichRxn,8))
                    IonB = FLOOR(DissolutionData(WhichRxn,9))
-                   ExpA = ANINT(10000.*(DissolutionData(WhichRxn,8)-FLOOR(DissolutionData(WhichRxn,8))))
-                   ExpB = ANINT(10000.*(DissolutionData(WhichRxn,9)-FLOOR(DissolutionData(WhichRxn,9))))
+                   ExpA = NINT(10000.*(DissolutionData(WhichRxn,8)-FLOOR(DissolutionData(WhichRxn,8))))
+                   ExpB = NINT(10000.*(DissolutionData(WhichRxn,9)-FLOOR(DissolutionData(WhichRxn,9))))
 
                    IF (CurrentParticle%AqChems(INT(DissolutionData(WhichRxn,2))) .LE. 0) THEN
                       CALL ERROR ("A dissolution reaction (specified in Dissolution.in) specifies that the gas "//	&
@@ -766,7 +770,7 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 
 	USE InfrastructuralCode, ONLY : INT2STR, ERROR,		&
 					Warn, Transcript,	&
-					REAL2STR, IsNaN
+					REAL2STR!, IsNaN
 
 	USE GridPointFields,	 ONLY : getM,			        &
 					GetGridCellChemBurden,		&
@@ -809,17 +813,19 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 					ZSROrgWater
 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8  :: TimeStepSize		!! Should be in Seconds
+	TYPE (XPLEX)  :: TimeStepSize		!! Should be in Seconds
 	INTEGER :: NumTimeSteps
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!! LSODES Related Internal Variables !!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8,  ALLOCATABLE	:: y(:), rwork(:)
-	REAL*8			:: t,outtime,rtol,atol
+	TYPE (XPLEX),  ALLOCATABLE	:: y(:), rwork(:)
+	TYPE (XPLEX)			:: t,outtime,rtol,atol
 	INTEGER, ALLOCATABLE	:: iwork(:)
 	INTEGER			:: itol,itask,istate,iopt,mf,neq,LIW,LRW
 		
@@ -835,23 +841,23 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
                                    WhichSecondIon , Flag, Dum, RxnType,   &
 				   InternalReturnType, NH4Index, HIndex,  &
                                    OHIndex, GasSolidRxn, Global
-	REAL*8			:: II, JJ, KK, MM,                        &
+	TYPE (XPLEX)			:: II, JJ, KK, MM,                        &
                                    ChemTransferArray(HowManyGasChems),    &
                                    Temperature,	RH, NH3Index,             &
                                    OrgWaterContent, Store, Store3,Store4, &
                                    GasPhaseBurden, Electrolyte, WaterSatBurden
-	REAL*8, ALLOCATABLE :: InitialConcsArray(:), ChemStorageArray(:,:)
+	TYPE (XPLEX), ALLOCATABLE :: InitialConcsArray(:), ChemStorageArray(:,:)
 	LOGICAL :: EmptyGridCell
-	REAL*8  :: BeginTime,EndTime, ABCD
-	REAL*4  :: etimearray(2)
-	REAL*8  :: WaterTime, CondTime, AmmoniaTime
+	TYPE (XPLEX)  :: BeginTime,EndTime, ABCD
+	TYPE (XPLEX)  :: etimearray(2)
+	TYPE (XPLEX)  :: WaterTime, CondTime, AmmoniaTime, OptErrorTol
 
 	! 8 October 2016 CMB: AS per the migration from lsodes to dlsodes,
 	!					  we need to declare and store these common blocks
 	!					  on each routine that calls dlsodes.
-	real*8 :: diffs
+	TYPE (XPLEX) :: diffs
 	integer :: num_nans
-	real*8 :: rowns, ccmax, el0, h, hmin, hmxi, hu, rc, tn, uround
+	TYPE (XPLEX) :: rowns, ccmax, el0, h, hmin, hmxi, hu, rc, tn, uround
 	integer :: init, mxstep, mxhnil, nhnil, NSLAST, NYH, IOWNS, ICF, IERPJ, &
 			   IERSL, JCUR, JSTART, KFLAG, L, LYH, LEWT, LACOR, LSAVF, &
 			   LWM, LIWM, METH, MITER, MAXORD, MAXCOR, MSBP, MXNCF, N, &
@@ -862,7 +868,7 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 					KFLAG, L, LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, &
 					MITER, MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, &
 					NFE, NJE, NQU
-	real*8 :: con0, conmin, ccmxj, psmall, rbig, seth
+	TYPE (XPLEX) :: con0, conmin, ccmxj, psmall, rbig, seth
 	integer :: IPLOST, IESP, ISTATC, IYS, IBA, IBIAN, IBJAN, IBJGP, &
 			   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,&
 			   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,&
@@ -881,7 +887,7 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 	LOGICAL :: Equilibrated, UseEq
 
 	! cb
-	real*8 :: bef
+	TYPE (XPLEX) :: bef, gasburden2
 	! end cb
 	
 	TYPE(Particle), POINTER :: FirstParticle, CurrentParticle
@@ -1324,22 +1330,22 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 						IF(ReturnType .NE. 2) Equilibrated = .FALSE.
 						!call flush(6)
 		
-						! CMB: Switch to double precision
+						! CMB: Switch to TYPE (XPLEX)
                         ! If change in aero water content is lt 0.5%, particle in Eq.
 						!IF(ABS((ABCD-CurrentParticle%AqChems(1)) &
                         !        /CurrentParticle%AqChems(1)) .LE. 0.005) THEN
-						IF(dABS((ABCD-CurrentParticle%AqChems(1)) &
+						IF(abs((ABCD-CurrentParticle%AqChems(1)) &
 						        /CurrentParticle%AqChems(1)) .LE. 0.005) THEN		
 						  ReturnType  = 2
 						  Equilibrated = .TRUE.
 						END IF
 
 						LLLL = LLLL+1
-						IF(LLLL .GT. 25) THEN	! CB: uncommented warns
-                                                   CALL WARN("Over 25 water iterations "// &
-                                                             "for a single particle "//&
-                                                             "in StepCondensation().")
-                                                   CALL WARN("RH equals :"//trim(real2str(RH)))
+						IF(LLLL .GT. 25) THEN	! CB: uncommented warns BBS recommented
+                                                !   CALL WARN("Over 25 water iterations "// &
+                                                !             "for a single particle "//&
+                                                !             "in StepCondensation().")
+                                                !   CALL WARN("RH equals :"//trim(real2str(RH)))
                                                    ReturnType  = 2
                                                    Equilibrated = .TRUE.
 						END IF
@@ -1578,21 +1584,21 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 			!END SELECT
 			SELECT CASE (INT(DissolutionData(Rxn,11)))
 			CASE (:1)
-				IF (dabs(Y(1)) .le. 1.0e-40 .AND. dabs(II) .le. 1.0e-40) CYCLE
+				IF (abs(Y(1)) .le. 1.0e-40 .AND. abs(II) .le. 1.0e-40) CYCLE
 			CASE (2)
-				IF (dabs(Y(1)) .le. 1.0e-40 .AND. &
-						(dabs(II) .le. 1.0e-40 .OR. dabs(JJ) .le. 1.0e-40)) CYCLE
+				IF (abs(Y(1)) .le. 1.0e-40 .AND. &
+						(abs(II) .le. 1.0e-40 .OR. abs(JJ) .le. 1.0e-40)) CYCLE
 			CASE (3)
-				IF (dabs(Y(1)) .le. 1.0e-40 .AND. &
-						(dabs(II) .le. 1.0e-40 .OR. &
-								dabs(JJ) .le. 1.0e-40) .AND. &
-								dabs(KK) .le. 1.0e-40) CYCLE
+				IF (abs(Y(1)) .le. 1.0e-40 .AND. &
+						(abs(II) .le. 1.0e-40 .OR. &
+								abs(JJ) .le. 1.0e-40) .AND. &
+								abs(KK) .le. 1.0e-40) CYCLE
 			CASE (4)
-				IF ((dabs(Y(1)) .le. 1.0e-40 .OR. dabs(JJ) .le. 1.0e-40) .AND. &
-						dabs(II) .le. 1.0e-40) CYCLE
+				IF ((abs(Y(1)) .le. 1.0e-40 .OR. abs(JJ) .le. 1.0e-40) .AND. &
+						abs(II) .le. 1.0e-40) CYCLE
 			CASE (5)
-				IF ((dabs(Y(1)) .le. 1.0e-40 .OR. dabs(JJ) .le. 1.0e-40) .AND. &
-						dabs(II) .le. 1.0e-40 .AND. dabs(KK) .le. 1.0e-40) CYCLE
+				IF ((abs(Y(1)) .le. 1.0e-40 .OR. abs(JJ) .le. 1.0e-40) .AND. &
+						abs(II) .le. 1.0e-40 .AND. abs(KK) .le. 1.0e-40) CYCLE
 			END SELECT
 
 		
@@ -1655,10 +1661,10 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 						write(*,*) 'New Y(I) is NaN; apply a small perturbation to the value and try ODE again OR set to orig and continue'
 						!Y(i) = InitialConcsArray(i) !Y(i) + 1D-10
 					else
-						diffs = diffs + dabs(Y(i) - InitialConcsArray(i))
+						diffs = diffs + abs(Y(i) - InitialConcsArray(i))
 					endif
 				enddo
-				if (dabs(diffs) .lt. 1.0D-10) then
+				if (abs(diffs) .lt. 1.0D-10) then
 					do i = 1, NEQ
 						if (isNaN(Y(i))) Y(i) = InitialConcsArray(i)
 					enddo
@@ -1816,7 +1822,7 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 					if(nint(Electrolyte) .ne. 0 .and. &
 					!IF(INT(Electrolyte) .NE. 0. .AND. & !Gas-solid Reaction exists
 					   !CurrentParticle%AqChems(INT(Electrolyte)) .GT. ABS(ChemStorageArray(J,I+1) / Avogadro)) THEN !There is enough salt
-					   CurrentParticle%AqChems(nINT(Electrolyte)) .GT. dABS(ChemStorageArray(J,I+1) / Avogadro)) THEN !There is enough salt
+					   CurrentParticle%AqChems(nINT(Electrolyte)) .GT. abs(ChemStorageArray(J,I+1) / Avogadro)) THEN !There is enough salt
 						WRITE(*,*) "Salt Evaporation!"
 		
 						!Evaporate Electrolyte (remember chemstoragearray is negative here!)
@@ -1840,7 +1846,11 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 								Temperature = GetTemp()
 								GasPhaseBurden = GetGridCellChemBurden (INT(DissolutionData(C,1)))
                                                                 WaterSatBurden = GetSatVapBurden ()
-								CALL EquilibrateDissolutionReaction (GasPhaseBurden, C, CurrentParticle, Temperature, ReturnType, WaterSatBurden = WaterSatBurden, GasPhaseBurden2=0.0, OptErrorTolerance=AqThermoEquilibriumError/2.)
+                                                                GasBurden2%r = 0.0
+                                                                GasBurden2%i = 0.0
+                                                                OptErrorTol%r = AqThermoEquilibriumError/2.
+                                                                OptErrorTol%i = 0.
+								CALL EquilibrateDissolutionReaction (GasPhaseBurden, C, CurrentParticle, Temperature, ReturnType, WaterSatBurden = WaterSatBurden, GasPhaseBurden2=GasBurden2, OptErrorTolerance=OptErrorTol)
 								CALL ReplaceGridCellChemBurden (INT(DissolutionData(C,1)), GasPhaseBurden)		
 							END IF
 						END DO
@@ -2036,10 +2046,12 @@ SUBROUTINE CondensationJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 	USE GridPointFields,     ONLY : GasPhaseChemicalRates
 	USE InfrastructuralCode, ONLY : ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8		:: t, y, pdj
+	TYPE (XPLEX)		:: t, y, pdj
 	INTEGER		:: I, neq, ia, ja
 	DIMENSION	:: y(1), ia(1), ja(1), pdj(1)
 
@@ -2175,10 +2187,12 @@ SUBROUTINE CondensationODEEvaluator (neq, t, y, ydot)
                                                  REAL2STR, INT2STR
 		USE ModelParameters,     ONLY : Avogadro
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variable (prescribed by LSODES)
-		REAL*8		:: t, y, ydot
+		TYPE (XPLEX)		:: t, y, ydot
 		INTEGER		:: neq
 		DIMENSION	:: y(1), ydot(1)
 

@@ -44,6 +44,8 @@
 MODULE Condensation
 
 USE Aerosols, ONLY : Particle
+USE MYTYPE
+USE XPLEXIFY
 
 PRIVATE
 PUBLIC :: StepCondensation,		   &
@@ -77,9 +79,9 @@ PUBLIC :: StepCondensation,		   &
 
         !!These should be replaced by Get functions, so
         !!outside routines can't change them MJA, 20130719
-	REAL*8,	ALLOCATABLE :: DissolutionData(:,:)
-	REAL*8,	ALLOCATABLE :: OrganicDissolutionData(:,:)
-	REAL*8,	ALLOCATABLE :: AqOrganicDissolutionData(:,:)
+	TYPE (XPLEX),	ALLOCATABLE :: DissolutionData(:,:)
+	TYPE (XPLEX),	ALLOCATABLE :: OrganicDissolutionData(:,:)
+	TYPE (XPLEX),	ALLOCATABLE :: AqOrganicDissolutionData(:,:)
 
 CONTAINS
 

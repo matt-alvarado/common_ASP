@@ -30,14 +30,16 @@ SUBROUTINE SetEvolveGasChemConstants ()
 
 	USE GridPointFields, ONLY : SetYLEN,SetHowManyEvolveGasChems
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	GasLIW	 = 31+HowManyEvolveGasChems+HowManyNonZeroGasJacTerms
 	YLEN = HowManyGasChems+3
 	LRW  = 40 + 34*HowManyEvolveGasChems + 5*HowManyNonZeroGasJacTerms
-	IF (LRW .LT. 5000000) THEN
-		LRW = 5000000
-	END IF
+!	IF (LRW .LT. 64*5000000) THEN
+!		LRW = 64*5000000
+!	END IF
 	
 	!! Replicate this value in the eulerian module
 	CALL SetYLEN(YLEN)
@@ -63,16 +65,18 @@ SUBROUTINE StepGasChemistry(TimeStepSize,NumTimeSteps)
 					getM,				&
 					UpdateChemicalConcentrations
 		
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8  :: TimeStepSize		!! Should be in Seconds
+	TYPE (XPLEX)  :: TimeStepSize		!! Should be in Seconds
 	INTEGER :: NumTimeSteps
 
 	! 8 October 2016 CMB: AS per the migration from lsodes to dlsodes,
 	!					  we need to declare and store these common blocks
 	!					  on each routine that calls dlsodes.
-	real*8 :: rowns, ccmax, el0, h, hmin, hmxi, hu, rc, tn, uround
+	TYPE (XPLEX) :: rowns, ccmax, el0, h, hmin, hmxi, hu, rc, tn, uround
 	integer :: init, mxstep, mxhnil, nhnil, NSLAST, NYH, IOWNS, ICF, IERPJ, &
 			   IERSL, JCUR, JSTART, KFLAG, L, LYH, LEWT, LACOR, LSAVF, &
 			   LWM, LIWM, METH, MITER, MAXORD, MAXCOR, MSBP, MXNCF, N, &
@@ -83,7 +87,7 @@ SUBROUTINE StepGasChemistry(TimeStepSize,NumTimeSteps)
 					KFLAG, L, LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, &
 					MITER, MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, &
 					NFE, NJE, NQU
-	real*8 :: con0, conmin, ccmxj, psmall, rbig, seth
+	TYPE (XPLEX) :: con0, conmin, ccmxj, psmall, rbig, seth
 	integer :: IPLOST, IESP, ISTATC, IYS, IBA, IBIAN, IBJAN, IBJGP, &
 			   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,&
 			   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,&
@@ -99,7 +103,7 @@ SUBROUTINE StepGasChemistry(TimeStepSize,NumTimeSteps)
         ! CB: debugging
 	LOGICAL, PARAMETER :: Scaffolding = .FALSE.
 	!LOGICAL, PARAMETER :: Scaffolding = .TRUE.
-        REAL*8  :: BeginTime,EndTime
+        TYPE (XPLEX)  :: BeginTime,EndTime
 	INTEGER	::	q, OutFH
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -110,7 +114,7 @@ SUBROUTINE StepGasChemistry(TimeStepSize,NumTimeSteps)
 	!! nnz    = the number of nonzero elements in the sparse	    !!
 	!!          jacobian (if this is unknown, use an estimate), and      !!
 	!! lenrat = the real to integer wordlength ratio (usually 1 in       !!
-        !!          single precision and 2 in double precision).	     !!
+        !!          single precision and 2 in TYPE (XPLEX)).	     !!
 	!!								     !!
 	!!  Length of Y is the Total Number of Gas Chemicals                 !!
         !!      (Evolving + Non-Evolving) Plus 3                             !!
@@ -122,14 +126,14 @@ SUBROUTINE StepGasChemistry(TimeStepSize,NumTimeSteps)
 	!!								     !!
 	!!  Value of LIW is the declared length of IWORK		     !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8, ALLOCATABLE	:: y(:), rwork(:)
-	REAL*8			:: t,outtime,rtol,atol
+	TYPE (XPLEX), ALLOCATABLE	:: y(:), rwork(:)
+	TYPE (XPLEX)			:: t,outtime,rtol,atol
 	INTEGER, ALLOCATABLE	:: iwork(:)
 	INTEGER			:: itol,itask,istate,iopt,mf,neq
 		
 	!! Non-LSODES Local Variables
 	INTEGER :: I,J,allocation_error
-	REAL*8  :: M
+	TYPE (XPLEX)  :: M
 
 	!! SCSCSCSC
 	IF (Scaffolding) CALL Transcript(">>>Entering StepGasChemistry<<<")
@@ -388,6 +392,7 @@ y = GetGasChemVector()
 10	  CALL dLSODES (GasODEEvaluator,HowManyEvolveGasChems,y,t,outtime, &
 	                itol,rtol,atol,itask,&
 	  	            istate,iopt,rwork,lrw,iwork,GasLIW,GasJacobianEvaluator,mf)	  
+ !         write(*,*) iwork(17)
 !10	  CALL LSODES (GasODEEvaluator,HowManyEvolveGasChems,y,t,outtime, &
 !               itol,rtol,atol,itask,&
 !	       istate,iopt,rwork,lrw,iwork,GasLIW,GasJacobianEvaluator,mf)
@@ -398,7 +403,7 @@ y = GetGasChemVector()
           !! until the appropriate end time is reached.
 	  IF (ISTATE .EQ. -1 .AND. T < OUTTIME) THEN
 		IF (Scaffolding) &
-		CALL WARN("Warning! Nominal maximum number of steps in LSODES was exceeded in Gas Phase Integration... Recycling")
+		CALL WARN("Warning! Nominal maximum number of steps in LSODES was exceeded in Gas Phase Integration.. Recycling")
 		ISTATE = 2
 		GOTO 10
 	  END IF
@@ -447,15 +452,17 @@ SUBROUTINE GasODEEvaluator (neq, t, y, ydot)
 	USE GridPointFields,	 ONLY :	GasPhaseChemicalRates
 	USE InfrastructuralCode, ONLY : Transcript
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variable (prescribed by LSODES)
-	REAL*8		:: t, y, ydot
+	TYPE (XPLEX)		:: t, y, ydot
 	INTEGER		:: neq
 	DIMENSION	:: y(1), ydot(1)
 
 	!! Internal Variables
-	REAL*8	:: Term, T_mix, m, b
+	TYPE (XPLEX)	:: Term, T_mix, m, b
 	INTEGER :: I,GP(3)
 
 	TYPE (DiffEqTerm), POINTER :: Current
@@ -551,15 +558,17 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
         !
         !use chemistry, only: ifgas, ifaq, ifsolid
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8		:: t, y, pdj
+	TYPE (XPLEX)		:: t, y, pdj
 	INTEGER		:: I, neq, ia, ja
 	DIMENSION	:: y(1), ia(1), ja(1), pdj(1)
 
 	!! Internal Variables
-	REAL*8	:: GP(3), Term, RunningTotal, T_mix, m, b
+	TYPE (XPLEX)	:: GP(3), Term, RunningTotal, T_mix, m, b
 	INTEGER :: J
 
 	TYPE (DiffEqTerm), POINTER :: Current

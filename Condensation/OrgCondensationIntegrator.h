@@ -41,7 +41,7 @@ SUBROUTINE StepOrgCondensation (TimestepSize, NumTimeSteps)
 
 	USE InfrastructuralCode, ONLY : INT2STR, ERROR,		&
 					Warn, Transcript,	&
-					REAL2STR, isnan
+					REAL2STR!, isnan
 
 	USE GridPointFields,	 ONLY : getM,			&
 					GetGridCellChemBurden,	&
@@ -65,17 +65,19 @@ SUBROUTINE StepOrgCondensation (TimestepSize, NumTimeSteps)
 					WaterContentPrecision,		&
 					micron
 	!USE OutputRoutines
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8  :: TimeStepSize		!! Should be in Seconds
+	TYPE (XPLEX)  :: TimeStepSize		!! Should be in Seconds
 	INTEGER :: NumTimeSteps
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!! LSODES Related Internal Variables !!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8,  ALLOCATABLE	:: y(:), rwork(:)
-	REAL*8			:: t,outtime,rtol,atol
+	TYPE (XPLEX),  ALLOCATABLE	:: y(:), rwork(:)
+	TYPE (XPLEX)			:: t,outtime,rtol,atol
 	INTEGER, ALLOCATABLE	:: iwork(:)
 	INTEGER			:: itol,itask,istate,iopt,mf,neq,LIW,LRW
 		
@@ -86,19 +88,19 @@ SUBROUTINE StepOrgCondensation (TimestepSize, NumTimeSteps)
                                    GasChemIndex1, TimeStep,	&
 				   ReturnType, WhichDominantIon, & 
                                    WhichSecondIon , Flag
-	REAL*8			:: II, JJ, KK, &
+	TYPE (XPLEX)			:: II, JJ, KK, &
                                    ChemTransferArray(HowManyGasChems), &
                                    Temperature,	RH, NH3Index, Store
-	REAL*8, ALLOCATABLE :: InitialConcsArray(:), ChemStorageArray(:,:)
+	TYPE (XPLEX), ALLOCATABLE :: InitialConcsArray(:), ChemStorageArray(:,:)
 	LOGICAL :: EmptyGridCell
-	REAL*8  :: BeginTime,EndTime
+	TYPE (XPLEX)  :: BeginTime,EndTime
 	
 	! 8 October 2016 CMB: AS per the migration from lsodes to dlsodes,
 		!					  we need to declare and store these common blocks
 		!					  on each routine that calls dlsodes.
 		integer :: num_nans
-		real*8 :: diffs
-		real*8 :: rowns, ccmax, el0, h, hmin, hmxi, hu, rc, tn, uround
+		TYPE (XPLEX) :: diffs
+		TYPE (XPLEX) :: rowns, ccmax, el0, h, hmin, hmxi, hu, rc, tn, uround
 		integer :: init, mxstep, mxhnil, nhnil, NSLAST, NYH, IOWNS, ICF, IERPJ, &
 				   IERSL, JCUR, JSTART, KFLAG, L, LYH, LEWT, LACOR, LSAVF, &
 				   LWM, LIWM, METH, MITER, MAXORD, MAXCOR, MSBP, MXNCF, N, &
@@ -109,7 +111,7 @@ SUBROUTINE StepOrgCondensation (TimestepSize, NumTimeSteps)
 						KFLAG, L, LYH, LEWT, LACOR, LSAVF, LWM, LIWM, METH, &
 						MITER, MAXORD, MAXCOR, MSBP, MXNCF, N, NQ, NST, &
 						NFE, NJE, NQU
-		real*8 :: con0, conmin, ccmxj, psmall, rbig, seth
+		TYPE (XPLEX) :: con0, conmin, ccmxj, psmall, rbig, seth
 		integer :: IPLOST, IESP, ISTATC, IYS, IBA, IBIAN, IBJAN, IBJGP, &
 				   IPIAN, IPJAN, IPJGP, IPIGP, IPR, IPC, IPIC, IPISP, IPRSP, IPA,&
 				   LENYH, LENYHM, LENWK, LREQ, LRAT, LREST, LWMIN, MOSS, MSBJ,&
@@ -654,10 +656,10 @@ SUBROUTINE StepOrgCondensation (TimestepSize, NumTimeSteps)
 						!write(*,*) 'New Y(I) is NaN; apply a small perturbation to the value and try ODE again OR set to orig and continue'
 						!Y(i) = InitialConcsArray(i) !Y(i) + 1D-10
 					else
-						diffs = diffs + dabs(Y(i) - InitialConcsArray(i))
+						diffs = diffs + abs(Y(i) - InitialConcsArray(i))
 					endif
 				enddo
-				if (dabs(diffs) .lt. 1d-10) then
+				if (abs(diffs) .lt. 1d-10) then
 					do i = 1, NEQ
 						if (isNaN(Y(i))) Y(i) = InitialConcsArray(i)
 					enddo
@@ -776,10 +778,12 @@ SUBROUTINE OrgCondensationODEEvaluator (neq, t, y, ydot)
 		USE InfrastructuralCode, ONLY : Transcript, ERROR
 		USE ModelParameters,     ONLY : Avogadro
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variable (prescribed by LSODES)
-		REAL*8		:: t, y, ydot
+		TYPE (XPLEX)		:: t, y, ydot
 		INTEGER		:: neq
 		DIMENSION	:: y(1), ydot(1)
 
@@ -869,10 +873,12 @@ SUBROUTINE OrgCondensationJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 	USE GridPointFields,     ONLY : GasPhaseChemicalRates
 	USE InfrastructuralCode, ONLY : ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8		:: t, y, pdj
+	TYPE (XPLEX)		:: t, y, pdj
 	INTEGER		:: I, neq, ia, ja
 	DIMENSION	:: y(1), ia(1), ja(1), pdj(1)
 
@@ -981,21 +987,23 @@ SUBROUTINE OrgDissolutionFactors ( WhichRxn, HowManyLinks, Temperature, &
 
 	USE InfrastructuralCode, ONLY : ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables, in
 	INTEGER ::  WhichRxn, HowManyLinks
-	REAL*8  :: Temperature
+	TYPE (XPLEX)  :: Temperature
 
 	!! External Variables, out
-	REAL*8  :: SoverH(HowManyLinks), SoverH2(HowManyLinks), & 
+	TYPE (XPLEX)  :: SoverH(HowManyLinks), SoverH2(HowManyLinks), & 
                    InitialConcs1(HowManyLinks), InitialConcs2(HowManyLinks), &
                    InitialConcs3(HowManyLinks), RealFlag(HowManyLinks)
 	INTEGER :: ReturnType, ReactionType, Flag, IonA, IonB, ExpA, ExpB
 
 	!! Internal Variables
 	INTEGER :: InternalHowManyLinks, I, J, Allocation_Error, GasChemIndex
-	REAL*8  :: II, H2SO4AqIndex, AnionSatConc, GasSaturationConc
+	TYPE (XPLEX)  :: II, H2SO4AqIndex, AnionSatConc, GasSaturationConc
 
 	TYPE(Particle), POINTER :: CurrentParticle
 
@@ -1081,15 +1089,17 @@ FUNCTION OrgCondensationRateCoefficients (ReactionNumb, NumbLinks)
 					ThermoBulkMode,			&
 					IgnoreCorrectionstoDiffusivity
 
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
 	!! Define input and output variables
 	INTEGER	:: ReactionNumb, NumbLinks
-	REAL*8	:: OrgCondensationRateCoefficients(NumbLinks)
+	TYPE (XPLEX)	:: OrgCondensationRateCoefficients(NumbLinks)
 
 	TYPE(Particle),POINTER :: Current
 	INTEGER ::  I, ChemIndex
-	REAL*8  ::	AirDensity,		&
+	TYPE (XPLEX)  ::	AirDensity,		&
 			AirTemp,		&
 			Cpm,			&	! Moist specific heat
 			Dv,			&	! Diffusion Coeffienct 

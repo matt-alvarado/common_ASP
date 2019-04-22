@@ -88,6 +88,8 @@ FUNCTION MakeSection(WhichPopulation, WhichBin)
 
 	USE ModelParameters,     ONLY : micron, BinEdges
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -99,7 +101,7 @@ FUNCTION MakeSection(WhichPopulation, WhichBin)
 	INTEGER :: allocation_error, I,J
     
 	! CMB add
-	real*8 :: filler_value
+	TYPE (XPLEX) :: filler_value
 	filler_value = 1.0e-30
 	! end CMB add
 	
@@ -247,6 +249,8 @@ SUBROUTINE MakeParticle(WhichPopulation, ResultInt, LagrangianOnly, StructuredDi
 	USE InfrastructuralCode, ONLY : REAL2STR, INT2STR, Transcript,  &
                                         Warn, Error, GetParticleID
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Input Variables
@@ -261,16 +265,16 @@ SUBROUTINE MakeParticle(WhichPopulation, ResultInt, LagrangianOnly, StructuredDi
         LOGICAL :: Boundary
 
 	!! Local Variables
-	REAL*8 :: II, JJ, KK, RR(1)
+	TYPE (XPLEX) :: II, JJ, KK, RR(1)
 	TYPE(Particle), POINTER :: NewParticle, CurrentParticle
 	INTEGER			:: allocation_error, I,J,X,Y,Z
 	LOGICAL, PARAMETER	:: Scaffolding = .FALSE. !.TRUE.
 
     !!This holds the AerosolModes or EnvAerosolModes arrays, depending on the value of Boundary
-    REAL*8, ALLOCATABLE :: ModesArray(:,:)
+    TYPE (XPLEX), ALLOCATABLE :: ModesArray(:,:)
 	
 	! CMB add
-	real*8 :: filler_value
+	TYPE (XPLEX) :: filler_value
 	filler_value = 1.0e-30
 	! end CMB add
 	
@@ -499,9 +503,12 @@ SUBROUTINE MakeParticle(WhichPopulation, ResultInt, LagrangianOnly, StructuredDi
 	!! percentage of the terminal velocity, randomly apportioned	!!
 	!! between the three directions.				!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	CALL Random_Number(II)
-	CALL Random_Number(JJ)
-	CALL Random_Number(KK)
+	CALL Random_Number(II%r)
+	CALL Random_Number(JJ%r)
+	CALL Random_Number(KK%r)
+        II%i = 0.0
+        JJ%i = 0.0
+        KK%i = 0.0
 
 	!! Set initial velocity at half or more of terminal velocity
 	KK = (1.+KK)/2.  ! * TerminalVelocity(NewParticle%Radius)
@@ -512,9 +519,9 @@ SUBROUTINE MakeParticle(WhichPopulation, ResultInt, LagrangianOnly, StructuredDi
 
 	!! Change this into two random angles 
         !! and then move to cosines and sines from there:
-	NewParticle%velocity(1) = KK*DCOS(II)*DCOS(JJ)
-	NewParticle%velocity(2) = KK*DSIN(II)*DCOS(JJ)
-	NewParticle%velocity(3) = KK*DSIN(JJ)
+	NewParticle%velocity(1) = KK*COS(II)*COS(JJ)
+	NewParticle%velocity(2) = KK*SIN(II)*COS(JJ)
+	NewParticle%velocity(3) = KK*SIN(JJ)
 
 	IF (SCAFFOLDING) CALL Transcript("Effective Radius : ("//TRIM(REAL2STR(NewParticle%EffectiveRadius))//")")
 	IF (SCAFFOLDING) CALL Transcript("Velocity (X,Y,Z): ("//TRIM(REAL2STR(NewParticle%velocity(1)))//","//			&
@@ -595,6 +602,8 @@ FUNCTION MakeBulk(Boundary)
 
 	USE ModelParameters,     ONLY : micron,NumbInsolTypes
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -604,7 +613,7 @@ FUNCTION MakeBulk(Boundary)
 
 	!! Local Variables
 	INTEGER :: allocation_error, I,J
-	REAL*8  :: II
+	TYPE (XPLEX)  :: II
 
 	!! If particle is large enough to be tracked, 
 	!! create the New Particle and allocate its arrays
@@ -750,6 +759,8 @@ SUBROUTINE PopulateParticlesSectionsRightAway (Boundary)
                                         AqPhaseChemicalNames,           &
                                         HowManyAqOrgChems
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
         !!Input Variables
@@ -761,11 +772,11 @@ SUBROUTINE PopulateParticlesSectionsRightAway (Boundary)
 	           SectionalParticles,	&
 		   LagrangianParticles
 
-	REAL*8 :: II, Temperature, ln_sigma_sq, vtot, mtot, d_mass_mean
-	REAL*8 :: del_diam, vrat, diam, mass_bin, store_num, d_num_mean
-	REAL*8 :: sum_num, new_num, sum_mass, num_all_modes, rescale
-	REAL*8 :: RescalingFactors(HowManyAerosolModes,HowManyAqChems+HowManyOrgChems)
-        REAL*8 :: RH, InorgWaterContent
+	TYPE (XPLEX) :: II, Temperature, ln_sigma_sq, vtot, mtot, d_mass_mean
+	TYPE (XPLEX) :: del_diam, vrat, diam, mass_bin, store_num, d_num_mean
+	TYPE (XPLEX) :: sum_num, new_num, sum_mass, num_all_modes, rescale
+	TYPE (XPLEX) :: RescalingFactors(HowManyAerosolModes,HowManyAqChems+HowManyOrgChems)
+        TYPE (XPLEX) :: RH, InorgWaterContent
 
 	CHARACTER (len= 1024) :: str
 	LOGICAL :: Scaffolding, Transcribe, Jacobson
@@ -773,7 +784,7 @@ SUBROUTINE PopulateParticlesSectionsRightAway (Boundary)
 	TYPE(Particle), POINTER :: Current, Trailer, SectionRunner
 
         !!This holds the AerosolModes or EnvAerosolModes arrays, depending on the value of Boundary
-        REAL*8, ALLOCATABLE :: ModesArray(:,:)
+        TYPE (XPLEX), ALLOCATABLE :: ModesArray(:,:)
         INTEGER :: NumModes, allocation_error
 
 	Scaffolding= .FALSE.
@@ -874,7 +885,7 @@ SUBROUTINE PopulateParticlesSectionsRightAway (Boundary)
 		!! Scale the particle concentration by the number !!
 		!! concentration and the domain volume.	          !!
 		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			NumbParticles = ANINT(ModesArray(I,1) * DomainX/LengthScale * DomainY/LengthScale * DomainZ/LengthScale)
+			NumbParticles = NINT(ModesArray(I,1) * DomainX/LengthScale * DomainY/LengthScale * DomainZ/LengthScale)
 			SectionalParticles  = 0
 			LagrangianParticles = 0
 			IF(ModesArray(I,3) .NE. 0.0) THEN !Log-normal mode
@@ -1230,11 +1241,13 @@ SUBROUTINE ReadDistributionsOrganic ()
 	USE Chemistry,		 ONLY : FindChem, & 
                                         HowManyAqChems, HowManyOrgChems
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Internal Variables
 	INTEGER				:: I, J, K, L, FH, allocation_error
-	REAL*8				:: II,JJ,KK, ChemPercentage
+	TYPE (XPLEX)				:: II,JJ,KK, ChemPercentage
 	LOGICAL				:: Scaffolding, Transcribe
 	CHARACTER (len=256) :: CurrLine, Token, TempLine
 	LOGICAL             :: LagrangianOrNot
@@ -1612,6 +1625,8 @@ FUNCTION MakeMonodisperse(Boundary)
 	USE ModelParameters,     ONLY : micron,NumbInsolTypes, Lengthscale, &
 					DomainX, DomainY, DomainZ	
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -1620,7 +1635,7 @@ FUNCTION MakeMonodisperse(Boundary)
 
 	!! Local Variables
 	INTEGER :: allocation_error, I,J
-	REAL*8  ::  II
+	TYPE (XPLEX)  ::  II
 
 	!! If particle is large enough to be tracked, 
 	!! create the New Particle and allocate its arrays
@@ -1681,10 +1696,10 @@ FUNCTION MakeMonodisperse(Boundary)
 
         IF (.NOT.(BOUNDARY)) THEN
 	     MakeMonodisperse%NumberOfParticles = &
-                ANINT(AerosolModes(1,1) * DomainX/LengthScale * DomainY/LengthScale * DomainZ/LengthScale)
+                NINT(AerosolModes(1,1) * DomainX/LengthScale * DomainY/LengthScale * DomainZ/LengthScale)
         ELSE
 	     MakeMonodisperse%NumberOfParticles = &
-                ANINT(EnvAerosolModes(1,1) * DomainX/LengthScale * DomainY/LengthScale * DomainZ/LengthScale)
+                NINT(EnvAerosolModes(1,1) * DomainX/LengthScale * DomainY/LengthScale * DomainZ/LengthScale)
         ENDIF
 
 	MakeMonodisperse%Sectional	      = .TRUE.
@@ -1777,6 +1792,8 @@ SUBROUTINE MakeParticleExponential(WhichPopulation, Boundary)
 	USE InfrastructuralCode, ONLY : REAL2STR, INT2STR, Transcript,  &
                                         Warn, Error, GetParticleID
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Input Variables
@@ -1784,13 +1801,13 @@ SUBROUTINE MakeParticleExponential(WhichPopulation, Boundary)
         LOGICAL :: Boundary !TRUE if boundary distribution, FALSE if main distribution
 
 	!! Local Variables
-	REAL*8 :: JJ, N12, M12, Exp1, Exp2, InitNum, VolSum1, VolSum2
+	TYPE (XPLEX) :: JJ, N12, M12, Exp1, Exp2, InitNum, VolSum1, VolSum2
 	TYPE(Particle), POINTER :: CurrentParticle
 	INTEGER				    :: I, allocation_error
 	LOGICAL, PARAMETER		:: Scaffolding = .FALSE. !.TRUE.
 
         !!This holds the AerosolModes or EnvAerosolModes arrays, depending on the value of Boundary
-        REAL*8, ALLOCATABLE :: ModesArray(:,:)
+        TYPE (XPLEX), ALLOCATABLE :: ModesArray(:,:)
 
 	IF (SCAFFOLDING) CALL Transcript(">>>Entering MakeParticleExponential()<<<")
 	IF (SCAFFOLDING) CALL Transcript("")
@@ -1918,11 +1935,13 @@ SUBROUTINE ReadBoundaryDistributionsOrganic ()
 	USE Chemistry,		 ONLY : FindChem, &
                                         HowManyAqChems, HowManyOrgChems
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Internal Variables
 	INTEGER				:: I, J, K, L, FH, allocation_error
-	REAL*8				:: II,JJ,KK, ChemPercentage
+	TYPE (XPLEX)				:: II,JJ,KK, ChemPercentage
 	LOGICAL				:: Scaffolding, Transcribe
 	CHARACTER (len=256) :: CurrLine, Token
 	LOGICAL             :: LagrangianOrNot

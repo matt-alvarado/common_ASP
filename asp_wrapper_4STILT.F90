@@ -53,6 +53,8 @@
 
 module asp_wrapper
 !use StringIO
+USE MYTYPE
+USE XPLEXIFY
 include "DEFCONC.INC"
 
 ! 20 September 2016 CMB (AER, Inc):
@@ -89,6 +91,8 @@ save InorganicGasList
 
 contains
       subroutine initialize_specificCB4Conc(conc)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       type(specificCB4Conc), intent(out) :: conc
@@ -106,6 +110,8 @@ contains
 ! --------------------------
 !
       subroutine initialize_allCB4MappingConc(flag)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       integer, intent(in) :: flag
@@ -135,6 +141,8 @@ contains
 ! --------------------------
 !
       subroutine copy_specificCB4Conc(source, destination)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       type(specificCB4Conc), intent(in) :: source
@@ -163,6 +171,8 @@ contains
 ! -----------------------------
 !
       subroutine initializeCB4Struct(defaultPsetGasl)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       TYPE(pset), intent(INOUT) :: defaultPsetGasl
@@ -204,6 +214,8 @@ contains
 ! --------------------
 !
       subroutine copyDirtStruct(source, destination)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       !include 'DEFCONC.INC'
@@ -247,6 +259,8 @@ contains
 ! --------------------------------------------
 !
       subroutine printDirtVector(dirt, numtyp, iunit)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 #ifdef IFORT
 !DEC$ ATTRIBUTES NO_ARG_CHECK :: dirt
@@ -284,6 +298,8 @@ contains
 !
       subroutine copyDirtVector(psetVect, dirt, veclength, reorder_flag)
       use Chemistry, ONLY : GasPhaseChemicalNames
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
       
       !include 'DEFCONC.INC'
@@ -374,6 +390,8 @@ contains
       subroutine copyAerosoldirtVector(psetVect, adirt, veclength, reorder_flag)
       use Chemistry, ONLY : HowManyAqChems, HowManyAqCations, &
             HowManyAqAnions, HowManyOrgChems, HowManyAqOrgChems
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
       
       !include 'DEFCONC.INC'
@@ -464,6 +482,8 @@ contains
       subroutine combine_or_split_dirt_adirt(combo, dirt, adirt, &
                                              numdirt, numadirt, &
                                              processing_flag)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       type(pset), allocatable, intent(inout) :: combo(:)
@@ -512,6 +532,8 @@ contains
       subroutine cb_readCB4File(file_name, file_data, return_status, &
                                 cdep, rdep, sdep, ibyr, ibmo, ibda, &
                                 ibhr)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
       
       !include 'DEFCONC.INC'
@@ -584,8 +606,10 @@ contains
             
             ! TODO: Fortran's fixed-length string concept is TERRIBLE.
             read(88, '(A16)') file_data%species(iter)%ident
-            read(88, *) file_data%species(iter)%qrate
-            read(88, *) file_data%species(iter)%qhrs
+             read(88, *) file_data%species(iter)%qrate%r
+             file_data%species(iter)%qrate%i = 0.0
+             read(88, *) file_data%species(iter)%qhrs%r
+             file_data%species(iter)%qhrs%i = 0.0
             
             ! Copy species name to debugger array (TODO)
             allSpeciesNames(iter) = file_data%species(iter)%ident
@@ -640,9 +664,13 @@ contains
           ! nothing more than a temporary kludge, let's let it go for
           ! now.
           do iter = 1, file_data%vecLength
-            READ(88, *) file_data%species(iter)%PDIAM, &
-                        file_data%species(iter)%PDENS, &
-                        file_data%species(iter)%SHAPE
+            READ(88, *) file_data%species(iter)%PDIAM%r, &
+                        file_data%species(iter)%PDENS%r, &
+                        file_data%species(iter)%SHAPE%r
+
+            file_data%species(iter)%PDIAM%i = 0.0
+            file_data%species(iter)%PDENS%i = 0.0
+            file_data%species(iter)%SHAPE%i = 0.0
             
             IF (file_data%species(iter)%PDIAM.EQ.0.0 .OR. &
                 file_data%species(iter)%PDENS.EQ.0.0 .OR. &
@@ -650,11 +678,17 @@ contains
                 file_data%species(iter)%DOGAS=.TRUE.
             endif
             
-            READ(88, *) file_data%species(iter)%DRYVL, &
-                        file_data%species(iter)%GPMOL, &
-                        file_data%species(iter)%ACVTY, &
-                        file_data%species(iter)%DIFTY, &
-                        file_data%species(iter)%HENRY
+            READ(88, *) file_data%species(iter)%DRYVL%r, &
+                        file_data%species(iter)%GPMOL%r, &
+                        file_data%species(iter)%ACVTY%r, &
+                        file_data%species(iter)%DIFTY%r, &
+                        file_data%species(iter)%HENRY%r
+
+            file_data%species(iter)%DRYVL%i = 0.0
+            file_data%species(iter)%GPMOL%i = 0.0
+            file_data%species(iter)%ACVTY%i = 0.0
+            file_data%species(iter)%DIFTY%i = 0.0
+            file_data%species(iter)%HENRY%i = 0.0
             
             IF(file_data%species(iter)%DRYVL.GT.0.0) then
                 file_data%species(iter)%DODRY=.TRUE.
@@ -699,9 +733,13 @@ contains
                 file_data%species(iter)%DORES=.FALSE.
             END IF
             
-            READ(88, *) file_data%species(iter)%WETGAS, &
-                        file_data%species(iter)%WETIN, &
-                        file_data%species(iter)%WETLO
+            READ(88, *) file_data%species(iter)%WETGAS%r, &
+                        file_data%species(iter)%WETIN%r, &
+                        file_data%species(iter)%WETLO%r
+
+            file_data%species(iter)%WETGAS%i = 0.0
+            file_data%species(iter)%WETIN%i = 0.0
+            file_data%species(iter)%WETLO%i = 0.0
             
             ! check for consistency of wet removal definitions
             IF (file_data%species(iter)%DOGAS)THEN
@@ -719,12 +757,14 @@ contains
                 file_data%species(iter)%DOWET=.TRUE.
             endif
             
-            READ(88, *) file_data%species(iter)%RHALF
+            READ(88, *) file_data%species(iter)%RHALF%r
+            file_data%species(iter)%RHALF%i = 0.0
             IF(file_data%species(iter)%RHALF.GT.0.0) then
                 file_data%species(iter)%DORAD=.TRUE.
             endif
             
-            READ(88, *) file_data%species(iter)%SRATE
+            READ(88, *) file_data%species(iter)%SRATE%r
+            file_data%species(iter)%SRATE%i = 0.0
             IF(file_data%species(iter)%SRATE.GT.0.0) then
                 file_data%species(iter)%DOSUS=.TRUE.
             endif
@@ -756,6 +796,8 @@ contains
 ! -----------------------------
 !
       subroutine setDefaultDirt()
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       defaultPsetGas%ident = '                '
@@ -795,6 +837,8 @@ contains
 ! ------------------------------
 !
       integer function getDirtIndex(dirt, numtyp, inputString)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       type(pset), intent(in) :: dirt(:)
@@ -827,11 +871,13 @@ contains
       use OutputRoutines
       use Coagulation
 
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
-      !real*8, intent(INOUT) :: GasConc(HowManyEvolveGasChems)
-      real*8, allocatable, intent(INOUT) :: CB4ConcAll(:)
-      real*8, intent(INOUT) :: GasConc(HowManyEvolveGasChems)
+      !TYPE (XPLEX), intent(INOUT) :: GasConc(HowManyEvolveGasChems)
+      TYPE (XPLEX), allocatable, intent(INOUT) :: CB4ConcAll(:)
+      TYPE (XPLEX), intent(INOUT) :: GasConc(HowManyEvolveGasChems)
       integer, intent(in) :: type_flag
       logical, intent(inout) :: initialize_flag
       integer, intent(IN) :: direction_flag, numtyp
@@ -845,7 +891,7 @@ contains
       !character*(maxSpeciesNameLength), allocatable :: &
       !  namesOfASPSpecies
       !integer, allocatable :: indicesOfASPSpecies
-      real*8 :: cb4conc, aspsubconc, aspSpeciesConc
+      TYPE (XPLEX) :: cb4conc, aspsubconc, aspSpeciesConc
       integer :: dirtIndex, p, i, aerosol_or_gas, asp_iter_lim 
       logical :: to_initialize_asp, gas_flag, aero_flag
 
@@ -1033,6 +1079,8 @@ contains
 ! ------------------------
 !      
       subroutine initializeMappingStruct(veclength)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       integer, intent(in) :: veclength
@@ -1058,6 +1106,8 @@ contains
       subroutine setOneSpeciesMap(speciesMap, cb4SpeciesName, &
                                   numASPSpecies, namesOfASPSpecies, &
                                   indicesOfASPSpecies)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       type(specificCB4Conc), intent(INOUT) :: speciesMap
@@ -1095,6 +1145,8 @@ contains
 !
       integer function getNumCommas(tstring)
       use StringIO, ONLY: getNumberCommas
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       character(len=*), intent(IN) :: tstring
@@ -1117,9 +1169,13 @@ contains
 ! ------------------------------
 !
       subroutine readCB4ASPMappingFile(file_name, return_status, flag)
+      !USE XPLEXIFY
+       USE MYTYPE
       !implicit none
 
       use InfrastructuralCode
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
       character*(*), intent(in) :: file_name
@@ -1377,6 +1433,8 @@ contains
                                         weights, mass_weights)    ! new
       use StepASP, ONLY : initializeASP
 
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
 
@@ -1386,17 +1444,21 @@ contains
       integer :: return_status
       
       ! add for new aerosol formulation
-      real*8, allocatable, intent(out) :: weights(:), mass_weights(:)
-
+      TYPE (XPLEX), allocatable, intent(out) :: weights(:), mass_weights(:)
+      TYPE (XPLEX) :: xsza, xtrans
       ! Get the array that maps CB4 species to ASP
       !call readCB4ASPMappingFile(dirt_file_name, return_status, 0)
       !call readCB4ASPMappingFile(adirt_file_name, return_status, 1)
 
       !print *, 'In asp_wrapper(): about to call initialize ASP'
       ! TODO: This may come with arguments later...
+      xsza%r = 45.0
+      xsza%i = 0.0 
+      xtrans%r = 1.0
+      xtrans%i = 0.0
       if (initialize_flag .eq. 1) & !then
-        call initializeASP(weights, mass_weights, sza=45.0, &
-                transmissivity = 1.0, doAerosols=useaero)
+        call initializeASP(weights, mass_weights, sza=xsza, &
+                transmissivity = xtrans, doAerosols=useaero)
       !endif
 
       ! Now, we need to get the list of Reaction types? 
@@ -1407,14 +1469,16 @@ contains
 ! ------------------------------
 ! 
       subroutine convert_gas_concs_units_in_place(tpar, ppar, array, direction)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
       
-      real*8, intent(in) :: ppar, tpar
-      real*8, intent(inout) :: array(:)
+      TYPE (XPLEX), intent(in) :: ppar, tpar
+      TYPE (XPLEX), intent(inout) :: array(:)
       integer, intent(in) :: direction
       
       integer :: iter, allo_status
-      real*8, allocatable :: temp_array(:)
+      TYPE (XPLEX), allocatable :: temp_array(:)
       
       if (size(array) .gt. 0) then
            allocate(temp_array(size(array)), stat=allo_status)
@@ -1436,14 +1500,16 @@ contains
 !
       subroutine convert_gas_concs_units(tpar,ppar,cbsum_ppm,numtypes,&
                                          cbsum_molec_cm3, direction)
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
 
-      real*8, intent(IN) :: ppar
-      real*8, intent(IN) :: tpar
-      real*8, intent(INOUT) :: cbsum_ppm(:)
-      real*8, intent(INOUT) :: cbsum_molec_cm3(:)
+      TYPE (XPLEX), intent(IN) :: ppar
+      TYPE (XPLEX), intent(IN) :: tpar
+      TYPE (XPLEX), intent(INOUT) :: cbsum_ppm(:)
+      TYPE (XPLEX), intent(INOUT) :: cbsum_molec_cm3(:)
       integer, intent(IN) :: numtypes
-      real*8 :: factor
+      TYPE (XPLEX) :: factor
       integer :: direction, i ! 1: ppm->molec/cm3, -1: reverse, others: no action
 
       factor = (ppar*avogadrosnum/R__J_K_mol/tpar/ &
@@ -1478,6 +1544,8 @@ contains
 !! ---------------------------------
 !!
 !      integer function get_line_new(FUNIT, line, fileend)
+!      USE XPLEXIFY
+!       USE MYTYPE
 !      implicit none
 !
 !      integer, parameter :: buffer_size = 1024
@@ -1555,6 +1623,8 @@ contains
 
 character(len=1024) function getNonGasChemicalName(indx) result(chemName)
     use Chemistry
+    USE XPLEXIFY
+       USE MYTYPE
     implicit none
 
     integer :: indx
@@ -1607,6 +1677,8 @@ end function getNonGasChemicalName
 subroutine stack_non_gas_chemical_names(non_gas_chem_names)
     use Chemistry
     use StringIO, ONLY : copyString
+    USE XPLEXIFY
+       USE MYTYPE
     implicit none
     
     character(len=64), intent(out), allocatable :: non_gas_chem_names(:)
@@ -1738,26 +1810,30 @@ end subroutine
       !use InfrastructuralCode
 
      
+      USE XPLEXIFY
+       USE MYTYPE
       implicit none
       !include 'DEFCONC.INC'
+      !USE XPLEXIFY
+!       USE MYTYPE
       !implicit none
 
       !! ------------- from ASP ----------------- External Variables
-      REAL*8 :: Timestep !(in s)
-      !REAL*8 :: Temp  !(in K)
-      REAL*8 :: Press !(in mbar)
-      REAL*8 :: Dens  !(in kg/m3 dry air)
-      REAL*8 :: GasConc(HowManyEvolveGasChems)
-      REAL*8 :: NumConc(HowManyBins)
-      REAL*8 :: MassConc(HowManyBins, HowManyAqChems+&
+      TYPE (XPLEX) :: Timestep !(in s)
+      !TYPE (XPLEX) :: Temp  !(in K)
+      TYPE (XPLEX) :: Press !(in mbar)
+      TYPE (XPLEX) :: Dens  !(in kg/m3 dry air)
+      TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+      TYPE (XPLEX) :: NumConc(HowManyBins)
+      TYPE (XPLEX) :: MassConc(HowManyBins, HowManyAqChems+&
                          HowManyAqCations+HowManyAqAnions+&
                          HowManyOrgChems+HowManyAqOrgChems)
-      REAL*8 :: Radius(HowManyBins)
-      REAL*8 :: TermVel(HowManyBins)
-      !REAL*8 :: PhotoRates(12)
+      TYPE (XPLEX) :: Radius(HowManyBins)
+      TYPE (XPLEX) :: TermVel(HowManyBins)
+      !TYPE (XPLEX) :: PhotoRates(12)
       ! CB: Ifort complains unless these dimensions match
-      !REAL*8, DIMnENSION(18) :: ExtCoeff, SingScat, Assym
-      REAL*8, DIMENSION(451):: ExtCoeff, SingScat, Assym
+      !TYPE (XPLEX), DIMnENSION(18) :: ExtCoeff, SingScat, Assym
+      TYPE (XPLEX), DIMENSION(451):: ExtCoeff, SingScat, Assym
       integer :: itt, jp
       ! ---------------------- end from ASP
 
@@ -1768,16 +1844,16 @@ end subroutine
 !DEC$ ATTRIBUTES NO_ARG_CHECK :: dirt, adirt
 #endif
       type(pset), intent(in) :: dirt(:), adirt(:)
-      real*8, intent(INOUT) :: cbsum_ppm(:)    ! before
-      real*8, intent(INOUT) :: casum_ppm(:)    ! after 
-      real*8, intent(in) :: ppar, solarElevationAngle, density
-      !real*8, intent(in) :: timestep
-      real*8 :: press_mbar, tempK
-      real*8, allocatable :: cbsum_molec_cm3(:), casum_molec_cm3(:), &
+      TYPE (XPLEX), intent(INOUT) :: cbsum_ppm(:)    ! before
+      TYPE (XPLEX), intent(INOUT) :: casum_ppm(:)    ! after 
+      TYPE (XPLEX), intent(in) :: ppar, solarElevationAngle, density
+      !TYPE (XPLEX), intent(in) :: timestep
+      TYPE (XPLEX) :: press_mbar, tempK
+      TYPE (XPLEX), allocatable :: cbsum_molec_cm3(:), casum_molec_cm3(:), &
                              adirt_molec_cm3_1(:), adirt_molec_cm3_2(:) 
       integer :: allo_status, iter, iii
-      real*8 :: derp
-	  real*8, intent(in) :: Transmissivity !Estimated cloud cover from /STILT-Chem/sunflx.f
+      TYPE (XPLEX) :: derp
+	  TYPE (XPLEX), intent(in) :: Transmissivity !Estimated cloud cover from /STILT-Chem/sunflx.f
 	  
       ! bug fix: pressures already in mb
       press_mbar = ppar/100.0   ! convert to mbar from Pa
@@ -1919,11 +1995,13 @@ end subroutine
 ! 20 September 2016 CMB (AER, Inc): Adding a few routines to reflect the inclusion of
 !                                   a non-monodisperse aerosol option.
 !
-real*8 function sum_over_all_size_bins_one_species(MassConcArray, &
+TYPE (XPLEX) function sum_over_all_size_bins_one_species(MassConcArray, &
         species_index)
+    USE XPLEXIFY
+       USE MYTYPE
     implicit none
     
-    real*8, allocatable, intent(in) :: MassConcArray(:,:)
+    TYPE (XPLEX), allocatable, intent(in) :: MassConcArray(:,:)
     integer, intent(in) :: species_index
     
     if (allocated(MassConcArray)) then
@@ -1934,11 +2012,13 @@ real*8 function sum_over_all_size_bins_one_species(MassConcArray, &
     return
 end function
 
-real*8 function sum_over_all_species_one_size_bin(MassConcArray, &
+TYPE (XPLEX) function sum_over_all_species_one_size_bin(MassConcArray, &
         size_index)
+    USE XPLEXIFY
+       USE MYTYPE    
     implicit none    
         
-    real*8, allocatable, intent(in) :: MassConcArray(:,:)
+    TYPE (XPLEX), allocatable, intent(in) :: MassConcArray(:,:)
     integer, intent(in) :: size_index
     
     if (allocated(MassConcArray)) then
@@ -1949,10 +2029,12 @@ real*8 function sum_over_all_species_one_size_bin(MassConcArray, &
     return
 end function
 
-real*8 function get_total_mass(MassConcArray)
+TYPE (XPLEX) function get_total_mass(MassConcArray)
+    USE XPLEXIFY
+       USE MYTYPE
     implicit none
     
-    real*8, allocatable, intent(in) :: MassConcArray(:,:)
+    TYPE (XPLEX), allocatable, intent(in) :: MassConcArray(:,:)
     
     if (allocated(MassConcArray)) then
         get_total_mass = sum(MassConcArray(:,:))

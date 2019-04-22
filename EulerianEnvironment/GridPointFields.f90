@@ -42,6 +42,8 @@
 	
 	module GridPointFields
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Everything is private unless declared otherwise
@@ -124,23 +126,23 @@
 !	integer :: XGridPoints(HowManyGrids)
 !	integer :: YGridPoints(HowManyGrids)
 !	integer :: ZGridPoints(HowManyGrids)
-	real*8  :: GridPointVolume
+	TYPE (XPLEX)  :: GridPointVolume
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! The folling arrays are PRIMARY !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	real*8              :: GridTemp 	! Air Temperature (K)
-	real*8              :: GridPress	! Air Pressure (mb)
-	real*8, allocatable :: GridGasChem(:)   
+	TYPE (XPLEX)              :: GridTemp 	! Air Temperature (K)
+	TYPE (XPLEX)              :: GridPress	! Air Pressure (mb)
+	TYPE (XPLEX), allocatable :: GridGasChem(:)   
         ! Gas Phase Chemistry (mol per cc for each molecule)
-	real*8              :: TemporaryWaterArray
+	TYPE (XPLEX)              :: TemporaryWaterArray
         ! Relative Humidity (between 0 and 1) is stored temporarily
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! The folling arrays hold SECONDARY THERMODYNAMIC variables, 
 	!! and are diagnosed from the primary variables above.
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	real*8, allocatable :: GasPhaseChemicalRates(:)
+	TYPE (XPLEX), allocatable :: GasPhaseChemicalRates(:)
 
 	!! If all the grids are the same scale, then this is true
 	LOGICAL :: AllSameGrid
@@ -176,14 +178,16 @@
         ! UPDATE: The sqrt(-1.0) does not work for a NaN set under
         ! gfortran.  Let's try tricking the compiler...
         subroutine linear2dInterp(x1, y1, x2, y2, x3, y3)
+        USE XPLEXIFY
+       USE MYTYPE
         implicit none
 
-        real*8, intent(in) :: x1, y1, x2, y2, x3
-        real*8, intent(out) :: y3
-        real*8 :: slope, intercept
+        TYPE (XPLEX), intent(in) :: x1, y1, x2, y2, x3
+        TYPE (XPLEX), intent(out) :: y3
+        TYPE (XPLEX) :: slope, intercept
         
         ! CMB: Hack here
-        real*4 :: nan
+        TYPE (XPLEX) :: nan
         nan = 0.
 
         if (x1 .eq. x2) then

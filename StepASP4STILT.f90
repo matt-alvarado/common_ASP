@@ -59,6 +59,10 @@
 
 MODULE StepASP
 
+    USE XPLEXIFY
+       USE MYTYPE
+    USE XPLEXIFY
+       USE MYTYPE
     IMPLICIT NONE
 
             ! CMB: aerosol flag is private
@@ -100,14 +104,18 @@ CONTAINS
         USE OutputRoutines
         USE Coagulation
 
+        USE XPLEXIFY
+       USE MYTYPE
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
         !! External Variables
-        REAL*8 :: TimeStep
+        TYPE (XPLEX) :: TimeStep
 		
         !! Internal Variables
         INTEGER :: I, NumBins
-        REAL*8 :: TEMP
+        TYPE (XPLEX) :: TEMP
 	
         TYPE(Particle), POINTER :: cur
 		
@@ -219,28 +227,32 @@ CONTAINS
         USE OutputRoutines
         USE Coagulation
 
+        USE XPLEXIFY
+       USE MYTYPE
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
         !! External Variables
-        REAL*8, INTENT(IN) :: Temp  !(in K)
-        REAL*8, INTENT(IN) :: Press !(in mbar)
-        REAL*8, INTENT(IN) :: Dens  !(in kg/m3 dry air)
-        REAL*8 :: GasConc(HowManyEvolveGasChems) !(in molecules/cm3)
-        REAL*8, INTENT(IN) :: AeroNumConc(HowManyBins) !(in particles/cm3)
-        REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !(in ug/m3)
-        REAL*8, INTENT(IN) :: Transmissivity
-        !REAL*8, INTENT(IN) :: PhotoRates(12)
+        TYPE (XPLEX), INTENT(IN) :: Temp  !(in K)
+        TYPE (XPLEX), INTENT(IN) :: Press !(in mbar)
+        TYPE (XPLEX), INTENT(IN) :: Dens  !(in kg/m3 dry air)
+        TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems) !(in molecules/cm3)
+        TYPE (XPLEX), INTENT(IN) :: AeroNumConc(HowManyBins) !(in particles/cm3)
+        TYPE (XPLEX) :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !(in ug/m3)
+        TYPE (XPLEX), INTENT(IN) :: Transmissivity
+        !TYPE (XPLEX), INTENT(IN) :: PhotoRates(12)
 
         !! Internal Variables
         INTEGER :: I, J, L, RxnIndex, NumAq, GG, iii
-        REAL*8 :: HeteroNumberConc(HowManyBins)
-        REAL*8 :: HeteroRadii(HowManyBins)
-        REAL*8 :: Scale
+        TYPE (XPLEX) :: HeteroNumberConc(HowManyBins)
+        TYPE (XPLEX) :: HeteroRadii(HowManyBins)
+        TYPE (XPLEX) :: Scale
 
         TYPE(Particle), POINTER :: cur
 	  
         ! CMB add
-        real*8, intent(in) :: sza
+        TYPE (XPLEX), intent(in) :: sza
         integer :: doAerosols
         doAerosols = getAerosolProc()
         ! end CMB add
@@ -525,28 +537,32 @@ CONTAINS
         USE OutputRoutines
         USE Coagulation
 
+        USE XPLEXIFY
+       USE MYTYPE
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
         !! External Variables
-        REAL*8 :: Temp, Press, Dens
-        REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
+        TYPE (XPLEX) :: Temp, Press, Dens
+        TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
             ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep, &
             SubExtCoeffSep, SubSSASep
-        REAL*8 :: GasConc(HowManyEvolveGasChems)!molecules/cm3
-        REAL*8 :: AeroNumConc(HowManyBins)!particles/cm3
-        REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !ug/m3
-        REAL*8 :: Radius(HowManyBins) !cm
-        REAL*8 :: TermVel(HowManyBins) !m/s
+        TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)!molecules/cm3
+        TYPE (XPLEX) :: AeroNumConc(HowManyBins)!particles/cm3
+        TYPE (XPLEX) :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !ug/m3
+        TYPE (XPLEX) :: Radius(HowManyBins) !cm
+        TYPE (XPLEX) :: TermVel(HowManyBins) !m/s
 		
         !! Internal Variables
         INTEGER :: I, J, NumAq
-        REAL*8 :: SaltConc(HowManyAqChems)
+        TYPE (XPLEX) :: SaltConc(HowManyAqChems)
 	
         TYPE(Particle), POINTER :: Cur
 		
         ! CMB add
         integer :: doAerosols, iii != getAerosolProc()
-        real*8 :: filler_value, ro2_t, rco3_t
+        TYPE (XPLEX) :: filler_value, ro2_t, rco3_t
         doAerosols = getAerosolProc()
         filler_value = 1.0D-40
         ! end CMB add
@@ -693,11 +709,15 @@ CONTAINS
         USE OutputRoutines
         USE Coagulation
 	
+        USE XPLEXIFY
+       USE MYTYPE
+        USE XPLEXIFY
+       USE MYTYPE
         implicit none
 
         ! CMB add
         integer :: ii !, derp
-        real*8, intent(in), optional :: sza, Transmissivity
+        TYPE (XPLEX), intent(in), optional :: sza, Transmissivity
         !logical, intent(in), optional :: doAerosols
         integer, intent(in), optional :: doAerosols
         !logical :: todoAerosols
@@ -707,7 +727,7 @@ CONTAINS
         !! Define the local variables
         integer :: i, j, k, l, seedarray(2),q, r, NumBins
         INTEGER :: time(8), sizerand
-        REAL*4  :: etimearray(2)
+        TYPE (XPLEX)  :: etimearray(2)
         TYPE(Particle), POINTER :: Cur, Env
         CHARACTER (len = 8)     :: ErrorDate
         CHARACTER (len = 10)    :: ErrorTime
@@ -718,14 +738,14 @@ CONTAINS
         !                        static size.  I'm choosing the former for right now.
         !
         integer :: allo_stat, iter, num_aeros
-        real*8 :: temp, press, dens, total_sum, row_sum
-        real*8, dimension(451) :: ExtCoeff, SingScat, Assym
-        real*8, allocatable, intent(out) :: num_weights(:), mass_weights(:)
-        REAL*8, allocatable :: GasConc(:) !HowManyEvolveGasChems)
-        REAL*8, allocatable :: NumConc(:) !HowManyBins)
-        REAL*8, allocatable :: MassConc(:, :) !HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
-        REAL*8, allocatable :: Radius(:) !HowManyBins)
-        REAL*8, allocatable :: TermVel(:) !HowManyBins)
+        TYPE (XPLEX) :: temp, press, dens, total_sum, row_sum
+        TYPE (XPLEX), dimension(451) :: ExtCoeff, SingScat, Assym
+        TYPE (XPLEX), allocatable, intent(out) :: num_weights(:), mass_weights(:)
+        TYPE (XPLEX), allocatable :: GasConc(:) !HowManyEvolveGasChems)
+        TYPE (XPLEX), allocatable :: NumConc(:) !HowManyBins)
+        TYPE (XPLEX), allocatable :: MassConc(:, :) !HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
+        TYPE (XPLEX), allocatable :: Radius(:) !HowManyBins)
+        TYPE (XPLEX), allocatable :: TermVel(:) !HowManyBins)
         ! end CMB
          
         ! CMB add
@@ -909,32 +929,36 @@ CONTAINS
         USE OutputRoutines
         USE Coagulation
 
+        USE XPLEXIFY
+       USE MYTYPE
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
         !! External Variables
-        REAL*8 :: Timestep !(in s)
-        REAL*8 :: tTemp  !(in K)
-        REAL*8 :: Press !(in mbar)
-        REAL*8 :: Dens  !(in kg/m3 dry air)
-        REAL*8 :: GasConc(HowManyEvolveGasChems)
-        REAL*8 :: NumConc(HowManyBins)
-        REAL*8 :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
-        REAL*8 :: Radius(HowManyBins)
-        REAL*8 :: TermVel(HowManyBins)
+        TYPE (XPLEX) :: Timestep !(in s)
+        TYPE (XPLEX) :: tTemp  !(in K)
+        TYPE (XPLEX) :: Press !(in mbar)
+        TYPE (XPLEX) :: Dens  !(in kg/m3 dry air)
+        TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+        TYPE (XPLEX) :: NumConc(HowManyBins)
+        TYPE (XPLEX) :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
+        TYPE (XPLEX) :: Radius(HowManyBins)
+        TYPE (XPLEX) :: TermVel(HowManyBins)
         integer :: itt, jp
-        !REAL*8 :: PhotoRates(12)
+        !TYPE (XPLEX) :: PhotoRates(12)
 		
         ! CMB add: 
-        real*8, intent(in) :: sza, Transmissivity
+        TYPE (XPLEX), intent(in) :: sza, Transmissivity
         integer, intent(in), optional :: do_aerosols
         type(Particle), POINTER :: cur
-        real*8 :: total_num_part
+        TYPE (XPLEX) :: total_num_part
         !logical :: want_aerosols
         ! end CMB add
 
         ! CB: Ifort complains unless these dimensions match
-        !REAL*8, DIMENSION(18) :: ExtCoeff, SingScat, Assym
-        REAL*8, DIMENSION(451):: ExtCoeff, SingScat, Assym
+        !TYPE (XPLEX), DIMENSION(18) :: ExtCoeff, SingScat, Assym
+        TYPE (XPLEX), DIMENSION(451):: ExtCoeff, SingScat, Assym
         INTEGER :: I, J, K
 
         ! CMB add

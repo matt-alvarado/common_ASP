@@ -60,7 +60,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ! ************************************************************************
-! Modified by CMB for use by gfortran: dlog10() needs a double precision
+! Modified by CMB for use by gfortran: dlog10() needs a TYPE (XPLEX)
 ! value, so I forced an explicit cast each time
 ! ************************************************************************
 
@@ -72,14 +72,16 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 
   Use ModelParameters
   USE InfrastructuralCode, ONLY : Transcript, ERROR, Int2Str, Real2Str
+  USE XPLEXIFY
+       USE MYTYPE
   IMPLICIT NONE
 
-  REAL*8,  INTENT(in) :: ReactionRates(:,:)
+  TYPE (XPLEX),  INTENT(in) :: ReactionRates(:,:)
   INTEGER, INTENT(in) :: ArraySize(2)
-  REAL*8              :: TotalPeroxy, TotalAcylPeroxy, H2OConc
+  TYPE (XPLEX)              :: TotalPeroxy, TotalAcylPeroxy, H2OConc
 
   INTEGER :: L
-  REAL*8	:: Temp,Mgas,X(3),k0,ki, Y_o, Y_o_term, Y_inf_term, Z, F, &
+  TYPE (XPLEX)	:: Temp,Mgas,X(3),k0,ki, Y_o, Y_o_term, Y_inf_term, Z, F, &
   	   alpha, beta, m_o, m_inf, Ratio, Scale, Pres, k1, k2, k3, kf, Keq, &
 	   KINF, NCD, FD, RO2_T, RCO3_T, C_H2O, Knaught, N2gas, O2gas
 
@@ -109,7 +111,7 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  k0   = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)* Mgas
 	  ki   = ReactionRates(L,6)*EXP(ReactionRates(L,7)/Temp)
 	  GasPhaseChemicalRates(L) = (k0*ki)/(k0+ki) * ReactionRates(L,8)** &
-						(1./(1.+(DLOG10(dble(k0/ki))**2.)))
+						(1./(1.+(LOG10((k0/ki))**2.)))
 								
         !Isomerization Case
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 2) THEN
@@ -127,7 +129,7 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  k0  = ReactionRates(L,4)*(Temp/300.)**(-1.*ReactionRates(L,5)) * Mgas
 	  ki  = ReactionRates(L,6)*(Temp/300.)**(-1.*ReactionRates(L,7))
 	  kf  =	(k0*ki)/(k0+ki) * ReactionRates(L,8)**			&
-				(1./(1.+(DLOG10(dble(k0/ki))**2.)))
+				(1./(1.+(LOG10((k0/ki))**2.)))
 	  Keq = ReactionRates(L,9)*EXP(ReactionRates(L,10)/TEMP)
 								
 	  GasPhaseChemicalRates(L) = kf/Keq
@@ -151,10 +153,10 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  KINF = 9.7E+14*((TEMP/300.0)**0.1)*EXP(-11080.0/TEMP)
           NCD = 0.75-1.27*(DLOG10(dble(0.35)))
 !          FD = 10.**(DLOG10(0.35)/(1.+(DLOG10(Knaught/KINF)/NCD)**2))
-          FD = 10.**(DLOG10(dble(0.35))/(1.+(DLOG10(dble(Knaught/KINF))/NCD)**2))
+          FD = 10.**(LOG10((0.35))/(1.+(LOG10((Knaught/KINF))/NCD)**2))
           GasPhaseChemicalRates(L) = FD*(Knaught*KINF)/(Knaught+KINF)	
 !          FD = 10.**(DLOG10(0.35)/(1.+(DLOG10(Knaught/KINF)/NCD)**2))
-          FD = 10.**(DLOG10(dble(0.35))/(1.+(DLOG10(dble(Knaught/KINF))/NCD)**2))
+          FD = 10.**(LOG10((0.35))/(1.+(LOG10((Knaught/KINF))/NCD)**2))
           GasPhaseChemicalRates(L) = FD*(Knaught*KINF)/(Knaught+KINF)	
 
 !          WRITE(*,*) GasPhaseChemicalRates(L), (1.+(DLOG10(Knaught/KINF)/NCD)**2)
@@ -189,8 +191,8 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 11) THEN
 	  k0 = ReactionRates(L,4)*exp(ReactionRates(L,5)/TEMP) * Mgas
 	  ki = ReactionRates(L,6)*exp(ReactionRates(L,7)/TEMP)
-	  NCD = 0.75-1.27*(DLOG10(dble(ReactionRates(L,8))))
-          FD = 10.**(DLOG10(dble(ReactionRates(L,8)))/(1.+(DLOG10(dble(k0/ki))/NCD)**2))
+	  NCD = 0.75-1.27*(LOG10((ReactionRates(L,8))))
+          FD = 10.**(LOG10((ReactionRates(L,8)))/(1.+(LOG10((k0/ki))/NCD)**2))
           GasPhaseChemicalRates(L) = FD*(k0*ki)/(k0+ki)
 
         !+ RO2_T pseudo-1st order Case (MJA, 01-25-2013)
@@ -325,15 +327,15 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 3) THEN
 	  k0 = ReactionRates(L,4)*(Temp/300.)**(-1.*ReactionRates(L,5)) * Mgas
 	  ki = ReactionRates(L,6)*(Temp/300.)**(-1.*ReactionRates(L,7))
-	  NCD = 0.75-1.27*(DLOG10(dble(ReactionRates(L,8))))
-          FD = 10.**(DLOG10(dble(ReactionRates(L,8)))/(1.+(DLOG10(dble(k0/ki))/NCD)**2))
+	  NCD = 0.75-1.27*(LOG10((ReactionRates(L,8))))
+          FD = 10.**(LOG10((ReactionRates(L,8)))/(1.+(LOG10((k0/ki))/NCD)**2))
           GasPhaseChemicalRates(L) = FD*(k0*ki)/(k0+ki)													
 	!Calculate pseudo-2nd order rate constant
 	ELSE !JPL Style							
 	  k0 = ReactionRates(L,3)*(Temp/300.)**(-1.*ReactionRates(L,4)) * Mgas
 	  ki = ReactionRates(L,5)*(Temp/300.)**(-1.*ReactionRates(L,6))
 	  GasPhaseChemicalRates(L) = (k0*ki)/(k0+ki) * ReactionRates(L,7)** &
-					(1./(1.+(DLOG10(dble(k0/ki))**2.)))
+					(1./(1.+(LOG10((k0/ki))**2.)))
 	END IF
       END SELECT
 
@@ -347,6 +349,8 @@ END SUBROUTINE ResetGasPhaseReactionRates
 SUBROUTINE AllocateGasChemistryGrid (NumbChems)
 
 	USE InfrastructuralCode, ONLY : ERROR
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: NumbChems, Allocation_Error 
@@ -370,6 +374,8 @@ SUBROUTINE AllocateGasReactionGrid (NumbRates)
 
 	USE InfrastructuralCode, ONLY : ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: NumbRates, Allocation_Error
@@ -392,10 +398,12 @@ SUBROUTINE SetHomogeneousChemFieldPPB (Index, Value)
 
 	USE InfrastructuralCode, ONLY : ERROR, Transcript
 	USE ModelParameters,	 ONLY : ppbscale,chemscale
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	integer ::  Index
-	real*8  :: Value, Mgas
+	TYPE (XPLEX)  :: Value, Mgas
 
         !! Set each chemical to the specified value.
         Mgas = GetM ()
@@ -412,11 +420,13 @@ SUBROUTINE SetHomogeneousChemFieldMGperM3 (Index, Value, MolecMass)
 
 	USE InfrastructuralCode, ONLY : ERROR, Transcript
 	USE ModelParameters,	 ONLY : chemscale,grams,avogadro
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	integer ::  Index
-	real*8  :: Value, Mgas
-	real*8  :: MolecMass			
+	TYPE (XPLEX)  :: Value, Mgas
+	TYPE (XPLEX)  :: MolecMass			
         !! Molecular mass of gas chem # Index -- 
         !! circular ref to access chemistry module here.
 
@@ -432,10 +442,12 @@ END SUBROUTINE SetHomogeneousChemFieldMGperM3
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FUNCTION GetGasChemVector () RESULT (Y)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8  :: Y(ylen)
+	TYPE (XPLEX)  :: Y(ylen)
 
 	!! Internal Variables
 	INTEGER   :: I
@@ -461,10 +473,12 @@ END FUNCTION GetGasChemVector
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE UpdateChemicalBurdens (Y)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-        REAL*8  :: Y(HowManyEvolveGasChems)
+        TYPE (XPLEX)  :: Y(HowManyEvolveGasChems)
 
 	!! Internal Variables
 	INTEGER :: I
@@ -480,10 +494,12 @@ END SUBROUTINE
 
 SUBROUTINE UpdateChemicalConcentrations (Y)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8  :: Y(HowManyEvolveGasChems)
+	TYPE (XPLEX)  :: Y(HowManyEvolveGasChems)
 
 	!! Internal Variables
 	INTEGER :: I
@@ -501,9 +517,11 @@ END SUBROUTINE
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 FUNCTION GetGasChems () RESULT (Y)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8				:: Y(HowManyGasChems)	! Output
+	TYPE (XPLEX)				:: Y(HowManyGasChems)	! Output
 	INTEGER				:: i
 
 	DO i = 1,HowManyGasChems
@@ -516,8 +534,10 @@ END FUNCTION GetGasChems
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Retrieve a single Gas Phase Chemical Interpolated to Any Point. !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetGasChem (SingleChemIndex) RESULT (Y)
+TYPE (XPLEX) FUNCTION GetGasChem (SingleChemIndex) RESULT (Y)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	INTEGER, intent(in) :: SingleChemIndex
@@ -527,8 +547,10 @@ REAL*8 FUNCTION GetGasChem (SingleChemIndex) RESULT (Y)
 	RETURN
 END FUNCTION GetGasChem
 
-REAL*8 FUNCTION GetGasBurden (SingleChemIndex) RESULT (Y)
+TYPE (XPLEX) FUNCTION GetGasBurden (SingleChemIndex) RESULT (Y)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	INTEGER, intent(in) :: SingleChemIndex
@@ -538,11 +560,13 @@ REAL*8 FUNCTION GetGasBurden (SingleChemIndex) RESULT (Y)
 	RETURN
 END FUNCTION GetGasBurden
 
-REAL*8 FUNCTION GetGasChemFromBurden (Burden)
+TYPE (XPLEX) FUNCTION GetGasChemFromBurden (Burden)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8, intent (in) :: Burden
+	TYPE (XPLEX), intent (in) :: Burden
 
 	GetGasChemFromBurden = Burden
 
@@ -554,10 +578,12 @@ END FUNCTION GetGasChemFromBurden
 !! (this is just the concentration - I've removed the scaling by volume !!
 !! (Matt Alvarado, 4/12/06).						!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetGridCellChemBurden (SingleChemIndex)
+TYPE (XPLEX) FUNCTION GetGridCellChemBurden (SingleChemIndex)
 
 	USE InfrastructuralCode, ONLY : ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER, intent(in) :: SingleChemIndex
@@ -572,9 +598,11 @@ END FUNCTION GetGridCellChemBurden
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE AddToGridCellChemBurden (SingleChemIndex, DeltaChemBurden)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
-	REAL*8,  intent(in) :: DeltaChemBurden
+	TYPE (XPLEX),  intent(in) :: DeltaChemBurden
 	INTEGER, intent(in) :: SingleChemIndex
 
 		GridGasChem(SingleChemIndex) = GridGasChem(SingleChemIndex) + &
@@ -588,9 +616,11 @@ END SUBROUTINE AddToGridCellChemBurden
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE ReplaceGridCellChemBurden (SingleChemIndex, ChemBurden)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
-	REAL*8,  intent(in) :: ChemBurden
+	TYPE (XPLEX),  intent(in) :: ChemBurden
 	INTEGER, intent(in) :: SingleChemIndex
 
 	GridGasChem(SingleChemIndex) = ChemBurden
@@ -602,10 +632,12 @@ END SUBROUTINE ReplaceGridCellChemBurden
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Retrieve a single Gas Phase Chemical Partial Pressure.                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetPartialPressure (SingleChemIndex)
+TYPE (XPLEX) FUNCTION GetPartialPressure (SingleChemIndex)
 
 	USE ModelParameters, ONLY : kB
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	INTEGER, intent(in) :: SingleChemIndex
@@ -625,14 +657,16 @@ SUBROUTINE SetWaterVaporField (RH)
 	USE InfrastructuralCode, ONLY : ERROR
 	USE ModelParameters,     ONLY : ppbscale, chemscale
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8 :: RH
+	TYPE (XPLEX) :: RH
 
 	!! Internal Variables
 	INTEGER :: allocation_error
-	REAL*8  :: SPress !, MM
+	TYPE (XPLEX)  :: SPress !, MM
 				
 	SPress = GetSatVapPress()
 	TemporaryWaterArray  = ChemScale * SPress * RH * GetM() / GetPress()  

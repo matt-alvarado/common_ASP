@@ -68,6 +68,8 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	!use StringIO, ONLY : fortranStr2Float
 	! end CMB
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Input Variables
@@ -79,7 +81,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	TYPE ReactRate
 	    integer	  :: NumbBodies	! Number of bodies in the reaction
 	    integer	  :: NumbRateFacs
-	    real*8	  :: Rate(20)	  ! Elements needed for rate
+	    TYPE (XPLEX)	  :: Rate(20)	  ! Elements needed for rate
 	    type (ReactRate), pointer :: Next
 	END TYPE ReactRate
 
@@ -88,7 +90,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	INTEGER		  :: Reacts(10),Prods(40),ReactionType,NumbRateFacs
 	INTEGER		  :: NumbProducts,NumbReactants,NumbReactions, & 
                              MaxNumbRateFacs
-	REAL*8		  :: ReactFactors(10),ProdFactors(40), II, RateFacs(20)
+	TYPE (XPLEX)		  :: ReactFactors(10),ProdFactors(40), II, RateFacs(20)
 	character (len=1024)      :: FullLine,CurrLine
 	character (len=1024)	  :: Token,Reactants,Reactant
 	character (len=1024)	  :: Products,Product
@@ -1631,6 +1633,8 @@ END SUBROUTINE MakeODESet
 
 		USE ModelParameters, ONLY : OutputDeckSubDir
 		USE InfrastructuralCode
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input Variables
@@ -1725,6 +1729,8 @@ END SUBROUTINE MakeODESet
 
 		USE InfrastructuralCode
 		USE ModelParameters
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input Variables
@@ -1855,6 +1861,8 @@ END SUBROUTINE MakeODESet
 
 		USE InfrastructuralCode, ONLY : Transcript
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		TYPE (DiffEqTerm), POINTER  :: OutEl, InEl
@@ -1941,6 +1949,8 @@ END SUBROUTINE MakeODESet
 
 		USE ModelParameters, ONLY : OutputDeckSubDir
 		USE InfrastructuralCode
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input Variables
@@ -2029,6 +2039,8 @@ END SUBROUTINE MakeODESet
 	FUNCTION CopyODEElement(InEl) RESULT (OutEl)
 
 		USE InfrastructuralCode, ONLY : ERROR
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
 		TYPE (DiffEqTerm), POINTER  :: OutEl, InEl
@@ -2089,6 +2101,8 @@ END SUBROUTINE MakeODESet
 	SUBROUTINE PrintODEElement(PrintEqTerm)
 
 		USE InfrastructuralCode, ONLY : INT2STR, REAL2STR, TRANSCRIPT
+		USE XPLEXIFY
+       USE MYTYPE
 		implicit none
 
 		Type (DiffEqTerm), POINTER :: PrintEqTerm
@@ -2141,6 +2155,8 @@ END SUBROUTINE MakeODESet
 
 		USE InfrastructuralCode
 		USE ModelParameters
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input Variables
@@ -2220,6 +2236,8 @@ END SUBROUTINE MakeODESet
 
 		USE InfrastructuralCode, ONLY : Transcript
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		TYPE (DiffEqTerm), POINTER  :: OutEl, InEl
@@ -2260,6 +2278,8 @@ END SUBROUTINE MakeODESet
 
 		USE ModelParameters, ONLY : OutputDeckSubDir
 		USE InfrastructuralCode
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input Variables

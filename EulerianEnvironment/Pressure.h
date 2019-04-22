@@ -35,10 +35,12 @@ SUBROUTINE SetPressField (Press)
 
 	USE ModelParameters, ONLY : PressureScale
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Inputs Variables:
-	real*8  :: Press
+	TYPE (XPLEX)  :: Press
 
 	GridPress = Press * PressureScale
 
@@ -48,8 +50,10 @@ END SUBROUTINE SetPressField
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Retrieve the PRESSURE    !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetPress () RESULT (Press)
+TYPE (XPLEX) FUNCTION GetPress () RESULT (Press)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	Press = GridPress
@@ -57,8 +61,10 @@ REAL*8 FUNCTION GetPress () RESULT (Press)
 	return
 END FUNCTION GetPress
 
-REAL*8 FUNCTION GetPressFromGrid () RESULT (Press)
+TYPE (XPLEX) FUNCTION GetPressFromGrid () RESULT (Press)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	Press = GridPress
@@ -69,10 +75,12 @@ END FUNCTION GetPressFromGrid
 !!!!!!!!!!!!!!!!
 !! Retrieve M !!
 !!!!!!!!!!!!!!!!
-REAL*8 FUNCTION GetM () RESULT (M)
+TYPE (XPLEX) FUNCTION GetM () RESULT (M)
 		
 	USE ModelParameters, ONLY : PressureScale
 
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Use the Ideal Gas Law to scale a reference M to local values

@@ -33,12 +33,16 @@ CHARACTER (len=1024) FUNCTION GetLine(FileHandle) RESULT (OutLine)
 ! CB: Insert the modified string library routine
 !
 !    use StringIO
+!    USE XPLEXIFY
+       USE MYTYPE
 !    implicit none
 !    integer :: fileHandle
 !    outLine = getLineASP(FileHandle)
     !print *, 'CMB in InputOutputCommands,h: outLine = ', &
     !        outline(1:len(trim(outline))), '.'
 ! end CB; when verified, comment out the rest of this function
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 	INTEGER :: i, FileHandle, Status
 
@@ -88,6 +92,8 @@ END FUNCTION
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE Error(ErrorMessage) 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Input Variables
@@ -113,6 +119,8 @@ END SUBROUTINE Error
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE Warn(WarningMessage) 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	CHARACTER*(*) :: WarningMessage
@@ -151,6 +159,8 @@ END SUBROUTINE Warn
 SUBROUTINE Transcript(Message)
 
 	USE ModelParameters, ONLY : TranscriptFH
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	CHARACTER*(*) :: Message

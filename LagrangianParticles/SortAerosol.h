@@ -38,6 +38,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE SortAerosolAtGridPointForCondensation ()
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 	
 	TYPE(Particle), POINTER :: FirstParticle, CurrentParticle, PlaceHolder
@@ -118,6 +120,8 @@ SUBROUTINE SortAerosolAtGridPointForCoagulation ()
 
         use infrastructuralcode, only : int2str
 	
+        USE XPLEXIFY
+       USE MYTYPE
         IMPLICIT NONE
 
 
@@ -305,14 +309,16 @@ SUBROUTINE RegridAerosol ()
 
 	USE ModelParameters
 	!USE OutputRoutines
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 	
 	!! Define the local variables
 	integer :: i, j, k, l, seedarray(2),q, r, NumBins, NumAqChems, NumOrgChems, NumAqOrgChems, GG
-	real*8  :: ii, jj, kk, y(200)
-	real*8  :: Mgas, Temp, Dum1, Dum2, MassFactor, Store, SUM
+	TYPE (XPLEX)  :: ii, jj, kk, y(200)
+	TYPE (XPLEX)  :: Mgas, Temp, Dum1, Dum2, MassFactor, Store, NewSUM
 
-	REAL*8, ALLOCATABLE	::	NumConc(:)
+	TYPE (XPLEX), ALLOCATABLE	::	NumConc(:)
 	TYPE(Particle), POINTER :: CurrentParticle, BiggerParticle, SmallerParticle
 	LOGICAL :: IonReset
 				
@@ -540,20 +546,20 @@ SUBROUTINE RegridAerosol ()
 
 	if (associated(CurrentParticle)) then    								
 	   if(CurrentParticle%numberofparticles .GT. 0.) THEN
-		SUM = 0.
+		NewSUM = 0.
 		DO I=1, NumAqChems
-			SUM = SUM + CurrentParticle%AqChems(I)
+			NewSUM = NewSUM + CurrentParticle%AqChems(I)
 		END DO
 
 		DO I=1, NumOrgChems
-			SUM = SUM + CurrentParticle%OrgChems(I)
+			NewSUM = NewSUM + CurrentParticle%OrgChems(I)
 		END DO
 
 		DO I=1, NumAqOrgChems
-			SUM = SUM + CurrentParticle%AqOrgChems(I)
+			NewSUM = NewSUM + CurrentParticle%AqOrgChems(I)
 		END DO	
 		
-		if(SUM .EQ. 0. .AND. CurrentParticle%numberofparticles .GT. 0.) THEN
+		if(NewSUM .EQ. 0. .AND. CurrentParticle%numberofparticles .GT. 0.) THEN
 			write(*,*) '**Warning numberofparticles exists without mass!!!'
 			CurrentParticle%numberofparticles = 0.
 		end if
@@ -578,6 +584,8 @@ END SUBROUTINE RegridAerosol
 SUBROUTINE SortBoundaryPart()
 
 use infrastructuralcode, only : int2str
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 	
 	!! Internal Variables	

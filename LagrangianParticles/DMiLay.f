@@ -4,7 +4,7 @@
      &                   M1, M2, S21, D21, MAXANG )
 
 c **********************************************************************
-c    DOUBLE PRECISION version of MieLay, which computes electromagnetic 
+c    TYPE (XPLEX) version of MieLay, which computes electromagnetic 
 c    scattering by a stratified sphere, i.e. a particle consisting of a 
 c    spherical core surrounded by a spherical shell.  The surrounding 
 c    medium is assumed to have refractive index unity.  The formulas, 
@@ -18,7 +18,7 @@ c    arguments, is inside the single precision version of this program
 c    (SUBROUTINE MieLay, available by anonymous ftp from 
 c    climate.gsfc.nasa.gov in directory pub/wiscombe).
 
-c    It is recommended to use this DOUBLE PRECISION version for IEEE 
+c    It is recommended to use this TYPE (XPLEX) version for IEEE 
 c    arithmetic (32-bit floating point) computers, just to be safe.
 c    If computer time is critical, back-to-back tests with the single
 c    precision version should be done for ranges of radii and refractive
@@ -28,7 +28,7 @@ c    cases of large size parameter (bigger than 10 or so) and/or large
 c    imaginary refractive index (bigger than 1 or so) and also whenever 
 c    overflows or strange behavior are encountered in running the
 c    single precision version.  Sometimes the bigger exponent range in
-c    DOUBLE PRECISION is as important as the added precision.
+c    TYPE (XPLEX) is as important as the added precision.
 
 c    This version is designed to be interchangeable with the single
 c    precision version:  all the floating-point input arguments are
@@ -41,7 +41,7 @@ c **********************************************************************
 c     .. Parameters ..
 
       INTEGER   MXANG, LL
-      DOUBLE PRECISION ZERO, ONE, TWO
+      TYPE (XPLEX) ZERO, ONE, TWO
       PARAMETER ( MXANG = 100, LL = 1000, ZERO = 0.0D0, ONE = 1.0D0,
      &            TWO = 2.0D0 )
 c     ..
@@ -61,7 +61,7 @@ c     .. Local Scalars ..
       LOGICAL   INPERR, PASS1
       INTEGER   J, K, M, N, NMX1, NMX2, NN
 
-      DOUBLE PRECISION  AA, AIM, AM1IM, AM1RE, ARE, BB, BIM, BM1IM,
+      TYPE (XPLEX)  AA, AIM, AM1IM, AM1RE, ARE, BB, BIM, BM1IM,
      &                  BM1RE, BRE, CC, COSX1, COSX4, DD, DENOM, 
      &                  DGQSC, DQEXT, DQSCA, E2Y1,
      &                  EY1, EY1MY4, EY1PY4, EY4, FOURPI, PINUM,
@@ -74,7 +74,7 @@ c     .. Local Scalars ..
 c     ..
 c     .. Local Arrays ..
 
-      DOUBLE PRECISION  PI( MXANG, 3 ), SI2THT( MXANG ), T( 5 ),
+      TYPE (XPLEX)  PI( MXANG, 3 ), SI2THT( MXANG ), T( 5 ),
      &                  TA( 4 ), TAU( MXANG, 3 )
 
       DOUBLE COMPLEX  ACAP( LL ), S1( MXANG, 2 ), S2( MXANG, 2 ),

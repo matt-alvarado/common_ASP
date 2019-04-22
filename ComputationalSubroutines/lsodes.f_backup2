@@ -115,7 +115,7 @@ c          where..
 c          nnz    = the number of nonzero elements in the sparse
 c                   jacobian (if this is unknown, use an estimate), and
 c          lenrat = the real to integer wordlength ratio (usually 1 in
-c                   single precision and 2 in double precision).
+c                   single precision and 2 in TYPE (XPLEX)).
 c          in any case, the required size of rwork cannot generally
 c          be predicted in advance if mf = 121 or 222, and the value
 c          above is a rough estimate of a crude lower bound.  some
@@ -672,7 +672,7 @@ c          lwm = neq + 2                              if miter = 3.
 c          in the above formulas,
 c          nnz    = number of nonzero elements in the jacobian matrix.
 c          lenrat = the real to integer wordlength ratio (usually 1 in
-c                   single precision and 2 in double precision).
+c                   single precision and 2 in TYPE (XPLEX)).
 c          (see the mf description for meth and miter.)
 c          thus if maxord has its default value and neq is constant,
 c          the minimum length of rwork is..
@@ -1282,7 +1282,7 @@ c
 c-----------------------------------------------------------------------
 c in the data statement below, set lenrat equal to the ratio of
 c the wordlength for a real number to that for an integer.  usually,
-c lenrat = 1 for single precision and 2 for double precision.  if the
+c lenrat = 1 for single precision and 2 for TYPE (XPLEX).  if the
 c true ratio is not an integer, use the next smaller integer (.ge. 1).
 c-----------------------------------------------------------------------
       data lenrat/1/
@@ -3646,9 +3646,9 @@ c             10n+1  insufficient storage in odrv
 c             11n+1  illegal path specification
 c
 c
-c  conversion from real to double precision
+c  conversion from real to TYPE (XPLEX)
 c
-c    change the real declarations in odrv and sro to double precision
+c    change the real declarations in odrv and sro to TYPE (XPLEX)
 c    declarations.
 c
 c-----------------------------------------------------------------------
@@ -3656,7 +3656,7 @@ c
       integer  ia(1), ja(1),  p(1), ip(1),  isp(1),  path,  flag,
      *   v, l, head,  tmp, q
       real  a(1)
-c...  double precision  a(1)
+c...  TYPE (XPLEX)  a(1)
       logical  dflag
 c
 c----initialize error flag and validate path specification
@@ -4174,7 +4174,7 @@ c-----------------------------------------------------------------------
 c
       integer  ip(1),  ia(1), ja(1),  q(1), r(1)
       real  a(1),  ak
-c...  double precision  a(1),  ak
+c...  TYPE (XPLEX)  a(1),  ak
       logical  dflag
 c
 c
@@ -4400,10 +4400,10 @@ c       -           insufficient storage was available to perform the
 c       -           numeric factorization (nnfc)).
 c
 c
-c  conversion to double precision
+c  conversion to TYPE (XPLEX)
 c
-c    to convert these routines for double precision arrays..
-c    (1) use the double precision declarations in place of the real
+c    to convert these routines for TYPE (XPLEX) arrays..
+c    (1) use the TYPE (XPLEX) declarations in place of the real
 c    declarations in each subprogram, as given in comment cards.
 c    (2) change the data-loaded value of the integer  lratio
 c    in subroutine cdrv, as indicated below.
@@ -4413,11 +4413,11 @@ c
       integer  r(1), c(1), ic(1),  ia(1), ja(1),  isp(1), esp,  path,
      *   flag,  d, u, q, row, tmp, ar,  umax
       real  a(1), b(1), z(1), rsp(1)
-c     double precision  a(1), b(1), z(1), rsp(1)
+c     TYPE (XPLEX)  a(1), b(1), z(1), rsp(1)
 c
 c  set lratio equal to the ratio between the length of floating point
 c  and integer array data.  e. g., lratio = 1 for (real, integer),
-c  lratio = 2 for (double precision, integer)
+c  lratio = 2 for (TYPE (XPLEX), integer)
 c
       data lratio/1/
 c
@@ -4714,7 +4714,7 @@ c       -           size = n.
 c
       integer  ic(1), ia(1), ja(1), jar(1), p(1), flag
       real  a(1), ar(1)
-c     double precision  a(1), ar(1)
+c     TYPE (XPLEX)  a(1), ar(1)
 c
 c  ******  for each nonempty row  *******************************
       do 5 k=1,n
@@ -5116,8 +5116,8 @@ c
       integer  iu(1), ju(1), iju(1), irl(1), jrl(1), flag
       real  a(1), l(1), d(1), u(1), z(1), b(1), row(1)
       real tmp(1), lki, sum, dk
-c     double precision  a(1), l(1), d(1), u(1), z(1), b(1), row(1)
-c     double precision  tmp(1), lki, sum, dk
+c     TYPE (XPLEX)  a(1), l(1), d(1), u(1), z(1), b(1), row(1)
+c     TYPE (XPLEX)  tmp(1), lki, sum, dk
 c
 c  ******  initialize pointers and test storage  ***********************
       if(il(n+1)-1 .gt. lmax) go to 104
@@ -5253,7 +5253,7 @@ c      u or l  to be used.
 c
       integer r(1), c(1), il(1), jl(1), ijl(1), iu(1), ju(1), iju(1)
       real l(1), d(1), u(1), b(1), z(1), tmp(1), tmpk, sum
-c     double precision  l(1), d(1), u(1), b(1), z(1), tmp(1), tmpk,sum
+c     TYPE (XPLEX)  l(1), d(1), u(1), b(1), z(1), tmp(1), tmpk,sum
 c
 c  ******  set tmp to reordered b  *************************************
       do 1 k=1,n
@@ -5307,7 +5307,7 @@ c      u or l  to be used.
 c
       integer r(1), c(1), il(1), jl(1), ijl(1), iu(1), ju(1), iju(1)
       real l(1), d(1), u(1), b(1), z(1), tmp(1), tmpk,sum
-c     double precision l(1), d(1), u(1), b(1), z(1), tmp(1), tmpk,sum
+c     TYPE (XPLEX) l(1), d(1), u(1), b(1), z(1), tmp(1), tmpk,sum
 c
 c  ******  set tmp to reordered b  *************************************
       do 1 k=1,n

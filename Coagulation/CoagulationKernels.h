@@ -45,7 +45,7 @@
 !! The routine returns the SUM of the two kernels, appropriate given the    !!
 !! way these will be solved.						    !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION CoagKernBrownianDiff (Particle1, Particle2)
+TYPE (XPLEX) FUNCTION CoagKernBrownianDiff (Particle1, Particle2)
 
 	USE GridPointFields, ONLY : GetDynamicViscosityOfAir,		&
 				    GetTemp,				&
@@ -60,14 +60,16 @@ REAL*8 FUNCTION CoagKernBrownianDiff (Particle1, Particle2)
 
 	USE ModelParameters, ONLY : Pi, kB, ThmVelFac
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	TYPE(Particle), POINTER :: Particle1, Particle2
 
 	!! Local Variables
-	REAL*8 :: DynVisc, Temp, AirDensity	!! Environmental
-	REAL*8 :: D1, D2, Knudsen1, Knudsen2, Cs1, Cs2,	&	!! Particle
+	TYPE (XPLEX) :: DynVisc, Temp, AirDensity	!! Environmental
+	TYPE (XPLEX) :: D1, D2, Knudsen1, Knudsen2, Cs1, Cs2,	&	!! Particle
 			  Mass1, Mass2, MFP1, MFP2, Del1, Del2, CE, BetaInv, &
 			  ReNumb, ScNumb
 
@@ -92,12 +94,12 @@ REAL*8 FUNCTION CoagKernBrownianDiff (Particle1, Particle2)
 	!! The first comes from Miliken via Jacobson's Atm. Modeling Book:
 	IF (.FALSE.) THEN
 	!! From Kasten 1968 (Jacobson)
-		Cs1 = 1. + Knudsen1 * (1.249 + 0.42 * DEXP(-0.87 / Knudsen1))
-		Cs2 = 1. + Knudsen2 * (1.249 + 0.42 * DEXP(-0.87 / Knudsen2))
+		Cs1 = 1. + Knudsen1 * (1.249 + 0.42 * exp(-0.87 / Knudsen1))
+		Cs2 = 1. + Knudsen2 * (1.249 + 0.42 * exp(-0.87 / Knudsen2))
 	ELSEIF (.FALSE.) THEN
 	!! From Allen and Raabe 1982
-		Cs1 = 1. + Knudsen1 * (1.257 + 0.4 * DEXP(-1.1 / Knudsen1))
-		Cs2 = 1. + Knudsen2 * (1.257 + 0.4 * DEXP(-1.1 / Knudsen2))
+		Cs1 = 1. + Knudsen1 * (1.257 + 0.4 * exp(-1.1 / Knudsen1))
+		Cs2 = 1. + Knudsen2 * (1.257 + 0.4 * exp(-1.1 / Knudsen2))
 	ELSEIF (.TRUE.) THEN
 	!! From Fuchs 1964 (Seinfeld and Pandis, p. 661)
 		Cs1 = (5. + 4.*Knudsen1 + 6.*Knudsen1*Knudsen1 + 18.*Knudsen1*Knudsen1*Knudsen1)/&
@@ -178,7 +180,7 @@ END FUNCTION CoagKernBrownianDiff
 !! The difficulty with this form is properly writing the collection    !!
 !! efficiency, Ec.   						       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION CoagKernGravCollection (Particle1, Particle2)
+TYPE (XPLEX) FUNCTION CoagKernGravCollection (Particle1, Particle2)
 
 	USE GridPointFields, ONLY : GetDynamicViscosityOfAir,	&
 					GetAirDensity
@@ -190,14 +192,16 @@ REAL*8 FUNCTION CoagKernGravCollection (Particle1, Particle2)
 
 	USE ModelParameters, ONLY : Pi
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	TYPE(Particle), POINTER :: Particle1, Particle2
 
 	!! Local Variables
-	REAL*8 :: dVel, Ec
-	REAL*8 :: DynVisc, AirDensity  !! Environmental   
+	TYPE (XPLEX) :: dVel, Ec
+	TYPE (XPLEX) :: DynVisc, AirDensity  !! Environmental   
 
 
 	!! Both particles will be associated with the same gridpoint, so simply use 
@@ -213,7 +217,7 @@ REAL*8 FUNCTION CoagKernGravCollection (Particle1, Particle2)
 	!! Both sectional means the velocity differential is of the fall velocities
 	IF (Particle1%Sectional .AND. Particle2%Sectional) THEN
 
-		dVel = DABS(TerminalVelocity(Particle1)-TerminalVelocity(Particle2))
+		dVel = ABS(TerminalVelocity(Particle1)-TerminalVelocity(Particle2))
 
 	!! One or the other is sectional
 	ELSE IF (Particle1%Sectional) THEN

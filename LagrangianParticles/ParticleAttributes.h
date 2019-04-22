@@ -89,11 +89,11 @@
 !!12. FUNCTION CurvatureCorrection (InParticle)
 !!13. FUNCTION SurfaceTension (InParticle)
 !!14. FUNCTION ReynoldsNumber (InParticle)
-!!15. REAL*8 FUNCTION OrgCurvatureCorrection (InParticle)
-!!16. REAL*8 FUNCTION MolalityAqCarbon(InParticle)
-!!17. REAL*8 FUNCTION AqueousSolutionMass
+!!15. TYPE (XPLEX) FUNCTION OrgCurvatureCorrection (InParticle)
+!!16. TYPE (XPLEX) FUNCTION MolalityAqCarbon(InParticle)
+!!17. TYPE (XPLEX) FUNCTION AqueousSolutionMass
 !!18. SUBROUTINE ShellRefIndAndRad(InParticle)
-!!19. REAL*8 FUNCTION AerosolOpticalDepth()
+!!19. TYPE (XPLEX) FUNCTION AerosolOpticalDepth()
 !!20. SUBROUTINE AerosolOptProp
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
@@ -104,6 +104,8 @@
 
 SUBROUTINE ResetAllOriginPressureLevels (OriginPressureLevel)
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	Type(Particle),POINTER :: p_Particle
@@ -124,10 +126,12 @@ END SUBROUTINE ResetAllOriginPressureLevels
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the Knudsen Number of the Particle	!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION ParticleKnudsen (InParticle)
+TYPE (XPLEX) FUNCTION ParticleKnudsen (InParticle)
 
 	USE GridPointFields, ONLY : MeanFreePathOfAir
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	Type(Particle),POINTER :: InParticle
@@ -145,11 +149,13 @@ END FUNCTION ParticleKnudsen
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the Knudsen Number Of Energy of the Particle !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION ParticleKnudsenForEnergy (InParticle)
+TYPE (XPLEX) FUNCTION ParticleKnudsenForEnergy (InParticle)
 
 	USE GridPointFields, ONLY : MolecularThermalDiffusivity, & 
                                     GetThermalVelocityOfAir
 
+    USE XPLEXIFY
+       USE MYTYPE
     IMPLICIT NONE
 
 	Type(Particle),POINTER :: InParticle
@@ -166,17 +172,19 @@ END FUNCTION ParticleKnudsenForEnergy
 !! has a number of possible forms.  This function selects !!
 !! the appropriate one and returns the value.			  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION CunninghamSlipCorrectionFactor (InParticle)
+TYPE (XPLEX) FUNCTION CunninghamSlipCorrectionFactor (InParticle)
 
+    USE XPLEXIFY
+       USE MYTYPE
     IMPLICIT NONE
 
 	Type(Particle),POINTER :: InParticle
-	REAL*8		   :: Knudsen
+	TYPE (XPLEX)		   :: Knudsen
 
 	Knudsen = ParticleKnudsen (InParticle)
 
 	!! From Kasten 1968 (via Jacobson, 1997)
-	CunninghamSlipCorrectionFactor = 1 + Knudsen * (1.249 + 0.42 * dexp(-0.87 / Knudsen))
+	CunninghamSlipCorrectionFactor = 1 + Knudsen * (1.249 + 0.42 * exp(-0.87 / Knudsen))
 
 	!write(*,*) 'CRL: CunninghamSlipCorrectionFactor = ',CunninghamSlipCorrectionFactor
 	!write(*,*) 'CRL: Knudsen = ',Knudsen
@@ -189,17 +197,19 @@ END FUNCTION CunninghamSlipCorrectionFactor
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Returns the pH of an aerosol. !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION AerosolPH (InParticle)
+TYPE (XPLEX) FUNCTION AerosolPH (InParticle)
 
 	USE ModelParameters, ONLY : ProtonIndex
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	TYPE(PARTICLE),POINTER :: InParticle
 
 	!!Internal Variables
-	REAL*8 :: ProtonMolarity
+	TYPE (XPLEX) :: ProtonMolarity
 
 
 	IF (InParticle%NumberOfParticles .EQ. 0. .OR. InParticle%Dry) THEN
@@ -227,7 +237,7 @@ END FUNCTION AerosolPH
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the PARTICLE DENSITY for a lagrangian particle !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION ParticleDensity (InParticle)
+TYPE (XPLEX) FUNCTION ParticleDensity (InParticle)
 !MJA 05-008-2012 Added special routine for dry BC only particles
 
 	USE ModelParameters,     ONLY : grams, cm, aqchemscale, &
@@ -248,12 +258,14 @@ REAL*8 FUNCTION ParticleDensity (InParticle)
                                        AqOrgMolecularMass,             &
                                        AqOrgDensity
 
-	USE InfrastructuralCode, ONLY : ERROR,REAL2STR, WARN, IsNaN, int2str
+	USE InfrastructuralCode, ONLY : ERROR,REAL2STR, WARN, int2str
 
 	! cmb add
 	!use outputroutines, only : spillbeans
 	! 
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -261,7 +273,7 @@ REAL*8 FUNCTION ParticleDensity (InParticle)
 
 	!! Internal Variables
 	INTEGER :: I,K, SkipFlag, C
-	REAL*8  ::Volume,Mass,ionMass,PSIij, TempElectrolytes(HowManyAqChems),&
+	TYPE (XPLEX)  ::Volume,Mass,ionMass,PSIij, TempElectrolytes(HowManyAqChems),&
 	BinaryDensity, NumerSum, DenomSum, TempMolality, &
   	PatKumWeights(HowManyAqEqReactions,3), XX, YY, Residual, dR, &
 	SolutionDensity, InsolMass, InsolVolume, InsolDensity, InorgSolnDensity
@@ -270,7 +282,7 @@ REAL*8 FUNCTION ParticleDensity (InParticle)
 
         LOGICAL :: ForceSolnDens
 
-	real*8 :: sum_electrolytes
+	TYPE (XPLEX) :: sum_electrolytes
 
         !Use this flag to force the aqueous solution density to be 1.0 g/cm3 and skip a lot of code
         ForceSolnDens = .TRUE.
@@ -537,8 +549,8 @@ REAL*8 FUNCTION ParticleDensity (InParticle)
 		!Skip non-solid electrolytes (NH3, CO2, etc).
 		DO C = 1, HowManyAqEqReactions
 			! CMB
-			if (dabs(aqequilibrialist(c,1) - I) .lt. 0.000001 .and. &
-					dabs(AqEquilibriaList(c,6)) .lt. 1.0e-12) then
+			if (abs(aqequilibrialist(c,1) - I) .lt. 0.000001 .and. &
+					abs(AqEquilibriaList(c,6)) .lt. 1.0e-12) then
 			!IF(AqEquilibriaList(C,1) .EQ. I .AND. AqEquilibriaList(C,6) .EQ. 0.0) THEN
 				SkipFlag = 1
 			END IF
@@ -631,7 +643,7 @@ END FUNCTION ParticleDensity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate Particle Mass !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION ParticleMass (InParticle)
+TYPE (XPLEX) FUNCTION ParticleMass (InParticle)
 
 	USE ModelParameters,     ONLY : grams, cm, aqchemscale, moles, pi, avogadro
 	USE Chemistry,		 ONLY : AqMolecularMass, HowManyAqChems,	&
@@ -640,6 +652,8 @@ REAL*8 FUNCTION ParticleMass (InParticle)
 					HowManyOrgChems, OrgMolecularMass, &
 					HowManyAqOrgChems, AqOrgMolecularMass 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -696,17 +710,19 @@ FUNCTION GetPatwardhandAndKumarWeightings (InParticle)
 			      AqAnionCharge,            &
 			      AqPhaseChemicalNames
 
-	USE InfrastructuralCode, ONLY : WARN, IsNaN
+	USE InfrastructuralCode, ONLY : WARN
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8 :: GetPatwardhandAndKumarWeightings(HowManyAqEqReactions,3)
+	TYPE (XPLEX) :: GetPatwardhandAndKumarWeightings(HowManyAqEqReactions,3)
 	TYPE(Particle),POINTER :: InParticle
 
 	!! Internal Variables
 	INTEGER :: K, CatIndex, AnIndex
-	REAL*8  :: II, JJ,														  &
+	TYPE (XPLEX)  :: II, JJ,														  &
 			   CationicStrFr(HowManyAqCations),AnionicStrFr(HowManyAqAnions), &
 			   CationChgFrac(HowManyAqCations),AnionChgFrac(HowManyAqAnions)
 
@@ -804,7 +820,7 @@ FUNCTION GetPatwardhandAndKumarWeightings (InParticle)
 		
 		!Exclude Levitocite reaction from this calculation
 		! cmb
-		if (dabs(AqEquilibriaList(K, 22)) .gt. 1e-40) then
+		if (abs(AqEquilibriaList(K, 22)) .gt. 1e-40) then
 		!IF(AqEquilibriaList(K,22) .NE. 0) THEN
 			IF (AqPhaseChemicalNames(INT(AqEquilibriaList(K,1))) .EQ. "(NH4)3H(SO4)2") THEN
 				GetPatwardhandAndKumarWeightings(K,1) = 0.
@@ -860,14 +876,16 @@ FUNCTION HypotheticalElectrolyteConcentrations (InParticle)
 	! CMB: add warn
 	USE InfrastructuralCode, ONLY : ERROR, REAL2STR, TRANSCRIPT, warn
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8 :: HypotheticalElectrolyteConcentrations(HowManyAqChems)
+	TYPE (XPLEX) :: HypotheticalElectrolyteConcentrations(HowManyAqChems), printvar, printvar2
 	TYPE(Particle),POINTER :: InParticle
 
 	!! Internal Variables
-	REAL*8  :: TempChem(HowManyAqChems+HowManyAqCations+HowManyAqAnions), DeltaMoles, Sum, ContentSum, ExcludeRxnInit
+	TYPE (XPLEX)  :: TempChem(HowManyAqChems+HowManyAqCations+HowManyAqAnions), DeltaMoles, NewSum, ContentSum, ExcludeRxnInit
 	INTEGER :: I, J, K, C, ExcludeRxn 
 
 	!! counters and settings
@@ -881,9 +899,13 @@ FUNCTION HypotheticalElectrolyteConcentrations (InParticle)
 		TempChem(I) = 0.
 		!write(*,*) 'inparticle%aqchems(', i, ') = ', inparticle%aqchems(i)
 		if (inparticle%aqchems(i) .lt. 0) then
-			call warn("InParticle%AqChems("//trim(real2str(real(i)))//") < 0 ("//&
+		      printvar%r = real(inparticle%particleid)
+                      printvar%i = 0.0	
+                      printvar2%r = real(i)
+                      printvar2%i = 0.0
+                      call warn("InParticle%AqChems("//trim(real2str(printvar2))//") < 0 ("//&
 					trim(real2str(inparticle%aqchems(i)))//"in HypoElectConc; ID="//trim(real2str(&
-					real(inparticle%particleid))))
+					printvar)))
 		endif
 		!Check for non-solid electrolyte (NH3, CO2, etc), and add in.
 		DO C = 1, HowManyAqEqReactions
@@ -1003,23 +1025,23 @@ FUNCTION HypotheticalElectrolyteConcentrations (InParticle)
 	!WRITE(*,*) "Check 4"
 
 	!! Check to make sure have accounted for all of the ions
-	SUM = 0.
+	NewSUM = 0.
 	DO I = HowManyAqChems+1, HowManyAqChems+HowManyAqCations+HowManyAqAnions
 		!IF(IsNan(TempChem(I))) THEN
 		!	WRITE(*,*) "Error in HypElec!"
 		!	STOP
 		!END IF
-		SUM = SUM + TempChem(I)
+		NewSUM = NewSUM + TempChem(I)
 	END DO
 
 	!! This is an error
 	!! I changed zero limit to 1.0e-3 from 1.0e-12 to eliminate some problems (Matt Alvarado, 5/10/2006)
 	!! Note that this does not error so long as the amount of ions left is less than 1/1000 of the total aqueous moles!
 	!! For dry particles, just runs!
-	IF (SUM .GT. ContentSum*1.e-3) THEN
+	IF (NewSUM .GT. ContentSum*1.e-3) THEN
 	!! It should not be caught in an infinite loop!
 
-		!WRITE(*,*) "Sum, ContentSum: ", SUM, ContentSum*1.0e-3
+		!WRITE(*,*) "Sum, ContentSum: ", NewSUM, ContentSum*1.0e-3
 
 		!! Show us what was wrong if the calculation doesn't work right.  (Probably the ContentSum*1.e-12 is not right below.)
 		CALL TRANSCRIPT("")
@@ -1067,17 +1089,19 @@ END FUNCTION HypotheticalElectrolyteConcentrations
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate the TERMINAL FALL VELOCITY for particles !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION TerminalVelocity (InParticle)
+TYPE (XPLEX) FUNCTION TerminalVelocity (InParticle)
 
 	USE GridPointFields, ONLY : GetAirDensity,GetDynamicViscosityOfAir
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Type input variables
 	TYPE (Particle),POINTER :: InParticle
 
 	!! Internal Vairables
-	REAL*8 :: Dum
+	TYPE (XPLEX) :: Dum
 
 	TerminalVelocity = ReynoldsNumber (InParticle) * 0.5             &
 					   * GetDynamicViscosityOfAir()  &
@@ -1093,16 +1117,18 @@ SUBROUTINE RecalculateRadius (InParticle)
 
 	USE Chemistry, ONLY : AqMolecularMass, HowManyAqChems, IFAQ, OrgPhaseChemicalNames
 	!USE outputroutines, only : spillbeans
+	USE XPLEXIFY
+       USE MYTYPE 
 	IMPLICIT NONE 
 
 	!! Type input variables
 	TYPE (Particle),POINTER :: InParticle
 
 	!! Type local variables
-	REAL*8  :: II
+	TYPE (XPLEX)  :: II
 
 	! CMB (AER, Inc): Floating-point inequality check
-	if (dabs(inparticle%numberofparticles) .le. 1.0e-40) then
+	if (abs(inparticle%numberofparticles) .le. 1.0e-40) then
 	!IF (InParticle%NumberOfParticles .EQ. 0. ) THEN
 		IF (InParticle%Edges(1) .GT. 0.) THEN
 			InParticle%EmbryoRadius    = InParticle%Edges(1)
@@ -1142,21 +1168,23 @@ END SUBROUTINE RecalculateRadius
 !! The optional argument PerturbWater is a multiple by which to change the water content   !!
 !! so we can get a sense of the derivative of the water residual.			   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION CurvatureCorrection (InParticle) 
+TYPE (XPLEX) FUNCTION CurvatureCorrection (InParticle) 
 
 	USE Chemistry, ONLY : AqMolecularMass, HowManyAqChems, HowManyAqAnions, HowManyAqCations
 	USE ModelParameters, ONLY : Rstar, micron, ThermoBulkMode, IgnoreCorrectionstoDiffusivity
 	USE GridPointFields, ONLY : SurfaceTensionofWater
 
+	USE XPLEXIFY
+       USE MYTYPE 
 	IMPLICIT NONE 
 
 	!! Type input variables
 	TYPE (Particle),POINTER  :: InParticle
-	REAL*8 :: TotalMoles
+	TYPE (XPLEX) :: TotalMoles
 	INTEGER :: I
 
 	!!Type Internal variables
-	REAL*8 :: TotalDens
+	TYPE (XPLEX) :: TotalDens
 	!WRITE(*,*) "Curvature Started", SurfaceTension(InParticle), ParticleDensity(InParticle)
 	
 	!Ignore this for bulk mode, no particles, or if ordered to.
@@ -1198,7 +1226,7 @@ END FUNCTION CurvatureCorrection
 !!                                                                     !!
 !! Units are dyn / cm                                                  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION SurfaceTension (InParticle)
+TYPE (XPLEX) FUNCTION SurfaceTension (InParticle)
 
 	USE GridPointFields, ONLY : SurfaceTensionOfWater, &
                                     GetRelativeHumidity
@@ -1213,6 +1241,8 @@ REAL*8 FUNCTION SurfaceTension (InParticle)
                                     HowManyAqCations   
 	
         USE InfrastructuralCode, ONLY : Error, REAL2STR
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -1220,7 +1250,7 @@ REAL*8 FUNCTION SurfaceTension (InParticle)
 
 	!! Internal Variables
 	INTEGER :: I
-	REAL*8  :: II, Sum1, DenomSum, TotalIonMolality, Test
+	TYPE (XPLEX)  :: II, Sum1, DenomSum, TotalIonMolality, Test
 
 	! CMB: equality check
 	if (inparticle%numberofparticles .le. 1.0e-40) return
@@ -1232,7 +1262,7 @@ REAL*8 FUNCTION SurfaceTension (InParticle)
 
 	IF(UseDonnanSurfaceTension) THEN !If true, Donnan; If False, Jacobson formulas
 		!!Donnan's Parameterization
-		!! 1. + SUM (K_i * Activity_i)
+		!! 1. + NewSUM (K_i * Activity_i)
 		DenomSum = 1.
 		DO I = 1, HowManyAqEqReactions
 			DenomSum = DenomSum + MeanActivity(I, InParticle) * AqEquilibriaList(I,15)
@@ -1313,17 +1343,19 @@ END FUNCTION SurfaceTension
 !! Tested against Fig. 16.3 in Jacobson, 1999 and it     !!
 !! matches well.					 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION ReynoldsNumber (InParticle)
+TYPE (XPLEX) FUNCTION ReynoldsNumber (InParticle)
 
 	USE GridPointFields, ONLY : GetAirDensity,GetDynamicViscosityOfAir
 	USE ModelParameters, ONLY : g, grams, cm
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Type input variables
 	TYPE (Particle),POINTER :: InParticle
 
 	!! Type local variables
-	REAL*8 :: Dv, Cs, AirDensity, X, Y
+	TYPE (XPLEX) :: Dv, Cs, AirDensity, X, Y
 
 	Dv         = GetDynamicViscosityOfAir()
 	Cs         = CunninghamSlipCorrectionFactor(InParticle)
@@ -1339,13 +1371,13 @@ REAL*8 FUNCTION ReynoldsNumber (InParticle)
 	!! The temporary is the Reynolds Number unless Re > 0.01
 	IF (ReynoldsNumber > 0.01 .and. ReynoldsNumber < 300) THEN
 
-		X = dLog((InParticle%ParticleDensity-AirDensity)*AirDensity*InParticle%EffectiveRadius**3.*32.*g/(3.*DV*DV))
+		X = Log((InParticle%ParticleDensity-AirDensity)*AirDensity*InParticle%EffectiveRadius**3.*32.*g/(3.*DV*DV))
 
 		!! The Values here taken from Prupp and Klett, p.417 and originate from Beard's paper (1976)
 		Y = -.318657d1+(0.992696d0)*X-(0.153193d-2)*X**2.-(0.987059d-3)*X**3.	&
 			-(0.578878d-3)*X**4.+(0.855176d-4)*X**5.-(0.327815d-5)*X**6.
 
-		ReynoldsNumber = Cs*dExp(Y)
+		ReynoldsNumber = Cs*Exp(Y)
 
 	ENDIF
 
@@ -1354,10 +1386,10 @@ REAL*8 FUNCTION ReynoldsNumber (InParticle)
 		!! Use X to signify Np**1/6
 		X = (InParticle%SurfaceTension**3.*AirDensity*AirDensity/(DV**4. * (InParticle%ParticleDensity-AirDensity) * g))**(1./6.)
 
-		Y = dLog(16./3.*X*InParticle%EffectiveRadius*InParticle%EffectiveRadius*	&
+		Y = Log(16./3.*X*InParticle%EffectiveRadius*InParticle%EffectiveRadius*	&
 				 (InParticle%ParticleDensity-AirDensity)*g/InParticle%SurfaceTension)
 
-		ReynoldsNumber = Cs*X*dExp(-5.00015+5.23778*Y-2.04914*Y**2.+0.475294*Y**3.-0.0542819*Y**4.+0.00238449*Y**5.)
+		ReynoldsNumber = Cs*X*Exp(-5.00015+5.23778*Y-2.04914*Y**2.+0.475294*Y**3.-0.0542819*Y**4.+0.00238449*Y**5.)
 
 	END IF
 
@@ -1371,21 +1403,23 @@ END FUNCTION ReynoldsNumber
 !! of the organic phase. Since the curvature correction is mainly for                      !!
 !! water above RH = 98%, this should be of minor importance.				   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION OrgCurvatureCorrection (InParticle) 
+TYPE (XPLEX) FUNCTION OrgCurvatureCorrection (InParticle) 
 
 	USE Chemistry, ONLY : AqMolecularMass, HowManyAqChems, HowManyAqAnions, HowManyAqCations
 	USE ModelParameters, ONLY : Rstar, micron, ThermoBulkMode, IgnoreCorrectionstoDiffusivity
 	USE GridPointFields, ONLY : SurfaceTensionofWater
 
+	USE XPLEXIFY
+       USE MYTYPE 
 	IMPLICIT NONE 
 
 	!! Type input variables
 	TYPE (Particle),POINTER  :: InParticle
-	REAL*8 :: TotalMoles
+	TYPE (XPLEX) :: TotalMoles
 	INTEGER :: I
 
 	!!Type Internal variables
-	REAL*8 :: TotalDens, SurfTens, Radius
+	TYPE (XPLEX) :: TotalDens, SurfTens, Radius
 	
 	!Ignore this for bulk mode or no insoluble species
 	IF (ThermoBulkMode .OR. IgnoreCorrectionstoDiffusivity .OR. InParticle%NumberofParticles .EQ. 0.0) THEN
@@ -1415,14 +1449,16 @@ REAL*8 FUNCTION OrgCurvatureCorrection (InParticle)
 END FUNCTION OrgCurvatureCorrection
 
 !Molality of carbon (mol/kg H2O) in aqueous phase for surface tension calculation (Matt Alvarado, 6/2006)
-REAL*8 FUNCTION MolalityAqCarbon(InParticle)
+TYPE (XPLEX) FUNCTION MolalityAqCarbon(InParticle)
 
 	USE Chemistry,				ONLY :	AqOrgNumCarbon
 	USE ModelParameters
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: Total
+	TYPE (XPLEX)  :: Total
 	INTEGER :: I
 	TYPE(PARTICLE),POINTER :: InParticle
 
@@ -1442,7 +1478,7 @@ END FUNCTION MolalityAqCarbon
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Calculate Mass of aqueous phase (g/particle) !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION AqueousSolutionMass (InParticle)
+TYPE (XPLEX) FUNCTION AqueousSolutionMass (InParticle)
 
 	USE ModelParameters,     ONLY : grams, cm, aqchemscale, moles, pi, avogadro
 	USE Chemistry,			 ONLY : AqMolecularMass, HowManyAqChems,	&
@@ -1451,6 +1487,8 @@ REAL*8 FUNCTION AqueousSolutionMass (InParticle)
 									HowManyAqOrgChems, AqOrgMolecularMass, &
 									HowManyAqEqReactions, AqEquilibriaList
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -1508,6 +1546,8 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 
 	USE InfrastructuralCode, ONLY : INT2STR, REAL2STR, ERROR
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 	
 	!! External Variables
@@ -1519,13 +1559,13 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 	!! Internal Variables
 	INTEGER, PARAMETER  :: MaxAng = 100
  	INTEGER	:: I, JJ, NumAng, ib, w_ind_low
-	REAL*8	:: SingleParticleVolume, VolumeConc, Factor,xxx
-	REAL*8	:: Er, Ei, SumEr, SumEi, Wavelength, Sum
-	REAL*8	:: SolnMolWeight, MolalRefraction, MolVol, & 
+	TYPE (XPLEX)	:: SingleParticleVolume, VolumeConc, Factor,xxx
+	TYPE (XPLEX)	:: Er, Ei, SumEr, SumEi, Wavelength, NewSum
+	TYPE (XPLEX)	:: SolnMolWeight, MolalRefraction, MolVol, & 
                    TotalVolConc, Rshell, ShellVolumeConc
-        REAL*8  :: ErBC, EiBC, ErVA, EiVA, bcvolrat, ErMG, EiMG
+        TYPE (XPLEX)  :: ErBC, EiBC, ErVA, EiVA, bcvolrat, ErMG, EiMG
 
-	REAL*8, ALLOCATABLE	:: AqVolConc(:), &
+	TYPE (XPLEX), ALLOCATABLE	:: AqVolConc(:), &
 				OrgVolConc(:), AqOrgVolConc(:), MolFrac(:)
 
         !These are refractive indices given as data statements
@@ -1534,18 +1574,18 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
         !! M. Hess, P. Koepke, and I. Schult (1998): 
         !!Optical Properties of Aerosols and clouds: 
         !!The software package OPAC, Bull. Am. Met. Soc., 79, 831-844.
-        REAL*8 :: WAVE(61), SOOT_REAL(61), SOOT_IMAG(61)
-        REAL*8 :: WATER_REAL(61), WATER_IMAG(61)
-        REAL*8 :: WASO_REAL(61), WASO_IMAG(61)
-        REAL*8 :: INSO_REAL(61), INSO_IMAG(61)
-        REAL*8 :: SEASALT_REAL(61), SEASALT_IMAG(61)
-        REAL*8 :: SULF_REAL(61), SULF_IMAG(61)
-        REAL*8 :: DUST_REAL(61), DUST_IMAG(61)
-        REAL*8 :: a_w, b_w, n_real, n_imag, V_molal, R_molal
+        TYPE (XPLEX) :: WAVE(61), SOOT_REAL(61), SOOT_IMAG(61)
+        TYPE (XPLEX) :: WATER_REAL(61), WATER_IMAG(61)
+        TYPE (XPLEX) :: WASO_REAL(61), WASO_IMAG(61)
+        TYPE (XPLEX) :: INSO_REAL(61), INSO_IMAG(61)
+        TYPE (XPLEX) :: SEASALT_REAL(61), SEASALT_IMAG(61)
+        TYPE (XPLEX) :: SULF_REAL(61), SULF_IMAG(61)
+        TYPE (XPLEX) :: DUST_REAL(61), DUST_IMAG(61)
+        TYPE (XPLEX) :: a_w, b_w, n_real, n_imag, V_molal, R_molal
 
 	COMPLEX :: SolarShellInd, SolarCoreInd, IRShellInd, IRCoreInd, VAInd
         COMPLEX :: Eshell, EBC, Factor2, EMG, MGInd
-	REAL*8	:: Angles(MaxAng), CosAng(MaxAng), M1( MaxAng, 2), &
+	TYPE (XPLEX)	:: Angles(MaxAng), CosAng(MaxAng), M1( MaxAng, 2), &
 			M2( MaxAng, 2 ), S21( MaxAng, 2 ), &
 		D21( MaxAng, 2 ), SolutionRefracIndex(2), SolutionVolConc
 
@@ -1852,7 +1892,7 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
            !Calculate Core Refractive Index
            n_real = a_w*SOOT_REAL(w_ind_low)+b_w*SOOT_REAL(w_ind_low+1)
            n_imag = -1.0*(a_w*SOOT_IMAG(w_ind_low)+b_w*SOOT_IMAG(w_ind_low+1))
-	   SolarCoreInd = CMPLX(n_real, -1.0*n_imag)
+	   SolarCoreInd = CMPLX(n_real%r, -1.0*n_imag%r)
            !IF (ib .eq. 419 .or. ib .eq. 420) WRITE(*,*) Wavelength, SolarShellInd, SolarCoreInd
 
            !We assume the core is BC, the shell everything else
@@ -1884,13 +1924,13 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 	     !Following Tang et. al., JGR V.102, D19, pp. 23269-23275, 1997. 
              !and Tang, JGR V.102, D2, pp. 1883-1893, 1997.)
 	     !Step 1: Calculate mole fractions in solution
-	     Sum = InParticle%AqChems(1)
+	     NewSum = InParticle%AqChems(1)
 	     DO I = HowManyAqChems+1, HowManyAqChems+HowManyAqCations+HowManyAqAnions
-	   	Sum = Sum + InParticle%AqChems(I)
+	   	NewSum = NewSum + InParticle%AqChems(I)
 	     END DO
-	     MolFrac(1) = InParticle%AqChems(1)/Sum
+	     MolFrac(1) = InParticle%AqChems(1)/NewSum
 	     DO I = 2, 1+HowManyAqCations+HowManyAqAnions
-	   	MolFrac(I) = InParticle%AqChems(HowManyAqChems+I-1)/Sum
+	   	MolFrac(I) = InParticle%AqChems(HowManyAqChems+I-1)/NewSum
 	     END DO
 		
 	     !Step 2: Calculate average molecular weight	
@@ -1969,7 +2009,7 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 	    Factor = SQRT(SumEr**2 + SumEi**2)
 	    InParticle%ShellRealRefracInd(ib) = SQRT((Factor + SumEr)/2.0)
 	    InParticle%ShellImagRefracInd(ib) = SQRT((Factor - SumEr)/2.0)
-	    SolarShellInd = CMPLX(InParticle%ShellRealRefracInd(ib),-1.0*InParticle%ShellImagRefracInd(ib))
+	    SolarShellInd = CMPLX(InParticle%ShellRealRefracInd(ib)%r,-1.0*InParticle%ShellImagRefracInd(ib)%r)
 
             !We assume the core is BC, the shell everything else
             !BUT we need to handle the cases where the particle is all BC (all core, no shell)
@@ -2000,19 +2040,19 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
             Factor = SQRT(ErVA**2 + EiVA**2)
 	    InParticle%VARealRefracInd(ib) = SQRT((Factor + ErVA)/2.0)
 	    InParticle%VAImagRefracInd(ib) = SQRT((Factor - ErVA)/2.0)            
-            VAInd = CMPLX(InParticle%VARealRefracInd(ib),-1.0*InParticle%VAImagRefracInd(ib))
+            VAInd = CMPLX(InParticle%VARealRefracInd(ib)%r,-1.0*InParticle%VAImagRefracInd(ib)%r)
 
             !!For Maxwell-Garnett mixing rule
-            Eshell =  CMPLX(SumEr,-1.0*SumEi)
-            EBC =  CMPLX(ErBC,-1.0*EiBC)
+            Eshell =  CMPLX(SumEr%r,-1.0*SumEi%r)
+            EBC =  CMPLX(ErBC%r,-1.0*EiBC%r)
             Factor2 = (EBC-Eshell)/(EBC+2.0*Eshell)
-            EMG = Eshell*(1.0+(3.0*BCVolRat*Factor2/(1.0-BCVolRat*Factor2)))
+            EMG = Eshell*(1.0+(3.0*BCVolRat%r*Factor2/(1.0-BCVolRat%r*Factor2)))
             ErMG = REAL(EMG)
             EiMG = AIMAG(EMG)
             Factor = SQRT(ErMG**2 + EiMG**2)
 	    InParticle%MGRealRefracInd(ib) = SQRT((Factor + ErMG)/2.0)
 	    InParticle%MGImagRefracInd(ib) = SQRT((Factor - ErMG)/2.0)            
-            MGInd = CMPLX(InParticle%MGRealRefracInd(ib),-1.0*InParticle%MGImagRefracInd(ib))
+            MGInd = CMPLX(InParticle%MGRealRefracInd(ib)%r,-1.0*InParticle%MGImagRefracInd(ib)%r)
           ENDIF
 
 	  NumAng = 0.
@@ -2214,11 +2254,13 @@ END SUBROUTINE ShellRefIndAndRad
 
 ! Modified by CMB (AER): Make Gfortran cooperate with type safety
 !                        as described above                         
-REAL*8 FUNCTION AerosolOpticalDepth ()
+TYPE (XPLEX) FUNCTION AerosolOpticalDepth ()
 ! 08/30/2010 Changed for photolysis radiation bins MJA
 ! 02/27/2012 Changed for photolysis radiation bins MJA	
 	USE ModelParameters, ONLY : PI, InversionHeight
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 	
 	Type(Particle),POINTER :: p_Particle
@@ -2264,22 +2306,24 @@ SUBROUTINE AerosolOptProp (ExtCoeff, SingScat, Assym, BackScatCoeff, &
 !
 	USE ModelParameters, ONLY : PI, InversionHeight
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
         !Input Variables
         INTEGER :: Flag
 	!Output Variables
-	REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym, BackScatCoeff
-	REAL*8, DIMENSION(451) :: SubExtCoeff, SubSingScat
+	TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym, BackScatCoeff
+	TYPE (XPLEX), DIMENSION(451) :: SubExtCoeff, SubSingScat
         !Below are for external mixture of BC and "shell"
-!	REAL*8, DIMENSION(451) :: ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep
-!	REAL*8, DIMENSION(451) :: SubExtCoeffSep, SubSingScatSep
+!	TYPE (XPLEX), DIMENSION(451) :: ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep
+!	TYPE (XPLEX), DIMENSION(451) :: SubExtCoeffSep, SubSingScatSep
 
 	!Internal variables
 	INTEGER :: ib
-	REAL*8, DIMENSION(451) :: ScatCoeff, SubScatCoeff
-!	REAL*8, DIMENSION(451) :: ScatCoeffSep, SubScatCoeffSep
-	REAL*8 :: AssymSum,xxx, hbs_frac, assym_sq, bc_vol_frac
+	TYPE (XPLEX), DIMENSION(451) :: ScatCoeff, SubScatCoeff
+!	TYPE (XPLEX), DIMENSION(451) :: ScatCoeffSep, SubScatCoeffSep
+	TYPE (XPLEX) :: AssymSum,xxx, hbs_frac, assym_sq, bc_vol_frac
 
         ! CMB: Gfortran doesn't like the additional definitions of the 
         !      public variables, nor does it like "Particle" being used

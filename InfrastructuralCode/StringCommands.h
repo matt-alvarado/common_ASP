@@ -33,6 +33,8 @@
 ! ! CB add
 ! integer function fstrtok_c(return_status, input_string, delimiters, &
 !                            first_token) RESULT (token_length)
+!    USE XPLEXIFY
+!       USE MYTYPE
 !    implicit none
 !
 !    character(LEN=*), intent(in) :: delimiters
@@ -137,6 +139,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  CHARACTER (len = 1024) FUNCTION INT2STR ( InInt ) RESULT ( OutString )
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
@@ -177,6 +181,8 @@ END FUNCTION INT2STR
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 INTEGER FUNCTION CountDigits ( InInt ) RESULT ( Digits )
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: InInt
@@ -197,10 +203,12 @@ END FUNCTION CountDigits
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  CHARACTER (len = 1024) FUNCTION REAL2STR ( InReal, inDecimalPlaces ) RESULT ( OutString )
 
+	USE XPLEXIFY
+        USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
-	REAL*8			  :: InReal
+	TYPE (XPLEX)			  :: InReal
 	INTEGER, OPTIONAL :: inDecimalPlaces
 
 	!! Internal Variables
@@ -227,10 +235,10 @@ END FUNCTION CountDigits
 	IF (DecimalPlaces > 12) CALL ERROR ("Ridiculously Large Number of Decimal Places Suggested "//&
 	"to Real2Str, Which Makes Me Very Unhappy!!! Stopping.")
 
-	IF (InReal .LT. 0.0) THEN
-		WorkReal = -1.*InReal
+	IF (InReal%r .LT. 0.0) THEN
+		WorkReal = -1.*InReal%r
 	ELSE
-		WorkReal = InReal
+		WorkReal = InReal%r
 	END IF
 		
 	!! Deal with zero or very near zero
@@ -389,6 +397,8 @@ END FUNCTION CountDigits
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	INTEGER FUNCTION STR2INT( InString ) RESULT ( OutInt )
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input typing
@@ -396,7 +406,7 @@ END FUNCTION CountDigits
 
 		!! Local variable typing
 		CHARACTER (len = 100)   :: CurrString
-		INTEGER					:: Sign,		&
+		INTEGER					:: NSign,		&
 								   I, J, K,		&
 								   IC, I0
 
@@ -412,9 +422,9 @@ END FUNCTION CountDigits
 		i = 1
 
 		!! Adjust for sign
-		Sign = 1
-		IF(CurrString(i:i) .eq. '-' ) THEN		! Sign would be at i = 1 since we used
-			Sign = -1							! StripToken()
+		NSign = 1
+		IF(CurrString(i:i) .eq. '-' ) THEN		! NSign would be at i = 1 since we used
+			NSign = -1							! StripToken()
 			i    = i + 1
 		END IF
 		IF(CurrString(i:i) .eq. '+' ) i = i + 1
@@ -436,7 +446,7 @@ END FUNCTION CountDigits
 
 		!! Either prepare the result or fail.
 		IF ( K .GT. 0 ) THEN
-			OutInt = SIGN * OutInt
+			OutInt = NSIGN * OutInt
 		ELSE
 			CALL ERROR("Bad Format in  >>>"//TRIM(CurrString)//"<<<"//&
 					   "Call to STR2INT Failed.  Stopping")
@@ -447,8 +457,10 @@ END FUNCTION CountDigits
 	!!!!!!!!!!!!!!!!!!!!!!!!
 	!!!!! Now STR2REAL !!!!!
 	!!!!!!!!!!!!!!!!!!!!!!!!
-	REAL*8 FUNCTION STR2REAL(InString) RESULT (OutReal)
+	TYPE (XPLEX) FUNCTION STR2REAL(InString) RESULT (OutReal)
 
+		USE XPLEXIFY
+                USE MYTYPE
 		IMPLICIT NONE
 
 		!! InPut Typing
@@ -489,7 +501,8 @@ END FUNCTION CountDigits
 		END IF
 
 		!! Push the string value into real form, using the constructed format statement
-		READ( CurrString, FMT, IOSTAT = IOS ) OutReal
+		READ( CurrString, FMT, IOSTAT = IOS ) OutReal%r
+                OutReal%i = 0.0
 
 		!! If there is some error, admit it and stop the program
 		IF( IOS .NE. 0 )   &
@@ -508,6 +521,8 @@ END FUNCTION CountDigits
 	!!		1 if YES
 	LOGICAL FUNCTION IsInteger( InString ) RESULT ( Flag )
 
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input typing
@@ -555,6 +570,8 @@ END FUNCTION CountDigits
 
 	LOGICAL FUNCTION IsReal( InString ) RESULT ( Flag )
 
+		USE XPLEXIFY
+                USE MYTYPE
 		IMPLICIT NONE
 
 		!! Input typing
@@ -562,7 +579,7 @@ END FUNCTION CountDigits
 
 		!! Local variable typing
 		LOGICAL				:: PassBy
-		INTEGER				:: I, J, LT, DOT, EXP
+		INTEGER				:: I, J, LT, DOT, NEXP
 		CHARACTER (len=128) :: CurrString
 
 		!! Dump leading and trailing spaces and tabs
@@ -571,7 +588,7 @@ END FUNCTION CountDigits
 		Flag	   = .TRUE.
 		J		   = 1
 		Dot		   = 0
-		Exp		   = 0
+		NExp		   = 0
 		PassBy	   = .FALSE.
 
 		!! If the string is too long, then it is denied real number status
@@ -596,18 +613,18 @@ END FUNCTION CountDigits
 		  !! not what people really want).
 		  IF (DOT == 0) THEN
 
-			IF (EXP == 0) THEN
+			IF (NEXP == 0) THEN
 				IF (INDEX ('1234567890.de', CurrString(I:I)) == 0) THEN
 					Flag = .FALSE.
 					EXIT
 				END IF
 				IF (INDEX ('de', CurrString(I:I)) >  0) THEN
-					Exp  = 1
+					NExp  = 1
 					IF (CurrString(I+1:I+1) .EQ. '+' .OR.	&! Acceptable to have a sign for the scientific notation
 						CurrString(I+1:I+1) .EQ. '-') PassBy = .TRUE.
 				END IF
 				IF (INDEX ('.' , CurrString(I:I)) >  0) Dot  = 1
-			ELSE !! EXP == 1
+			ELSE !! NEXP == 1
 				IF (INDEX ('1234567890.', CurrString(I:I)) == 0) THEN
 					Flag = .FALSE.
 					EXIT
@@ -615,17 +632,17 @@ END FUNCTION CountDigits
 				IF (INDEX ('.', CurrString(I:I)) >  0) Dot  = 1
 			END IF
 		  ELSE !! Dot == 1
-			IF (EXP == 0) THEN
+			IF (NEXP == 0) THEN
 				IF (INDEX ('1234567890de', CurrString(I:I)) == 0) THEN
 					Flag = .FALSE.
 					EXIT
 				END IF
 				IF (INDEX ('de', CurrString(I:I)) >  0) THEN
-					Exp  = 1
+					NExp  = 1
 					IF (CurrString(I+1:I+1) .EQ. '+' .OR.	&! Acceptable to have a sign for the scientific notation
 						CurrString(I+1:I+1) .EQ. '-') PassBy = .TRUE.
 				END IF
-			ELSE !! EXP == 1
+			ELSE !! NEXP == 1
 				IF (INDEX ('1234567890.', CurrString(I:I)) == 0) THEN
 					Flag = .FALSE.
 					EXIT

@@ -81,13 +81,15 @@
 !! sure to convert the weird         !!
 !! pressure units.		     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION SaturationVaporPressure  (Temperature, OrganicDissolutionRxn)
+TYPE (XPLEX) FUNCTION SaturationVaporPressure  (Temperature, OrganicDissolutionRxn)
 
 	USE ModelParameters, ONLY : EqCoeffTref, RstarMB
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: Temperature, TempRatio
+	TYPE (XPLEX)  :: Temperature, TempRatio
 	INTEGER :: OrganicDissolutionRxn
 
 
@@ -122,13 +124,15 @@ END FUNCTION SaturationVaporPressure
 !Note that this value is forced to be above 1.0e-25 to
 !keep hydrophobic equilibrium constants from dividing by ~0, and
 !giving an error in LSODES
-REAL*8 FUNCTION TotalMolesOM(InParticle) 
+TYPE (XPLEX) FUNCTION TotalMolesOM(InParticle) 
 
 	USE Chemistry,				ONLY :	HowManyOrgChems
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: Total
+	TYPE (XPLEX)  :: Total
 	INTEGER :: I
 	TYPE(PARTICLE),POINTER :: InParticle
 
@@ -159,12 +163,14 @@ SUBROUTINE UpdateHydrophobicUNIFAC(InParticle, Temperature)
 
 	USE Chemistry,		ONLY :	HowManyOrgChems, OrgActivityFlag, OrgActivityIndex
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: I, N, Q, status
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8, ALLOCATABLE :: XPASS(:), GAMMA(:)
-	REAL*8 :: TotalOM, Temperature, TotalOM_unifac
+	TYPE (XPLEX), ALLOCATABLE :: XPASS(:), GAMMA(:)
+	TYPE (XPLEX) :: TotalOM, Temperature, TotalOM_unifac
 	
 
 
@@ -262,17 +268,19 @@ SUBROUTINE EquilibrateHydrophobicPhaseAtGridPoint()
 
 	USE InfrastructuralCode, ONLY : ERROR, WARN, INT2STR, REAL2STR
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER ::  HowManyLinks
-	REAL*8  :: S1MassFracs(2), S2MassFracs(6), S3MassFracs(2), &
+	TYPE (XPLEX)  :: S1MassFracs(2), S2MassFracs(6), S3MassFracs(2), &
 			S4MassFracs(3), S5MassFracs(2), S6MassFracs(3), &
 			S7MassFracs(8), S8MassFracs(4), S9MassFracs(4), &
 			S10MassFracs(4), InitialBurden(10) 
 	TYPE(Particle),POINTER :: Current
 
 	LOGICAL :: Equilibrated, RxnEquilibrated
-	REAL*8  :: GasPhaseBurden, Temperature,  II
+	TYPE (XPLEX)  :: GasPhaseBurden, Temperature,  II,  OptErrorTol
 	INTEGER :: I, J, K, L, M, Q, ReturnType
 
 	
@@ -326,13 +334,17 @@ SUBROUTINE EquilibrateHydrophobicPhaseAtGridPoint()
 									
 					!Equilibrate one reaction
 					!WRITE(*,*) "Rxn: ", I
-					CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, OptErrorTolerance=AqThermoEquilibriumError/2.)							
+                                        OptErrorTol%r = AqThermoEquilibriumError/2.
+                                        OptErrorTol%i = 0.
+					CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, OptErrorTolerance=OptErrorTol)							
 					
 					!! Make a more refined guess if still equilibrating late in the game
 					!! (That is, force it to equilibrate much closer to 1 each time through)
 					IF ((K .GT. 25 .OR. L .GT. 10) .AND. ReturnType .NE. 2) THEN
+                                                OptErrorTol%r = AqThermoEquilibriumError/10.
+                                                OptErrorTol%i = 0.
 						CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, &
-																	 OptErrorTolerance=AqThermoEquilibriumError/10.)
+																	 OptErrorTolerance=OptErrorTol)
 					END IF
 
 					!WRITE(*,*) "Past Equil"
@@ -425,17 +437,19 @@ SUBROUTINE EquilibrateHydrophobicReaction (GasPhaseBurden, WhichRxn, &
 
 	USE Aerosols,		ONLY :	DumpParticleContentsAtError
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichRxn, ReturnType
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: GasPhaseBurden, Temperature
-	REAL*8 :: OptErrorTolerance
+	TYPE (XPLEX) :: GasPhaseBurden, Temperature
+	TYPE (XPLEX) :: OptErrorTolerance
 
 	!! Local Variables
 	INTEGER :: I
-	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients,&
+	TYPE (XPLEX)  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients,&
                    ErrorTolerance, DissociatedScaling, DissociatedExp
 	LOGICAL :: WaterRxn
 
@@ -516,7 +530,7 @@ SUBROUTINE EquilibrateHydrophobicReaction (GasPhaseBurden, WhichRxn, &
 	
 	!! Loop over Corrections until convergence if there is anything to do
 	! CMB: floating-point inequality
-	if (dabs(qnumer) .gt. 1.0-40 .or. dabs(qdenom) .gt. 1.0e-40) then
+	if (abs(qnumer) .gt. 1.0-40 .or. abs(qdenom) .gt. 1.0e-40) then
 	!IF (.NOT. (Qnumer .EQ. 0 .AND. Qdenom .EQ. 0)) THEN
 	DO WHILE ((ABS(EqRatio-1) .GT. ErrorTolerance))
 
@@ -593,7 +607,7 @@ END SUBROUTINE EquilibrateHydrophobicReaction
 
 !! This should only be used in the context of EquilibrateHydrophobicReaction!  
 !! Otherwise there is no check for lack of the species.
-REAL*8 FUNCTION HydrophobicEquilibriumConstantsRatio (GasPhaseBurden, & 
+TYPE (XPLEX) FUNCTION HydrophobicEquilibriumConstantsRatio (GasPhaseBurden, & 
                  WhichRxn, Temperature, InParticle)
 
 	USE Chemistry,       ONLY : AqEquilibriaList, HowManyOrgChems
@@ -605,15 +619,17 @@ REAL*8 FUNCTION HydrophobicEquilibriumConstantsRatio (GasPhaseBurden, &
 
 	USE Aerosols, ONLY : OrgCurvatureCorrection
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichRxn, ReactionType
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: GasPhaseBurden, Temperature, ActCoeff, OrgMolFrac
+	TYPE (XPLEX) :: GasPhaseBurden, Temperature, ActCoeff, OrgMolFrac
 
 	!! Internal Variables
-	REAL*8	:: Pvap, P1
+	TYPE (XPLEX)	:: Pvap, P1
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -706,17 +722,19 @@ SUBROUTINE EquilibrateHydrophilicReaction (GasPhaseBurden, WhichRxn, &
 
 	USE Aerosols,		ONLY :	DumpParticleContentsAtError
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichRxn, ReturnType
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: GasPhaseBurden, Temperature
-	REAL*8 :: OptErrorTolerance
+	TYPE (XPLEX) :: GasPhaseBurden, Temperature
+	TYPE (XPLEX) :: OptErrorTolerance
 
 	!! Local Variables
 	INTEGER :: I
-	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients, ErrorTolerance, DissociatedScaling, DissociatedExp
+	TYPE (XPLEX)  :: II, Qdenom, Qnumer, Z, dX, EqRatio, ActivityCoefficients, ErrorTolerance, DissociatedScaling, DissociatedExp
 	LOGICAL :: WaterRxn
 
 	!! SCSCSCSCSC
@@ -883,7 +901,7 @@ END SUBROUTINE EquilibrateHydrophilicReaction
 
 !! This should only be used in the context of EquilibrateHydrophilicReaction!  
 !! Otherwise there is no check for lack of the species.
-REAL*8 FUNCTION HydrophilicEquilibriumConstantsRatio (GasPhaseBurden, & 
+TYPE (XPLEX) FUNCTION HydrophilicEquilibriumConstantsRatio (GasPhaseBurden, & 
                   WhichRxn, Temperature, InParticle)
 
 	USE Chemistry,       ONLY : AqEquilibriaList, HowManyAqOrgChems
@@ -894,16 +912,18 @@ REAL*8 FUNCTION HydrophilicEquilibriumConstantsRatio (GasPhaseBurden, &
 	USE InfrastructuralCode, ONLY : Error
 	USE Aerosols, ONLY : Molality, CurvatureCorrection
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichRxn, ReactionType
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: GasPhaseBurden, Temperature, ActCoeff, OrgMolality, & 
+	TYPE (XPLEX) :: GasPhaseBurden, Temperature, ActCoeff, OrgMolality, & 
                   ProtonMolality
 
 	!! Internal Variables
-	REAL*8	:: Henry,  P1
+	TYPE (XPLEX)	:: Henry,  P1
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! There is only one reaction type:					     !!
@@ -973,14 +993,16 @@ END FUNCTION HydrophilicEquilibriumConstantsRatio
 
 !Calculates effective henry's law for hydrophilic organics 
 !in units of mol/kg/mbar 
-REAL*8 FUNCTION EffectiveOrganicHenrysLaw  (Temperature, ProtonMolality, AqOrganicDissolutionRxn)
+TYPE (XPLEX) FUNCTION EffectiveOrganicHenrysLaw  (Temperature, ProtonMolality, AqOrganicDissolutionRxn)
 
 	USE ModelParameters, ONLY : EqCoeffTref
 	USE InfrastructuralCode, ONLY : Error, warn	! cmb add warn 
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8  :: Temperature, ProtonMolality, KA1, KA2, Henry, AcidFactor
+	TYPE (XPLEX)  :: Temperature, ProtonMolality, KA1, KA2, Henry, AcidFactor
 	INTEGER :: AqOrganicDissolutionRxn, I
 	
 	I = AqOrganicDissolutionRxn
@@ -1031,12 +1053,14 @@ SUBROUTINE UpdateHydrophilicUNIFAC(InParticle, Temperature)
         USE Chemistry,		ONLY :	HowManyAqOrgChems, GammaInf, &
                                       AqOrgActivityFlag, AqOrgActivityIndex  
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: I, N, Q, status
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8, ALLOCATABLE :: XPASS(:), GAMMA(:)
-	REAL*8 :: TotalMoles, Temperature
+	TYPE (XPLEX), ALLOCATABLE :: XPASS(:), GAMMA(:)
+	TYPE (XPLEX) :: TotalMoles, Temperature
 		
 	N = 24 !Number of compounds
 	ALLOCATE(XPASS(0:N-1), GAMMA(0:N-1), STAT =status)
@@ -1117,17 +1141,19 @@ SUBROUTINE EquilibrateAllOrganicsAtGridPoint()
 
 	USE InfrastructuralCode, ONLY : ERROR, WARN, INT2STR, REAL2STR
 	
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER ::  HowManyLinks
-	REAL*8  :: S1MassFracs(2), S2MassFracs(6), S3MassFracs(2), &
+	TYPE (XPLEX)  :: S1MassFracs(2), S2MassFracs(6), S3MassFracs(2), &
 			S4MassFracs(3), S5MassFracs(2), S6MassFracs(3), &
 			S7MassFracs(8), S8MassFracs(4), S9MassFracs(4), &
 			S10MassFracs(4), InitialBurden(10) 
 	TYPE(Particle),POINTER :: Current
 
 	LOGICAL :: Equilibrated, RxnEquilibrated
-	REAL*8  :: GasPhaseBurden, Temperature, II
+	TYPE (XPLEX)  :: GasPhaseBurden, Temperature, II, OptErrorTol
 	INTEGER :: I, J, K, L, M, Q, ReturnType, AqRxnIndex
 
 	
@@ -1184,13 +1210,17 @@ SUBROUTINE EquilibrateAllOrganicsAtGridPoint()
 									
 						!Equilibrate one reaction
 						!WRITE(*,*) "Rxn: ", I
-						CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, OptErrorTolerance=AqThermoEquilibriumError/2.)							
+                                                 OptErrorTol%r = AqThermoEquilibriumError/2.
+                                                 OptErrorTol%i = 0.
+						CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, OptErrorTolerance=OptErrorTol)							
 					
 						!! Make a more refined guess if still equilibrating late in the game
 						!! (That is, force it to equilibrate much closer to 1 each time through)
 						IF ((K .GT. 25 .OR. L .GT. 10) .AND. ReturnType .NE. 2) THEN
-							CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, &
-																	 OptErrorTolerance=AqThermoEquilibriumError/10.)
+							 OptErrorTol%r = AqThermoEquilibriumError/10.
+                                                         OptErrorTol%i = 0.
+                                                         CALL EquilibrateHydrophobicReaction (GasPhaseBurden, I, Current, Temperature, ReturnType, &
+																	 OptErrorTolerance=OptErrorTol/10.)
 						END IF
 
 						!WRITE(*,*) "Past Equil"
@@ -1242,14 +1272,18 @@ SUBROUTINE EquilibrateAllOrganicsAtGridPoint()
 									
 						!Equilibrate one reaction
 						!WRITE(*,*) "Rxn: ", I, AqRxnIndex
-						CALL EquilibrateHydrophilicReaction (GasPhaseBurden, AqRxnIndex, Current, Temperature, ReturnType, OptErrorTolerance=AqThermoEquilibriumError/2.)							
+                                                 OptErrorTol%r = AqThermoEquilibriumError/2.
+                                                 OptErrorTol%i = 0.
+						CALL EquilibrateHydrophilicReaction (GasPhaseBurden, AqRxnIndex, Current, Temperature, ReturnType, OptErrorTolerance=OptErrorTol)							
 						!WRITE(*,*) "Equilibrate Okay"
 
 						!! Make a more refined guess if still equilibrating late in the game
 						!! (That is, force it to equilibrate much closer to 1 each time through)
 						IF ((K .GT. 25 .OR. L .GT. 10) .AND. ReturnType .NE. 2) THEN
-							CALL EquilibrateHydrophilicReaction (GasPhaseBurden, AqRxnIndex, Current, Temperature, ReturnType, &
-																	 OptErrorTolerance=AqThermoEquilibriumError/10.)
+							 OptErrorTol%r = AqThermoEquilibriumError/10.
+                                                         OptErrorTol%i = 0.
+                                                         CALL EquilibrateHydrophilicReaction (GasPhaseBurden, AqRxnIndex, Current, Temperature, ReturnType, &
+																	 OptErrorTolerance=OptErrorTol)
 						END IF
 
 						!WRITE(*,*) "Past Equil"
@@ -1311,16 +1345,18 @@ SUBROUTINE EquilibrateAllOrganicsAtGridPoint()
 
 END SUBROUTINE EquilibrateAllOrganicsAtGridPoint
 
-REAL*8 function dev(xin, Q, RH, Temp)
+TYPE (XPLEX) function dev(xin, Q, RH, Temp)
    
+   USE XPLEXIFY
+       USE MYTYPE
    IMPLICIT NONE
    
    !External Variables
-   real*8, INTENT(IN) :: xin, RH, Temp
+   TYPE (XPLEX), INTENT(IN) :: xin, RH, Temp
    integer, INTENT(IN) :: Q
 
    !Internal Variables
-   REAL*8 :: GAMMA(0:23), XPASS(0:23)
+   TYPE (XPLEX) :: GAMMA(0:23), XPASS(0:23)
 	 
 	 XPASS(Q) = xin
 	 XPASS(23) = 1.0 - XPASS(Q)
@@ -1357,17 +1393,19 @@ SUBROUTINE EquilibrateOrganicReaction (WhichAqRxn, WhichOrgRxn, &
 
 	USE Aerosols,		ONLY :	DumpParticleContentsAtError
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichAqRxn, WhichOrgRxn, ReturnType
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: Temperature
-	REAL*8 :: OptErrorTolerance
+	TYPE (XPLEX) :: Temperature
+	TYPE (XPLEX) :: OptErrorTolerance
 
 	!! Local Variables
 	INTEGER :: I
-	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
+	TYPE (XPLEX)  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                     ActivityCoefficients, ErrorTolerance, &
                     DissociatedScaling, DissociatedExp
 	LOGICAL :: WaterRxn
@@ -1509,7 +1547,7 @@ SUBROUTINE EquilibrateOrganicReaction (WhichAqRxn, WhichOrgRxn, &
 	RETURN
 END SUBROUTINE EquilibrateOrganicReaction
 
-REAL*8 FUNCTION TwoPhaseOrgEqRatio(WhichAqRxn, WhichOrgRxn, & 
+TYPE (XPLEX) FUNCTION TwoPhaseOrgEqRatio(WhichAqRxn, WhichOrgRxn, & 
                                    InParticle, Temperature)
 
 	USE Chemistry,       ONLY : AqEquilibriaList, HowManyOrgChems
@@ -1523,15 +1561,17 @@ REAL*8 FUNCTION TwoPhaseOrgEqRatio(WhichAqRxn, WhichOrgRxn, &
 	USE Aerosols, ONLY : Molality, CurvatureCorrection, &
                              OrgCurvatureCorrection
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: WhichAqRxn, WhichOrgRxn
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: Temperature
+	TYPE (XPLEX) :: Temperature
 
 	!! Internal Variables
-	REAL*8	:: Pvap, OrgActCoeff, OrgMolFrac, ProtonMolality, &
+	TYPE (XPLEX)	:: Pvap, OrgActCoeff, OrgMolFrac, ProtonMolality, &
 				Henry, AqOrgMolality, AqActCoeff
 	
 
@@ -1602,17 +1642,19 @@ SUBROUTINE EquilibrateOrganicParticle (InParticle, Temperature, &
 
 	USE Aerosols,		ONLY :	DumpParticleContentsAtError
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER :: ReturnType, allocation_error
 	TYPE(PARTICLE),POINTER :: InParticle
-	REAL*8 :: Temperature
-	REAL*8 :: OptErrorTolerance
+	TYPE (XPLEX) :: Temperature
+	TYPE (XPLEX) :: OptErrorTolerance
 
 	!! Local Variables
 	INTEGER :: I, K, C, InternalReturnType
-	REAL*8  :: II, ErrorTolerance
+	TYPE (XPLEX)  :: II, ErrorTolerance
 	INTEGER, ALLOCATABLE :: OrgIndex(:)
 
 	!! SCSCSCSCSC
@@ -1677,7 +1719,7 @@ SUBROUTINE EquilibrateOrganicParticle (InParticle, Temperature, &
 	RETURN
 END SUBROUTINE EquilibrateOrganicParticle
 
-REAL*8 FUNCTION BinaryWaterActivityOrganic(InParticle, WhichRxn, Temp)
+TYPE (XPLEX) FUNCTION BinaryWaterActivityOrganic(InParticle, WhichRxn, Temp)
 !! This function calculates the water activity for a binary solution 
 !! of aqueous organic and water (using UNIFAC) when the organic 
 !! is at the same 
@@ -1687,17 +1729,19 @@ REAL*8 FUNCTION BinaryWaterActivityOrganic(InParticle, WhichRxn, Temp)
 !! Created by Matt Alvarado, 09/08/2006
         USE InfrastructuralCode, ONLY: ERROR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!Input Variables
 	TYPE(PARTICLE),POINTER :: InParticle
 	INTEGER :: WhichRxn
-	REAL*8 :: Temp !Temperature
+	TYPE (XPLEX) :: Temp !Temperature
 
 	!Internal Variables
 	INTEGER :: I, J, N, status
-	REAL*8, ALLOCATABLE :: XPASS(:), GAMMA(:)
-	REAL*8 :: xorg, Ratio
+	TYPE (XPLEX), ALLOCATABLE :: XPASS(:), GAMMA(:)
+	TYPE (XPLEX) :: xorg, Ratio
 
 	!I is the index of the organic in AqOrgChems
 	I = AqOrganicDissolutionData(WhichRxn,3)
@@ -1742,10 +1786,12 @@ SUBROUTINE UpdateHydrophobicUNIFAC_all
     USE GridPointFields, ONLY: GetTemp
     USE Aerosols,		 ONLY : Particle, Particles
 
+    USE XPLEXIFY
+       USE MYTYPE 
     IMPLICIT NONE 
     
     TYPE(Particle), POINTER :: Current
-    REAL*8 :: Temp
+    TYPE (XPLEX) :: Temp
 
     Temp = GetTemp()
 
@@ -1763,10 +1809,12 @@ SUBROUTINE UpdateHydrophilicUNIFAC_all
     USE GridPointFields, ONLY: GetTemp
     USE Aerosols,        ONLY : Particle, Particles
 
+    USE XPLEXIFY
+       USE MYTYPE 
     IMPLICIT NONE 
     
     TYPE(Particle), POINTER :: Current
-    REAL*8 :: Temp
+    TYPE (XPLEX) :: Temp
     INTEGER :: Count
 
     Temp = GetTemp()

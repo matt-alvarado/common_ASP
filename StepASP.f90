@@ -56,6 +56,10 @@
 
 MODULE StepASP
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		PRIVATE
@@ -85,14 +89,18 @@ MODULE StepASP
 		USE OutputRoutines
 		USE Coagulation
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: TimeStep
+		TYPE (XPLEX) :: TimeStep
 		
 		!! Internal Variables
 		INTEGER :: I, NumBins
-		REAL*8 :: TEMP
+		TYPE (XPLEX) :: TEMP
 	
 		TYPE(Particle), POINTER :: cur
 		
@@ -165,22 +173,26 @@ MODULE StepASP
 	  USE OutputRoutines
 	  USE Coagulation
 
+	  USE XPLEXIFY
+       USE MYTYPE
+	  USE XPLEXIFY
+       USE MYTYPE
 	  IMPLICIT NONE
 
 	  !! External Variables
-	  REAL*8, INTENT(IN) :: Temp  !(in K)
-	  REAL*8, INTENT(IN) :: Press !(in mbar)
-	  REAL*8, INTENT(IN) :: Dens  !(in kg/m3 dry air)
-	  REAL*8 :: GasConc(HowManyEvolveGasChems)
-	  REAL*8, INTENT(IN) :: AeroNumConc(HowManyBins)
-	  REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
-	  REAL*8, INTENT(IN) :: inPhotoRates(12)
+	  TYPE (XPLEX), INTENT(IN) :: Temp  !(in K)
+	  TYPE (XPLEX), INTENT(IN) :: Press !(in mbar)
+	  TYPE (XPLEX), INTENT(IN) :: Dens  !(in kg/m3 dry air)
+	  TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+	  TYPE (XPLEX), INTENT(IN) :: AeroNumConc(HowManyBins)
+	  TYPE (XPLEX) :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
+	  TYPE (XPLEX), INTENT(IN) :: inPhotoRates(12)
 
 	  !! Internal Variables
 	  INTEGER :: I, J, L, RxnIndex, NumAq, GG
-	  REAL*8 :: HeteroNumberConc(HowManyBins)
-          REAL*8 :: HeteroRadii(HowManyBins)
-	  REAL*8 :: Scale
+	  TYPE (XPLEX) :: HeteroNumberConc(HowManyBins)
+          TYPE (XPLEX) :: HeteroRadii(HowManyBins)
+	  TYPE (XPLEX) :: Scale
 
 	  TYPE(Particle), POINTER :: cur
 		
@@ -341,21 +353,25 @@ MODULE StepASP
 		USE OutputRoutines
 		USE Coagulation
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: Temp, Press, Dens
-		REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
+		TYPE (XPLEX) :: Temp, Press, Dens
+		TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
                                           ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep, &
                                           SubExtCoeffSep, SubSSASep
-		REAL*8 :: GasConc(HowManyEvolveGasChems)
-		REAL*8 :: AeroNumConc(HowManyBins)
-		REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
-		REAL*8 :: Radius(HowManyBins)
+		TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+		TYPE (XPLEX) :: AeroNumConc(HowManyBins)
+		TYPE (XPLEX) :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
+		TYPE (XPLEX) :: Radius(HowManyBins)
 		
 		!! Internal Variables
 		INTEGER :: I, J, NumAq
-		REAL*8 :: SaltConc(HowManyAqChems)
+		TYPE (XPLEX) :: SaltConc(HowManyAqChems)
 	
 		TYPE(Particle), POINTER :: Cur
 		
@@ -447,12 +463,16 @@ MODULE StepASP
 	USE OutputRoutines
 	USE Coagulation
 	
+	USE XPLEXIFY
+       USE MYTYPE
+	USE XPLEXIFY
+       USE MYTYPE
 	implicit none
 
 	!! Define the local variables
 	integer :: i, j, k, l,q, r, NumBins
         INTEGER :: time(8)
-	REAL*4  :: etimearray(2)
+	TYPE (XPLEX)  :: etimearray(2)
 	TYPE(Particle), POINTER :: Cur, Env
 	CHARACTER (len = 8)     :: ErrorDate
 	CHARACTER (len = 10)    :: ErrorTime
@@ -514,19 +534,23 @@ MODULE StepASP
 		USE OutputRoutines
 		USE Coagulation
 
+		USE XPLEXIFY
+       USE MYTYPE
+		USE XPLEXIFY
+       USE MYTYPE
 		IMPLICIT NONE
 
 		!! External Variables
-		REAL*8 :: Timestep !(in s)
-		REAL*8 :: Temp  !(in K)
-		REAL*8 :: Press !(in mbar)
-		REAL*8 :: Dens  !(in kg/m3 dry air)
-		REAL*8 :: GasConc(HowManyEvolveGasChems)
-		REAL*8 :: NumConc(HowManyBins)
-		REAL*8 :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
-		REAL*8 :: Radius(HowManyBins)
-		REAL*8 :: outPhotoRates(12)
-		REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym
+		TYPE (XPLEX) :: Timestep !(in s)
+		TYPE (XPLEX) :: Temp  !(in K)
+		TYPE (XPLEX) :: Press !(in mbar)
+		TYPE (XPLEX) :: Dens  !(in kg/m3 dry air)
+		TYPE (XPLEX) :: GasConc(HowManyEvolveGasChems)
+		TYPE (XPLEX) :: NumConc(HowManyBins)
+		TYPE (XPLEX) :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
+		TYPE (XPLEX) :: Radius(HowManyBins)
+		TYPE (XPLEX) :: outPhotoRates(12)
+		TYPE (XPLEX), DIMENSION(451) :: ExtCoeff, SingScat, Assym
 		INTEGER :: I
 	
 		!WRITE(*,*) "Before Conc Input"

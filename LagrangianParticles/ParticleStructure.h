@@ -48,46 +48,46 @@ TYPE Particle
 	INTEGER :: ParticleDistribution  
         !! Corresponds to the initial section or -1 if from coagulation, 
 	!!if mixed in will have fractional component as well.
-	REAL*8  :: OriginPressureLevel
+	TYPE (XPLEX)  :: OriginPressureLevel
 
 	!! When the system is running as a sectional model each of these
 	!! particles will represent more than one particle
 	LOGICAL :: Sectional
-	REAL*8    :: NumberOfParticles
-	REAL*8    :: Edges(2)
+	TYPE (XPLEX)    :: NumberOfParticles
+	TYPE (XPLEX)    :: Edges(2)
 
 	!! velocity is a 3-space (x,y,z) expression 
         !! (in Model Length Scale and Seconds)
-	REAL*8 :: velocity(3)
+	TYPE (XPLEX) :: velocity(3)
 
 	LOGICAL :: Dry         !! True if the particle never picks up water 
                                !! (i.e., contact angle = 2pi or no electrolyte)
 
 	!! These are physical parameters that each particle is tagged with
-	REAL*8 :: Temperature
+	TYPE (XPLEX) :: Temperature
 	
-	REAL*8 :: EmbryoRadius    !! This is the radius of the solution embryo
-	REAL*8 :: InsolubleRadius 
+	TYPE (XPLEX) :: EmbryoRadius    !! This is the radius of the solution embryo
+	TYPE (XPLEX) :: InsolubleRadius 
         !! This is the radius of the insoluble part of the aerosol
-	REAL*8 :: EffectiveRadius 
+	TYPE (XPLEX) :: EffectiveRadius 
         !! This is the radius of the sphere with this particles' volume
 		
 	!! Thermodynamic Properties
-	REAL*8 :: IonicStr
-	REAL*8 :: WaterActivity
-	REAL*8 :: InorgSolnDensity   
+	TYPE (XPLEX) :: IonicStr
+	TYPE (XPLEX) :: WaterActivity
+	TYPE (XPLEX) :: InorgSolnDensity   
         !! Only includes water and ions - for optical property calcs
-	REAL*8 :: SolutionDensity    
+	TYPE (XPLEX) :: SolutionDensity    
         !! This is the solution density, including water, ions, 
         !! and aqueous organics
-	REAL*8 :: InsolubleDensity   
+	TYPE (XPLEX) :: InsolubleDensity   
         !! This is the average density of the combined solution 
         !! and solid salts, not including insoluble compounds
-	REAL*8 :: ParticleDensity    !! This includes insoluble compounds
-	REAL*8 :: SurfaceTension
+	TYPE (XPLEX) :: ParticleDensity    !! This includes insoluble compounds
+	TYPE (XPLEX) :: SurfaceTension
 
 	!! This gives the mean activity coefficients for each electrolyte combo
-	REAL*8, POINTER :: GammaMixed(:)   
+	TYPE (XPLEX), POINTER :: GammaMixed(:)   
         !! Mixed solution mean activity coefficients
         !! These are indexed by AqRxn number, *not* electrolyte index!
 
@@ -105,28 +105,28 @@ TYPE Particle
         !!
 	!! OrgChems lists the chemicals in the organic phase, 
         !! with BC hard coded as the first compound
-	REAL*8, POINTER :: AqChems(:)
-	REAL*8, POINTER :: OrgChems(:)
-	REAL*8, POINTER :: AqOrgChems(:)
+	TYPE (XPLEX), POINTER :: AqChems(:)
+	TYPE (XPLEX), POINTER :: OrgChems(:)
+	TYPE (XPLEX), POINTER :: AqOrgChems(:)
 
-	REAL*8, POINTER :: HydrophobicActivityCoeffs(:) 
+	TYPE (XPLEX), POINTER :: HydrophobicActivityCoeffs(:) 
         !These are indexed by org compound number
-	REAL*8, POINTER :: HydrophilicActivityCoeffs(:) 
+	TYPE (XPLEX), POINTER :: HydrophilicActivityCoeffs(:) 
         !These are indexed by aq org compound number
 
-	REAL*8, DIMENSION(451) :: ShellRealRefracInd 
+	TYPE (XPLEX), DIMENSION(451) :: ShellRealRefracInd 
         !Solar (550 nm) and IR (10 um)
-	REAL*8, DIMENSION(451) :: ShellImagRefracInd 
+	TYPE (XPLEX), DIMENSION(451) :: ShellImagRefracInd 
         !Solar (550 nm) and IR (10 um)
-	REAL*8, DIMENSION(451) :: MGRealRefracInd 
+	TYPE (XPLEX), DIMENSION(451) :: MGRealRefracInd 
         !Solar (550 nm) and IR (10 um)
-	REAL*8, DIMENSION(451) :: MGImagRefracInd 
+	TYPE (XPLEX), DIMENSION(451) :: MGImagRefracInd 
         !Solar (550 nm) and IR (10 um)
-	REAL*8, DIMENSION(451) :: VARealRefracInd 
+	TYPE (XPLEX), DIMENSION(451) :: VARealRefracInd 
         !Solar (550 nm) and IR (10 um)
-	REAL*8, DIMENSION(451) :: VAImagRefracInd 
+	TYPE (XPLEX), DIMENSION(451) :: VAImagRefracInd 
         !Solar (550 nm) and IR (10 um)
-	REAL*8				  :: AbsCoreRad
+	TYPE (XPLEX)				  :: AbsCoreRad
 !In the CRM6 radiation scheme, six  and  12 bands are selected for solar 
 ! and thermal IR regions, respectively. The spectral division is below: 
 ! Band Range              Refractive Index  Proxy Wavelength
@@ -153,36 +153,36 @@ TYPE Particle
 ! then 550 nm and 700 nm for comparison with aerosol optical property 
 ! measurements.
 
-	REAL*8, DIMENSION(451) :: ExtEff !Extinction Efficiency
-	REAL*8, DIMENSION(451) :: ScaEff !Scattering Efficiency
-	REAL*8, DIMENSION(451) :: BackScaEff !Back-Scattering Efficiency
-	REAL*8, DIMENSION(451) :: AssymParam !Assymetry Parameter
+	TYPE (XPLEX), DIMENSION(451) :: ExtEff !Extinction Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: ScaEff !Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: BackScaEff !Back-Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: AssymParam !Assymetry Parameter
 
         !MJA 08-17-2012 Below for a hypothetical particle of
         !same effective size but all BC
-	REAL*8, DIMENSION(451) :: ExtEffBC !Extinction Efficiency
-	REAL*8, DIMENSION(451) :: ScaEffBC !Scattering Efficiency
-	REAL*8, DIMENSION(451) :: BackScaEffBC !Back-Scattering Efficiency
-	REAL*8, DIMENSION(451) :: AssymParamBC !Assymetry Parameter
+	TYPE (XPLEX), DIMENSION(451) :: ExtEffBC !Extinction Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: ScaEffBC !Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: BackScaEffBC !Back-Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: AssymParamBC !Assymetry Parameter
 
         !MJA 08-17-2012 Below for a hypothetical particle of
         !same effective size and same ref. ind. as the shell
-	REAL*8, DIMENSION(451) :: ExtEffShell !Extinction Efficiency
-	REAL*8, DIMENSION(451) :: ScaEffShell !Scattering Efficiency
-	REAL*8, DIMENSION(451) :: BackScaEffShell !Back-Scattering Efficiency
-	REAL*8, DIMENSION(451) :: AssymParamShell !Assymetry Parameter
+	TYPE (XPLEX), DIMENSION(451) :: ExtEffShell !Extinction Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: ScaEffShell !Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: BackScaEffShell !Back-Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: AssymParamShell !Assymetry Parameter
 
         !MJA 11-08-2012 Below for Maxwell-Garnett Mixing (MG)
-	REAL*8, DIMENSION(451) :: ExtEffMG !Extinction Efficiency
-	REAL*8, DIMENSION(451) :: ScaEffMG !Scattering Efficiency
-	REAL*8, DIMENSION(451) :: BackScaEffMG !Back-Scattering Efficiency
-	REAL*8, DIMENSION(451) :: AssymParamMG !Assymetry Parameter
+	TYPE (XPLEX), DIMENSION(451) :: ExtEffMG !Extinction Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: ScaEffMG !Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: BackScaEffMG !Back-Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: AssymParamMG !Assymetry Parameter
 
         !MJA 11-08-2012 Below for Volume average dielectric constant mixing (VA)
-	REAL*8, DIMENSION(451) :: ExtEffVA !Extinction Efficiency
-	REAL*8, DIMENSION(451) :: ScaEffVA !Scattering Efficiency
-	REAL*8, DIMENSION(451) :: BackScaEffVA !Back-Scattering Efficiency
-	REAL*8, DIMENSION(451) :: AssymParamVA !Assymetry Parameter
+	TYPE (XPLEX), DIMENSION(451) :: ExtEffVA !Extinction Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: ScaEffVA !Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: BackScaEffVA !Back-Scattering Efficiency
+	TYPE (XPLEX), DIMENSION(451) :: AssymParamVA !Assymetry Parameter
 	
 	!! These area stored as linked lists
 	TYPE (Particle), POINTER :: Next

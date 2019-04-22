@@ -24,29 +24,45 @@
 !! DIFFUSIVITY OF TRACE CHEMICAL SPECIES                                     !!
 !! as a function of temperature and pressure.                                !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8 FUNCTION MolecularDiffusionCoefficient (ChemIndex)
+!FUNCTION Mole (ChemIndex)
+
+!        Mole%r = 0.375
+!        Mole%i = 0.0
+
+!	RETURN
+!END FUNCTION Mole
+
+
+FUNCTION MolecularDiffusionCoefficient (ChemIndex)
 
 	USE ModelParameters,     ONLY : cm,AirMolecMass,Angstrom,Rstar, &
                                         Avogadro,Pi,ChemScale
 	USE InfrastructuralCode, ONLY : Warn, Error, INT2STR
 	USE GridPointFields,	 ONLY : GetAirDensity, GetTemp
 
+	USE XPLEXIFY
+        USE MYTYPE
 	IMPLICIT NONE
 
 	!! External Variables
 	INTEGER		:: ChemIndex
+        TYPE (XPLEX)    :: MolecularDiffusionCoefficient
 	!CHARACTER*(*), OPTIONAL :: ChemName
 
 	!! Internal Variables
-	INTEGER :: i
+	INTEGER :: i 
+        TYPE (XPLEX) :: temp
 
         i = ChemIndex
 
 
-   MolecularDiffusionCoefficient = 0.375/(4.5*Angstrom)**2./GetAirDensity()* &
-	SQRT(Rstar*GetTemp()*AirMolecMass*ChemScale/	&
+        temp = Rstar*GetTemp()*AirMolecMass*ChemScale/	&
 	Avogadro/GasMolecularMass(i)*(GasMolecularMass(i)+		&
-	Avogadro*AirMolecMass)/2/Pi)
+	Avogadro*AirMolecMass)/2/Pi
+        
+        temp = sqrt(temp)
+        temp =  0.375/((4.5*Angstrom)*(4.5*Angstrom))/GetAirDensity()*temp
+        MolecularDiffusionCoefficient = temp
 
 	RETURN
 END FUNCTION MolecularDiffusionCoefficient

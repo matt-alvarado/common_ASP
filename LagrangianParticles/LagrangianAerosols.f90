@@ -58,6 +58,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE Aerosols
 
+USE XPLEXIFY
+       USE MYTYPE
 IMPLICIT NONE
 
 PRIVATE
@@ -107,7 +109,7 @@ INTEGER :: InputFlagRatioOrMass
 
 !! The windspeed for the O'Dowd 1997 Salt Parameterization 
 !! (0 means don't use it)
-!REAL*8  :: ODowdSaltWindSpeed
+!TYPE (XPLEX)  :: ODowdSaltWindSpeed
 !INTEGER :: ODowdSaltNumbBins
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -121,13 +123,13 @@ INTEGER :: InputFlagRatioOrMass
 !!              using org. indexing)                                         !!
 !!   IC(1..M)  (Number of each type of insoluble core aerosol per input)     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-REAL*8, ALLOCATABLE :: AerosolModes(:,:)
+TYPE (XPLEX), ALLOCATABLE :: AerosolModes(:,:)
 INTEGER	            :: HowManyAerosolModes
 LOGICAL             :: InsolCoresYesOrNo
 CHARACTER (len=64), ALLOCATABLE  :: AerosolModeNames(:)
 
 !!These are for the environmental (boundary) aerosol distribution
-REAL*8, ALLOCATABLE :: EnvAerosolModes(:,:)
+TYPE (XPLEX), ALLOCATABLE :: EnvAerosolModes(:,:)
 INTEGER		    :: HowManyEnvAerosolModes
 CHARACTER (len=64), ALLOCATABLE  :: EnvAerosolModeNames(:)
 
@@ -160,6 +162,8 @@ SUBROUTINE ClearParticles ()
 	USE ModelParameters, ONLY : HowManyBins
 	USE InfrastructuralCode, ONLY : TRANSCRIPT, INT2STR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER :: L
@@ -195,11 +199,13 @@ SUBROUTINE SCInitializeWaterParticles()
 	USE InfrastructuralCode, ONLY : ERROR
 	USE ModelParameters,     ONLY : micron
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Local Variables
 	INTEGER :: Allocation_Error,I,J,K,HowManyRadii
-	REAL*8  :: Radius(1000)
+	TYPE (XPLEX)  :: Radius(1000)
 	TYPE(Particle), POINTER :: CurrentParticle
 
 
@@ -241,10 +247,12 @@ END SUBROUTINE SCInitializeWaterParticles
 ! CMB (AER, Inc): None of these molality functions initialize the value of the 
 !                 returned function, nor do they handle floating-point equality.
 !                 Revisions made...
-REAL*8 FUNCTION Molality (ChemIndex, InParticle)
+TYPE (XPLEX) FUNCTION Molality (ChemIndex, InParticle)
 
 	USE ModelParameters, ONLY : moles, grams,WaterMolecMass
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
@@ -260,10 +268,12 @@ REAL*8 FUNCTION Molality (ChemIndex, InParticle)
 END FUNCTION Molality
 
 !! -- Ion molalities are calculated in a pass-along format
-REAL*8 FUNCTION CationMolality (ChemIndex, InParticle)
+TYPE (XPLEX) FUNCTION CationMolality (ChemIndex, InParticle)
 
 	USE ModelParameters, ONLY : HowManyAqChems
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
@@ -279,10 +289,12 @@ REAL*8 FUNCTION CationMolality (ChemIndex, InParticle)
 END FUNCTION CationMolality
 
 !! -- Ion molalities are calculated in a pass-along format
-REAL*8 FUNCTION AnionMolality (ChemIndex, InParticle)
+TYPE (XPLEX) FUNCTION AnionMolality (ChemIndex, InParticle)
 
 	USE ModelParameters, ONLY : HowManyAqChems, HowManyAqCations
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
@@ -307,9 +319,11 @@ SUBROUTINE ChangeMolality (MolalityChange, ChemIndex, InParticle)
 
 	USE ModelParameters, ONLY : moles, WaterMolecMass
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8		   :: MolalityChange
+	TYPE (XPLEX)		   :: MolalityChange
 	INTEGER		   :: ChemIndex
 	TYPE(Particle) :: InParticle
 
@@ -328,9 +342,11 @@ SUBROUTINE ChangeCationMolality (MolalityChange, ChemIndex, InParticle)
 
 	USE ModelParameters, ONLY : HowManyAqChems
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8		   :: MolalityChange
+	TYPE (XPLEX)		   :: MolalityChange
 	INTEGER		   :: ChemIndex
 	TYPE(Particle) :: InParticle
 
@@ -352,9 +368,11 @@ SUBROUTINE ChangeAnionMolality (MolalityChange, ChemIndex, InParticle)
 
 	USE ModelParameters, ONLY : HowManyAqChems, HowManyAqCations
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
-	REAL*8		   :: MolalityChange
+	TYPE (XPLEX)		   :: MolalityChange
 	INTEGER		   :: ChemIndex
 	TYPE(Particle) :: InParticle
 
@@ -377,6 +395,8 @@ FUNCTION CopyLagrangianParticle (InParticle)
 						HowManyAqEqReactions
 
 	USE InfrastructuralCode, ONLY : ERROR
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	TYPE(Particle), POINTER :: CopyLagrangianParticle
@@ -431,6 +451,8 @@ SUBROUTINE InitializeParticlesSectional()
 	USE InfrastructuralCode, ONLY : ERROR
         USE ModelParameters,     ONLY : SetInitialDens
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Local Variables
@@ -477,10 +499,12 @@ SUBROUTINE DissociateAllElectrolytes()
 
 	USE InfrastructuralCode, ONLY : ERROR, WARN, INT2STR, REAL2STR
 
+	USE XPLEXIFY
+       USE MYTYPE
 	IMPLICIT NONE
 
 	!! Internal Variables
-	REAL*8 :: II
+	TYPE (XPLEX) :: II
 	INTEGER :: I, J, K, L, M, Q, HowManyLinks, ReturnType, OrgRxnIndex, AqRxnIndex, StoreReturn
 	TYPE(Particle),POINTER :: Current	
 	

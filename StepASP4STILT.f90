@@ -138,7 +138,12 @@ CONTAINS
         !call spillbeans(tout_unit=101)
         !print *, 'GridGasChem(599) after StepGasChemistry = ', GridGasChem(599)
 		
-        if (doAerosols .gt. 0) then
+
+!        MJA, 04-23-2019
+!        temproraily removing aerosol calcs from XPLEX version 
+!        if (doAerosols .gt. 0) then
+         if (.false.) then
+         
             !Step Condensation, if desired
             cur => particles%first
                     

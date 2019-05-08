@@ -519,6 +519,8 @@ CONTAINS
         endif
         !print *, 'GasConc(599) after InputConcentrations = ', GasConc(599) 
         !print *, 'GridGasChem(599) after inputConcentrations = ', GridGasChem(599)
+        !AD XPLEX Debug
+        GasPhaseChemicalRates(:)%i = 0.
     END SUBROUTINE InputConcentrations
 
     SUBROUTINE OutputConcentrations(Temp, Press, Dens, GasConc, &

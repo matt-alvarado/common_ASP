@@ -1363,6 +1363,8 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	   Do I = 1,NumbRateFacs
 	 	NewRate%Rate(I) = RateFacs(I)
 	   End Do
+	   !AD XPLEX Debug
+           NewRate%Rate%i = RateFacs%i
 
 	   IF (Associated(FirstRate)) THEN
 	 	CurrentRate%Next => NewRate

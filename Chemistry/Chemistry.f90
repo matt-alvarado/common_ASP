@@ -549,6 +549,10 @@ MODULE Chemistry
                    !write(678,*) 'C_H2O = ', C_H2O
                    !write(678,*) 'In IFGAS: Calling ResetGasPhaseReactionRates'
                    CALL ResetGasPhaseReactionRates (GasPhaseReactionRates,GasPhaseReactionRateArraySize, RO2_T, RCO3_T, C_H2O)
+                   !AD XPLEX debug
+                   if(sum(GasPhaseReactionRates%i) .ne. 0) then
+                        GasPhaseReactionRates(:,:)%i = 0.
+                   endif
 		END IF	
 		
 		!!!!!!!!!!!!!!!!!!!
@@ -575,6 +579,10 @@ MODULE Chemistry
 		LOGICAL  :: FirstTime
 
 		CALL ResetHeteroRates (GasPhaseReactionRates,GasPhaseReactionRateArraySize,Radii,NumConc,NumBins, FirstTime)
+                   !AD XPLEX debug
+                   if(sum(GasPhaseReactionRates%i) .ne. 0) then
+                        GasPhaseReactionRates(:,:)%i = 0.
+                   endif
 	
 	END SUBROUTINE RecalculateHeteroRates
 
@@ -908,8 +916,10 @@ MODULE Chemistry
                     !print *, 'DegLower = ', DegLower
                     cosLower = cos(DegLower*RadToDeg)
                     cosHigher = cos(DegHigher*RadToDeg)
+                    !AD XPLEX debug
+                    sza%i=0.
                     szarad = sza*DegToRad
-
+               
                     RateLower = PhotoRates(lowerZenithIndex, RxnIndex)
                     RateHigher = PhotoRates(higherZenithIndex, &
                                             RxnIndex)
@@ -1095,6 +1105,10 @@ MODULE Chemistry
 	    call ResetPhotoRatesSZA(GasPhaseReactionRates, &
 	        GasPhaseReactionRateArraySize, &
 	        FirstTime, sza, transmissivity)
+                   !AD XPLEX debug
+                   if(sum(GasPhaseReactionRates%i) .ne. 0) then
+                        GasPhaseReactionRates(:,:)%i = 0.
+                   endif
 
 	end subroutine RecalculatePhotoRatesSZA
         ! end CB add
@@ -1115,6 +1129,10 @@ MODULE Chemistry
 
 		CALL ResetPhotoRates (GasPhaseReactionRates,GasPhaseReactionRateArraySize, ut, t, FirstTime)
 	
+                   !AD XPLEX debug
+                   if(sum(GasPhaseReactionRates%i) .ne. 0) then
+                        GasPhaseReactionRates(:,:)%i = 0.
+                   endif
 	END SUBROUTINE RecalculatePhotoRates
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

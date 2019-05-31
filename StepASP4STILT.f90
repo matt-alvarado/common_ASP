@@ -141,8 +141,8 @@ CONTAINS
 
 !        MJA, 04-23-2019
 !        temproraily removing aerosol calcs from XPLEX version 
-!        if (doAerosols .gt. 0) then
-         if (.false.) then
+!         if (.false.) then
+        if (doAerosols .gt. 0) then !AD XPLEX turning aerosols back on
          
             !Step Condensation, if desired
             cur => particles%first

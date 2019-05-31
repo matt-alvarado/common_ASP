@@ -16,6 +16,7 @@
 !! 10/26  2006   Matt Alvarado     Forced LRW to be above 500000            !!
 !! 02/15  2012   Matt Alvarado     Removing Eulerian grids, making ASP      !!
 !!                                 a one-box model or subroutine.           !!
+!! 05/31  2019   Archana Dayalu    Forced LRW to be 1000000 for XPLEX       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -36,7 +37,10 @@ SUBROUTINE SetEvolveGasChemConstants ()
 
 	GasLIW	 = 31+HowManyEvolveGasChems+HowManyNonZeroGasJacTerms
 	YLEN = HowManyGasChems+3
-	LRW  = 40 + 34*HowManyEvolveGasChems + 5*HowManyNonZeroGasJacTerms
+!	LRW  = 40 + 34*HowManyEvolveGasChems + 5*HowManyNonZeroGasJacTerms
+!       !AD XPLEX Comment out and replace with below
+        LRW  = 1000000 !AD XPLEX Debug allocation issue in non-fire run. Also set this in CondensationIntegrator.h
+
 !	IF (LRW .LT. 64*5000000) THEN
 !		LRW = 64*5000000
 !	END IF

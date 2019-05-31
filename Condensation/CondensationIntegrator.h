@@ -370,7 +370,8 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 						!				write(289,*) 'Calling StepAqOrgCondensation at line 350 of condensationintegrator.h'
 						!				call spillbeans(tout_unit=289)
 						!				endif
-                        CALL StepAqOrgCondensation (TimestepSize, 1)
+			!AD XPLEX: Turn of StepAqOrgCondensation to avoid DLSODE warnings/errors 5/31/2019
+                        !CALL StepAqOrgCondensation (TimestepSize, 1)
 				!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 				!										write(289,*) 
 				!										write(289,*) 'done with StepAqOrgCondensation at line 356 of condensationintegrator.h'
@@ -934,7 +935,8 @@ SUBROUTINE StepCondensation (TimestepSize, NumTimeSteps)
 	!! Temporarily set this to the maximum value 
         !! (which is also for reaction type 4)
 	HowManyNonZeroJacobianTerms = 11*HowManyLinks + 1
-	LRW  = 60 +  25*NEQ + 3*HowManyNonZeroJacobianTerms
+!	LRW  = 60 +  25*NEQ + 3*HowManyNonZeroJacobianTerms !AD XPLEX Comment out and replace with below
+        LRW  = 1000000 !AD XPLEX Debug allocation issue in non-fire run. Also set this in EvolveGasChemistry.
 	LIW  = 31 + neq + HowManyNonZeroJacobianTerms
 
 	!! Allocate the LSODES working arrays

@@ -326,7 +326,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 					!call flush(6)
 				!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 				!write(288,*) 
-				write(*,*) 'Calling StepOrgCondensation at line 311 of condensationintegrator.h'
+				!write(*,*) 'Calling StepOrgCondensation at line 311 of condensationintegrator.h'
 				!call spillbeans(tout_unit=288)
 				!endif
                     CALL StepOrgCondensation (TimestepSize, 1)
@@ -363,7 +363,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
                     if ((tempK .gt. tempThresh) .and. (relativeHumidity .gt. &
                             rhThresh)) then
 							!call spillbeans(tout_unit=289)
-                        print *, '---> Calling StepAqOrgCondensation if doing flux; temp = ', tempK, ' and RH = ', relativeHumidity
+                        !print *, '---> Calling StepAqOrgCondensation if doing flux; temp = ', tempK, ' and RH = ', relativeHumidity
                         !stop
 						!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 						!				write(289,*) 

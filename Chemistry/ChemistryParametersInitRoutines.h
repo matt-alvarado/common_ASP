@@ -74,6 +74,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	CHARACTER*(*)	  :: InputDeck, Delimitor
 	TYPE (DiffEqList) :: ODEs(:)
 	INTEGER	          :: ChemSize,Size,Phase
+		INTEGER :: RateFlag
 
 	!! A Linked List Type Used Only in this Subroutine
 	TYPE ReactRate
@@ -330,6 +331,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 
 	        !Check for PAN, Degradation, or Heterogeneous flag
 		CALL GetToken(Rates,";",Rate)
+		RateFlag = INT(STR2REAL(StripToken(Rate)))	!(N12: evaluated once; was re-parsed in every IF/ELSE IF below)
 
 		!print *, '*** CMB: Rate = "', rate, '".'
 		!print *, '*** CMB: Trimmed rate = "', rate(1:len(trim(rate))), '".'
@@ -339,7 +341,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 		!print *, '*** CMB: J = (number of rate terms) = ', j
 		
 		!Photolysis Case (Flag = 0)
-		IF (INT(STR2REAL(StripToken(Rate))) .EQ. 0) THEN
+		IF (RateFlag .EQ. 0) THEN
 		        !! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 2	 
@@ -373,7 +375,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 
 
 		!NOT USED: Old PAN Degradation Case (Flag = 1)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 1) THEN	
+		ELSE IF (RateFlag .EQ. 1) THEN	
 	                !! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 6
@@ -406,7 +408,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 			
 		!Isomerization Case (Flag = 2)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 2) THEN	
+		ELSE IF (RateFlag .EQ. 2) THEN	
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -440,7 +442,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			
 			
 		!Heterogeneous case (Flag = 3)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 3) THEN
+		ELSE IF (RateFlag .EQ. 3) THEN
 		        !! This number should match the number of rate inputs 
                         !! for this reaction type
 		        NumbRateFacs = 4
@@ -473,7 +475,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 
 		!Equilibrium degradation case (Flag = 4)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 4) THEN
+		ELSE IF (RateFlag .EQ. 4) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 8
@@ -506,7 +508,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 
 		!Fixed Rate Case (Flag = 5)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 5) THEN
+		ELSE IF (RateFlag .EQ. 5) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 2
@@ -540,7 +542,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			
 		!HNO4 case - 
                 !this is hard-wired in ResetGasPhaseReactionRates (Flag = 6)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 6) THEN
+		ELSE IF (RateFlag .EQ. 6) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 1
@@ -561,7 +563,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			
 		!N2O5 case - 
                 ! this is hard-wired in ResetGasPhaseReactionRates (Flag = 7)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 7) THEN
+		ELSE IF (RateFlag .EQ. 7) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 1
@@ -582,7 +584,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			
 		!O1D case - 
                 ! this is hard-wired in ResetGasPhaseReactionRates (Flag = 8)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 8) THEN
+		ELSE IF (RateFlag .EQ. 8) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 1
@@ -603,7 +605,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			
 		!O + O2 + M case 
                 ! - this is hard-wired in ResetGasPhaseReactionRates (Flag = 9)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 9) THEN
+		ELSE IF (RateFlag .EQ. 9) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 1
@@ -624,7 +626,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			
 		!RAD* + O2 case - 
                 ! this is hard-wired in ResetGasPhaseReactionRates (Flag = 10)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 10) THEN
+		ELSE IF (RateFlag .EQ. 10) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 1
@@ -644,7 +646,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END IF
 			
 			!MCM v3.2 PAN Degradation Case (Flag = 11)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 11) THEN	
+		ELSE IF (RateFlag .EQ. 11) THEN	
 	                !! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 6
@@ -676,7 +678,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 				END IF
 			END DO	
 		!RO2_T pseudo-first order case (Flag = 12) (MJA, 01-25-2013)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 12) THEN	
+		ELSE IF (RateFlag .EQ. 12) THEN	
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -723,9 +725,10 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 
 		!Check for Nitrate flags (first term 1 or 2)
 		CALL GetToken(Rates,";",Rate)			
+		RateFlag = INT(STR2REAL(StripToken(Rate)))	!(N12: evaluated once; was re-parsed in every IF/ELSE IF below)
 			
 		!Normal 2-Body Case
-		IF (INT(STR2REAL(StripToken(Rate))) .EQ. 0) THEN
+		IF (RateFlag .EQ. 0) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 4
@@ -758,7 +761,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 			
 		!Alkyl-Nirate Case (Flag = 1)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 1) THEN
+		ELSE IF (RateFlag .EQ. 1) THEN
 		        !! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 9
@@ -790,7 +793,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 			
 		!Corresponding to nitrate case (Flag = 2)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 2) THEN
+		ELSE IF (RateFlag .EQ. 2) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 9
@@ -823,7 +826,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 			
 		!K = K1 + K2
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 3) THEN
+		ELSE IF (RateFlag .EQ. 3) THEN
 			!! This number should match the number of rate inputs 
                         ! for this reaction type
 			NumbRateFacs = 5
@@ -856,7 +859,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 		
 		!k = k1 + k2*M case (Flag = 4)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 4) THEN
+		ELSE IF (RateFlag .EQ. 4) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -889,7 +892,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 
 		!k = k1 + k3*M(1+k3*M/k2) case (Flag = 5)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 5) THEN
+		ELSE IF (RateFlag .EQ. 5) THEN
 		!! This number should match the number of rate inputs for 
                 !! this reaction type
 			NumbRateFacs = 7
@@ -922,7 +925,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 			
 		!Heterogeneous case (Flag = 6)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 6) THEN
+		ELSE IF (RateFlag .EQ. 6) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 2
@@ -955,7 +958,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 
 		!k = A*exp(B/T)*(1-(1/(1+C*exp(D/T)))) case (Flag = 7)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 7) THEN
+		ELSE IF (RateFlag .EQ. 7) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -988,7 +991,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 
                 !k = A*exp(B/T)*(1/(1+C*exp(D/T))) case (Flag = 8)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 8) THEN
+		ELSE IF (RateFlag .EQ. 8) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -1021,7 +1024,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 	
 		!k = A*exp(B/T)*(1-C*exp(D/T)) case (Flag = 9)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 9) THEN
+		ELSE IF (RateFlag .EQ. 9) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -1053,7 +1056,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 				END IF
 			END DO
 		!Flag 10, k = C_H2O*(A1*exp(C1/T)+Mgas*A2*exp(C2/T)	
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 10) THEN
+		ELSE IF (RateFlag .EQ. 10) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 5
@@ -1089,7 +1092,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
                 !!     TMP3 = A*exp(B/T)
                 !!     TMP4 = [C/T + D*PRES+F] 
                 !!     PRES = ATMOSPHERIC PRESSURE IN PASCAL
-                ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 11) THEN
+                ELSE IF (RateFlag .EQ. 11) THEN
 			!! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 6
@@ -1136,10 +1139,11 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 
 		!Check for 3rd order rate constant flag (first term  = 1.0)
 		CALL GetToken(Rates,";",Rate)		
+		RateFlag = INT(STR2REAL(StripToken(Rate)))	!(N12: evaluated once; was re-parsed in every IF/ELSE IF below)
 			
 		!If the first term is below 1, 
                 ! assume it is a pseudo-2nd order reaction (JPL Style)
-		IF(INT(STR2REAL(StripToken(Rate))) .EQ. 0) THEN
+		IF(RateFlag .EQ. 0) THEN
 			
 			!! This number should match the number of rate inputs 
                         !!for this reaction type
@@ -1172,7 +1176,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 			
 		!Use third-order rate constant (as in O + O2 + M)
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 1) THEN
+		ELSE IF (RateFlag .EQ. 1) THEN
 			NumbRateFacs = 3
 
 			IF (J .NE. NumbRateFacs) &
@@ -1202,7 +1206,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 
 		!Use third-order thermal rate constant 
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 2) THEN
+		ELSE IF (RateFlag .EQ. 2) THEN
 			NumbRateFacs = 5
 
 			IF (J .NE. NumbRateFacs) &
@@ -1232,7 +1236,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 			END DO
 	
 	        !THIRD ORDER IUPAC Style
-		ELSE IF (INT(STR2REAL(StripToken(Rate))) .EQ. 3) THEN
+		ELSE IF (RateFlag .EQ. 3) THEN
 			NumbRateFacs = 6
 
 			IF (J .NE. NumbRateFacs) &

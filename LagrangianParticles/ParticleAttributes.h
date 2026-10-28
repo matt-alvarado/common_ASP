@@ -1489,6 +1489,34 @@ REAL*8 FUNCTION AqueousSolutionMass (InParticle)
 	RETURN
 END FUNCTION AqueousSolutionMass
 
+!! Patch 1.3: homogeneous-sphere Mie efficiencies via MIEV0 (Wiscombe) instead of DMiLay.
+!! DMiLay with RindCo = RindSh is a homogeneous sphere of radius Rshell; MIEV0 computes that case
+!! directly (no core/shell layering).  Outputs map as QEXT, QSCA, GQSC (= g*Qsca), and
+!! QBS = |SBACK|**2 / (Pi*x**2) (DMiLay's definition of its backscatter output).
+!! MIEV0.f is single-precision source; like the rest of ASP it relies on default REAL = 8 bytes.
+SUBROUTINE MieHomogeneousSphere (Radius, WVNO, Ind, QExt, QSca, QBack, GQSca)
+	IMPLICIT NONE
+	REAL*8  :: Radius, WVNO, QExt, QSca, QBack, GQSca
+	COMPLEX :: Ind
+	REAL*8, PARAMETER :: PIc = 3.14159265358979324D0
+	REAL*8  :: XX, MIMCUT, SPIKE, XMU(1), PMOM(0:1,1)
+	COMPLEX :: SFORW, SBACK, S1(1), S2(1), TFORW(2), TBACK(2)
+	LOGICAL :: PRNT(2), PERFCT, ANYANG
+	INTEGER :: NUMANG, NMOM, IPOLZN, MOMDIM
+	EXTERNAL MIEV0
+
+	XX     = Radius*WVNO
+	MIMCUT = 0.0D0
+	PRNT(1) = .FALSE. ; PRNT(2) = .FALSE.
+	XMU(1) = 0.0D0 ; PMOM = 0.0D0
+	PERFCT = .FALSE. ; ANYANG = .FALSE. ; NUMANG = 0 ; NMOM = 0 ; IPOLZN = 0 ; MOMDIM = 1
+	!! (all MIEV0 inputs are passed as variables: its first-call self-test overwrites them temporarily)
+	CALL MIEV0 (XX, Ind, PERFCT, MIMCUT, ANYANG, NUMANG, XMU, NMOM, IPOLZN, MOMDIM, PRNT, &
+	            QExt, QSca, GQSca, PMOM, SFORW, SBACK, S1, S2, TFORW, TBACK, SPIKE)
+	QBack = (REAL(SBACK)**2 + AIMAG(SBACK)**2) / (PIc*XX*XX)
+	RETURN
+END SUBROUTINE MieHomogeneousSphere
+
 !! This subroutine calculates the volume-average refractive indices for
 !! the reflective shell and then calls DMILAY for the efficienies and 
 !! assymetry parameter
@@ -1953,18 +1981,12 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
           !Now call for a hypothetical particle of
           !same effective size but all BC
 !          WRITE(*,*) "Call 2"
-	  CALL DMiLay( InParticle%AbsCoreRad, &
-			InParticle%EffectiveRadius, &
-			Wavelength, &
-			SolarCoreInd, & 
-			SolarCoreInd, &
-			CosAng, &
-			NumAng, &
+	  CALL MieHomogeneousSphere( InParticle%EffectiveRadius, Wavelength, SolarCoreInd, &
 			InParticle%ExtEffBC(ib), &
 			InParticle%ScaEffBC(ib), &
 			InParticle%BackScaEffBC(ib), &
-			InParticle%AssymParamBC(ib), & 
-                        M1, M2, S21, D21, MAXANG )
+			InParticle%AssymParamBC(ib) )
+	  !(Patch 1.3: was DMiLay with RindCo = RindSh)
 
 	   !DMiLay gives the assymetry parameter times the scattering eff.
 	   !So divide by scattering efficiency here (MJA, 10/15/07)
@@ -1974,18 +1996,12 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
           !Now call for a hypothetical particle of
           !same effective size but all shell
 !          WRITE(*,*) "Call 3"
-	  CALL DMiLay( InParticle%AbsCoreRad, &
-			InParticle%EffectiveRadius, &
-			Wavelength, &
-			SolarShellInd, & 
-			SolarShellInd, &
-			CosAng, &
-			NumAng, &
+	  CALL MieHomogeneousSphere( InParticle%EffectiveRadius, Wavelength, SolarShellInd, &
 			InParticle%ExtEffShell(ib), &
 			InParticle%ScaEffShell(ib), &
 			InParticle%BackScaEffShell(ib), &
-			InParticle%AssymParamShell(ib), & 
-                        M1, M2, S21, D21, MAXANG )
+			InParticle%AssymParamShell(ib) )
+	  !(Patch 1.3: was DMiLay with RindCo = RindSh)
 
 	   !DMiLay gives the assymetry parameter times the scattering eff.
 	   !So divide by scattering efficiency here (MJA, 10/15/07)
@@ -1994,18 +2010,12 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 
 !          WRITE(*,*) "Call 4"
           !Now call for volume average dielectric constant mixing rule
-	  CALL DMiLay( InParticle%AbsCoreRad, &
-			InParticle%EffectiveRadius, &
-			Wavelength, &
-			VAInd, & 
-			VAInd, &
-			CosAng, &
-			NumAng, &
+	  CALL MieHomogeneousSphere( InParticle%EffectiveRadius, Wavelength, VAInd, &
 			InParticle%ExtEffVA(ib), &
 			InParticle%ScaEffVA(ib), &
 			InParticle%BackScaEffVA(ib), &
-			InParticle%AssymParamVA(ib), & 
-                        M1, M2, S21, D21, MAXANG )
+			InParticle%AssymParamVA(ib) )
+	  !(Patch 1.3: was DMiLay with RindCo = RindSh)
 
 	   !DMiLay gives the assymetry parameter times the scattering eff.
 	   !So divide by scattering efficiency here (MJA, 10/15/07)
@@ -2013,18 +2023,12 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
                 InParticle%AssymParamVA(ib)/InParticle%ScaEffVA(ib)
 
           !Now call for Maxwell-Garnett mixing rule
-	  CALL DMiLay( InParticle%AbsCoreRad, &
-			InParticle%EffectiveRadius, &
-			Wavelength, &
-			MGInd, & 
-			MGInd, &
-			CosAng, &
-			NumAng, &
+	  CALL MieHomogeneousSphere( InParticle%EffectiveRadius, Wavelength, MGInd, &
 			InParticle%ExtEffMG(ib), &
 			InParticle%ScaEffMG(ib), &
 			InParticle%BackScaEffMG(ib), &
-			InParticle%AssymParamMG(ib), & 
-                        M1, M2, S21, D21, MAXANG )
+			InParticle%AssymParamMG(ib) )
+	  !(Patch 1.3: was DMiLay with RindCo = RindSh)
 
 	   !DMiLay gives the assymetry parameter times the scattering eff.
 	   !So divide by scattering efficiency here (MJA, 10/15/07)

@@ -67,6 +67,22 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Initializes and returns a sectional pseudo-particle following !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Patch 09: new Particle objects were allocated without defining the optical-property arrays, AbsCoreRad,
+!! velocity and InorgSolnDensity (valgrind: uninitialised values reaching SpillBeans / AerosolOptProp / output).
+!! They are set later by the optics code; give them a defined value (0) at creation.
+SUBROUTINE ZeroParticleOptics (P)
+	IMPLICIT NONE
+	TYPE (Particle) :: P
+	P%velocity = 0. ; P%InorgSolnDensity = 0. ; P%AbsCoreRad = 0.
+	P%ShellRealRefracInd = 0. ; P%ShellImagRefracInd = 0. ; P%MGRealRefracInd = 0. ; P%MGImagRefracInd = 0.
+	P%VARealRefracInd = 0. ; P%VAImagRefracInd = 0.
+	P%ExtEff = 0. ; P%ScaEff = 0. ; P%BackScaEff = 0. ; P%AssymParam = 0.
+	P%ExtEffBC = 0. ; P%ScaEffBC = 0. ; P%BackScaEffBC = 0. ; P%AssymParamBC = 0.
+	P%ExtEffShell = 0. ; P%ScaEffShell = 0. ; P%BackScaEffShell = 0. ; P%AssymParamShell = 0.
+	P%ExtEffMG = 0. ; P%ScaEffMG = 0. ; P%BackScaEffMG = 0. ; P%AssymParamMG = 0.
+	P%ExtEffVA = 0. ; P%ScaEffVA = 0. ; P%BackScaEffVA = 0. ; P%AssymParamVA = 0.
+END SUBROUTINE ZeroParticleOptics
+
 FUNCTION MakeSection(WhichPopulation, WhichBin)
 
 	! 3/30/2016 CMB (AER, Inc): In order to figure out why I am getting
@@ -107,6 +123,7 @@ FUNCTION MakeSection(WhichPopulation, WhichBin)
 	!! create the New Particle and allocate its arrays
 	ALLOCATE (MakeSection, stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of MakeSection Failed in MakeSection()")
+	CALL ZeroParticleOptics(MakeSection)
 	ALLOCATE (MakeSection%AqChems(HowManyAqChems+HowManyAqCations+HowManyAqAnions), stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of MakeSection%AqChems Failed in MakeSection()")
 	ALLOCATE (MakeSection%OrgChems(HowManyOrgChems), stat = allocation_error)
@@ -387,6 +404,7 @@ SUBROUTINE MakeParticle(WhichPopulation, ResultInt, LagrangianOnly, StructuredDi
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	ALLOCATE (NewParticle, stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of NewParticle Failed in MakeParticle()")
+	CALL ZeroParticleOptics(NewParticle)
 	ALLOCATE (NewParticle%AqChems(HowManyAqChems+HowManyAqCations+HowManyAqAnions), stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of NewParticle%AqChems Failed in MakeParticle()")
 	ALLOCATE (NewParticle%OrgChems(HowManyOrgChems), stat = allocation_error)
@@ -610,6 +628,7 @@ FUNCTION MakeBulk(Boundary)
 	!! create the New Particle and allocate its arrays
 	ALLOCATE (MakeBulk, stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of MakeBulk Failed in MakeBulk()")
+	CALL ZeroParticleOptics(MakeBulk)
 	ALLOCATE (MakeBulk%AqChems(HowManyAqChems+HowManyAqCations+HowManyAqAnions), stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of MakeBulk%AqChems Failed in MakeBulk()")
 	ALLOCATE (MakeBulk%OrgChems(HowManyOrgChems), stat = allocation_error)
@@ -1626,6 +1645,7 @@ FUNCTION MakeMonodisperse(Boundary)
 	!! create the New Particle and allocate its arrays
 	ALLOCATE (MakeMonodisperse, stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of MakeMonodisperse Failed in MakeMonodisperse()")
+	CALL ZeroParticleOptics(MakeMonodisperse)
 	ALLOCATE (MakeMonodisperse%AqChems(HowManyAqChems+HowManyAqCations+HowManyAqAnions), stat = allocation_error)
 	if (allocation_error > 0) CALL ERROR("Allocation of MakeMonodisperse%AqChems Failed in MakeMonodisperse()")
 	ALLOCATE (MakeMonodisperse%OrgChems(HowManyOrgChems), stat = allocation_error)

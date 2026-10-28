@@ -39,6 +39,9 @@
 !!                                 arbitrary points to ResetPhotoRates       !!
 !! 09/13  2016   Matt Alvarado     Added array GasPhaseEmisFactor to store   !!
 !!                                   fire emission factors in g/kg           !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
+!!                                 set/Jacobian setup by run mode            !!
+!!                                 (SetChemSetupLevel)                       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

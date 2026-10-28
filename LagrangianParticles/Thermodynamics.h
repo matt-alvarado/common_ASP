@@ -48,6 +48,12 @@
 !!                                  it up                                    !!
 !! 01/29  2013    Matt Alvarado     Removed EquilibriumWaterContent, replaced!!
 !!                                     with EquilibriumWaterContentAmount    !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit bc80201: N1-N5: remove redundant   !!
+!!                                 setup and equilibrium work (StripToken,   !!
+!!                                 MakeJacobian, MeanActivity, solver loop)  !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit a56950d: N6-N11: integrand caches, !!
+!!                                 EqCoeff cache, tabulated Gibbs-Duhem      !!
+!!                                 integral (N11 changes results ~2e-4)      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

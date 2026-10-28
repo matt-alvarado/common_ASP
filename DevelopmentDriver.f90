@@ -42,6 +42,9 @@
 !!                                  time step in first 10 minutes of run     !!
 !! 07/08  2013   Matt Alvarado     Moved a lot of output code to             !!
 !!                                  OutputRputines.f90                       !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
+!!                                 set/Jacobian setup by run mode            !!
+!!                                 (SetChemSetupLevel)                       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM ASP

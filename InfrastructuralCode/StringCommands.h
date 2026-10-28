@@ -15,6 +15,9 @@
 !! 01/04  2013   Matt Alvarado     Expanded length of allowed lines from    !!
 !!                                   512 to 1024 characters. Needed to      !!
 !!                                   allow 50 photo rxns.                   !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit bc80201: N1-N5: remove redundant   !!
+!!                                 setup and equilibrium work (StripToken,   !!
+!!                                 MakeJacobian, MeanActivity, solver loop)  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

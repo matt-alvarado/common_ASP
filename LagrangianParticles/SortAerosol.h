@@ -19,6 +19,9 @@
 !!			  	every time it is called.                     !!
 !! 10/05  2007   Matt Alvarado     Redid RegridAerosol to prevent            !!
 !!                                 zeros in size bins                        !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit cf81a74: CoagTest H6: skip the     !!
+!!                                 duplicate RecalculateRadius pass when     !!
+!!                                 Coag calls RegridAerosol                  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

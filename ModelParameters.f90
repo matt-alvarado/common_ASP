@@ -28,6 +28,8 @@
 !!                                    SetPhotoEndTime                        !!
 !! 07/03  2013   Matt Alvarado     Updated SetEulerianBox to include Fire CO !!
 !!                                   emission rate.                          !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 09afe88: Build fix: guard re-      !!
+!!                                 ALLOCATE of BinEdges (gfortran)           !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

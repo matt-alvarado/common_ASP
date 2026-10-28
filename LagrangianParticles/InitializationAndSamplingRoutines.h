@@ -45,6 +45,15 @@
 !!                                    removed MakeBoundaryParticleExponential
 !!          Added Boundary variable to PopulateParticlesSectionsRightAway and 
 !!                                    removed PopBoundaryPart
+!! 10/28  2026   Claude Sonnet 5.5 Commit 8064a92: Fix: set Edges in         !!
+!!                                 MakeMonodisperse (Edge 1/2 printed        !!
+!!                                 uninitialised memory)                     !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 21e319b: Fix: zero optical-        !!
+!!                                 property fields of newly created          !!
+!!                                 particles                                 !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 7c15ef6: Fix uninitialised         !!
+!!                                 ParticleDistribution in                   !!
+!!                                 PopulateParticlesSectionsRightAway        !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

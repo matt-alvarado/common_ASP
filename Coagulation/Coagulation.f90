@@ -16,6 +16,18 @@
 !!                                  monodisperse coag	                     !!
 !! 02/17  2012   Matt Alvarado     Removed Eulerian grids, making ASP        !!
 !!                                 a one-box model or subroutine.            !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 24670d0: CoagTest H1: precompute   !!
+!!                                 single-particle kernel quantities once    !!
+!!                                 per section                               !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit c20e470: CoagTest H4: collect      !!
+!!                                 species-independent coagulation terms     !!
+!!                                 once per step                             !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit cf81a74: CoagTest H6: skip the     !!
+!!                                 duplicate RecalculateRadius pass when     !!
+!!                                 Coag calls RegridAerosol                  !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 89d60a6: CoagTest H5: build        !!
+!!                                 VolumeFractions with one bracket scan per !!
+!!                                 (I,J)                                     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

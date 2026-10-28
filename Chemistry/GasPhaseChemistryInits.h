@@ -22,6 +22,12 @@
 !! 01/24  2013   Matt Alvarado   Added GasPhasePeroxy array to subroutine    !!
 !!                                 SetGasPhaseChemistry to read and store    !!
 !!                                 peroxy radical flag.                      !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
+!!                                 set/Jacobian setup by run mode            !!
+!!                                 (SetChemSetupLevel)                       !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 1f14880: Fix: initialise OLDASP to !!
+!!                                 .FALSE. (changes initial gas              !!
+!!                                 concentrations for k=0 decks)             !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

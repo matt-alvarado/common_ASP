@@ -25,6 +25,9 @@
 !!                                  SetAqPhaseChemistry to indicate what     !!
 !!                                  refractive index should be used for an   !!
 !!                                  electrolyte.                             !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
+!!                                 set/Jacobian setup by run mode            !!
+!!                                 (SetChemSetupLevel)                       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

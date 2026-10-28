@@ -71,6 +71,14 @@
 !!                                  the particle%surfacetension by calling 
 !!                                  SurfaceTension, and CurvatureCorrection
 !!                                  uses the particle%surfacetension
+!! 10/28  2026   Claude Sonnet 5.5 Commit 8cb0991: Phase 1.1: hoist OPAC     !!
+!!                                 tables to module PARAMETERs               !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 3717b42: Phase 1.2: hoist per-     !!
+!!                                 category refractive-index lookups         !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 7737090: Phase 1.3: MIEV0 for      !!
+!!                                 homogeneous-sphere Mie calls (adds        !!
+!!                                 MieSupport.f; link MIEV0.f +              !!
+!!                                 MieSupport.f)                             !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

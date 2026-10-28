@@ -832,7 +832,9 @@ SUBROUTINE PopulateParticlesSectionsRightAway (Boundary)
 	IF (HowManyBins .GT. 0. .OR. ThermoBulkMode) THEN
 		IF (.NOT.ThermoBulkMode .AND. .NOT.Monodisperse) THEN
 			DO J = 1, HowManyBins
-				NewSection => MakeSection(I,J) 
+				!! There is a single sectional population here; I is not set at this point
+				!! (it held stack garbage), so label the sections as distribution 1.
+				NewSection => MakeSection(1,J) 
                                 IF (.NOT.(Boundary)) THEN
 				    !!Budge the new mode in at the head of the list
 				    IF (ASSOCIATED(Particles%First)) THEN	

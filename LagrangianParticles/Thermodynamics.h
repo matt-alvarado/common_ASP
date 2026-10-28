@@ -987,6 +987,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Local Variables
 	INTEGER :: I, J
+	LOGICAL :: HaveEqRatio, Converged	!Patch N5
 	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                    ActivityCoefficients, ErrorTolerance, DRH, RH
 	LOGICAL :: WaterRxn
@@ -1382,7 +1383,18 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	! CMB: floating-point equality check
 	if (.not. (dabs(qnumer) .le. 1.0e-40 .and. dabs(qdenom) .le. 1.0e-40)) then
 	!IF (.NOT. (Qnumer .EQ. 0 .AND. Qdenom .EQ. 0)) THEN
-	DO WHILE (.NOT. CheckEquilibriumConvergenceForAqDissociationRxn (WhichEquilibriumRxn, InParticle, ErrorTolerance))
+	!Patch N5: the convergence test evaluates EquilibriumConstantsRatio on the particle state;
+	!the previous iteration ended by evaluating the same function on the same (unmodified)
+	!state.  Reuse that EqRatio instead of recomputing it (not valid for the infinitely
+	!dissociating branch, which the test handles differently).
+	HaveEqRatio = .FALSE.
+	DO
+		IF (HaveEqRatio) THEN
+			Converged = (ErrorTolerance .GE. ABS(EqRatio - 1.))
+		ELSE
+			Converged = CheckEquilibriumConvergenceForAqDissociationRxn (WhichEquilibriumRxn, InParticle, ErrorTolerance)
+		END IF
+		IF (Converged) EXIT
 
 
 
@@ -1589,6 +1601,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Store this EqRatio for testing against the next one, in the next loop
 	II = EqRatio
+	HaveEqRatio = (DABS(AqEquilibriaList(WhichEquilibriumRxn, 9) - 1) .GT. 1.0e-40)	!Patch N5
 
 	!! Count the number of attempts before convergence
 	I = I+1
@@ -1897,7 +1910,8 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 			WRITE(*,*) "Water Activity", AwPow
 			STOP
 		END IF
-		EquilibriumConstantsRatio = MeanActivity (WhichEquilibriumRxn, InParticle) / MM / Eq / AwPow
+		!Patch N3: Dum1 above is this same expression; do not call MeanActivity again.
+		EquilibriumConstantsRatio = Dum1
 	END IF
 
 	RETURN
@@ -1964,6 +1978,7 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	!! External Variables
 	INTEGER					:: WhichEquilibrium
 	TYPE(PARTICLE),POINTER	:: InParticle
+	REAL*8 :: CatM, AnM, LevM	!Patch N4: molalities evaluated once, not up to 4 times
 
 	!! If this is an empty section, we have no truck with it
         ! CMB (AER, Inc): Floating-point equality issue
@@ -1976,7 +1991,8 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	!Check for negative Molality
         ! CMB (AER, Inc): In order to debug some problems, we are going to uncomment the "Call DumpParticleContentsAtError" 
         !                 and "Stop" lines.  Need to fill in some arguments first...
-	IF (CationMolality(INT(AqEquilibriaList(WhichEquilibrium,2)),InParticle) .LT. 0.0) THEN
+	CatM = CationMolality(INT(AqEquilibriaList(WhichEquilibrium,2)),InParticle)
+	IF (CatM .LT. 0.0) THEN
 		!WRITE(*,*) "Negative Cation Molality, Reaction # ", TRIM(INT2STR(WhichEquilibrium)), " ", TRIM(AqCationNames(INT(AqEquilibriaList(WhichEquilibrium,2)))), " ", TRIM(REAL2STR(CationMolality(INT(AqEquilibriaList(WhichEquilibrium,2)),InParticle)))
 		!WRITE(*,*) "Resetting to 0."
 		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibrium,2)) + HowManyAqChems) = 0.0
@@ -1984,7 +2000,10 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 		CALL DumpParticleContentsAtError (InParticle, "NegMolality.txt", .false., &
 				.false., .false., .false., .false., .false., .false.)
 		STOP
-	ELSE IF (AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,3)),InParticle) .LT. 0.0) THEN
+	ELSE
+	  AnM = AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,3)),InParticle)
+	END IF
+	IF (AnM .LT. 0.0) THEN
 		!WRITE(*,*) "Negative Anion Molality, Reaction # ", TRIM(INT2STR(WhichEquilibrium)), " ", TRIM(AqAnionNames(INT(AqEquilibriaList(WhichEquilibrium,3)))), " ", TRIM(REAL2STR(AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,3)),InParticle)))
 		!WRITE(*,*) "Resetting to 0."
 		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibrium,3)) + HowManyAqChems + HowManyAqCations) = 0.0
@@ -2004,16 +2023,16 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	!! the mean activity coefficient					!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	IF (AqEquilibriaList(WhichEquilibrium,22) .EQ. 0.) THEN
-		MeanActivity = CationMolality(INT(AqEquilibriaList(WhichEquilibrium,2)),InParticle)**AqEquilibriaList(WhichEquilibrium, 4) * &
-				   AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,3)),InParticle) **AqEquilibriaList(WhichEquilibrium, 5) * &
+		MeanActivity = CatM**AqEquilibriaList(WhichEquilibrium, 4) * &
+				   AnM **AqEquilibriaList(WhichEquilibrium, 5) * &
 				   InParticle%GammaMixed(WhichEquilibrium)**(AqEquilibriaList(WhichEquilibrium, 4) &
 				   + AqEquilibriaList(WhichEquilibrium, 5))
 	END IF
 
 	!Correction for Levitocite
 	IF (AqEquilibriaList(WhichEquilibrium,22) .NE. 0.) THEN
-		MeanActivity = CationMolality(INT(AqEquilibriaList(WhichEquilibrium,2)),InParticle)**AqEquilibriaList(WhichEquilibrium, 4) * &
-				   AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,3)),InParticle) **AqEquilibriaList(WhichEquilibrium, 5) * &
+		MeanActivity = CatM**AqEquilibriaList(WhichEquilibrium, 4) * &
+				   AnM **AqEquilibriaList(WhichEquilibrium, 5) * &
 				   AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,22)),InParticle) **AqEquilibriaList(WhichEquilibrium, 23) * &
 				   InParticle%GammaMixed(WhichEquilibrium)**(AqEquilibriaList(WhichEquilibrium, 4) &
 				   + AqEquilibriaList(WhichEquilibrium, 5)+ AqEquilibriaList(WhichEquilibrium, 23))

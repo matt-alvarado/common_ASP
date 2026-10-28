@@ -115,7 +115,9 @@
 
 	!! Strip Trailing Whitespace
         ! CB: Modified to strip trailing newline characters as well        
-	j=LEN(InLine)
+	!Patch N1: begin the trailing-strip scan at LEN_TRIM (the trailing blanks are
+	!stripped by the same loop anyway) instead of at LEN, which walked ~1000 blanks per call.
+	j=LEN_TRIM(InLine)
         !do while (inLine(j:j) == CHAR(9) .or. &
         !          inLine(j:j) == CHAR(10) .or. &
         !          inLine(j:j) == CHAR(13) .or. &

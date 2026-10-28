@@ -1734,6 +1734,8 @@ END SUBROUTINE MakeODESet
 		!! Local Variables
 		INTEGER					  :: allocation_error, I, J, K, NonZeroElements
 		TYPE(DiffEqTerm), POINTER :: Current, CurrentJac, DerivativeTerm
+		TYPE(ChemTerm),   POINTER :: ScanChem	!Patch N2
+		LOGICAL					  :: ChemFound	!Patch N2
 
 		LOGICAL, PARAMETER		  :: Scaffolding = .TRUE.
 		TYPE(DiffEqTerm), POINTER :: TempTerm
@@ -1755,7 +1757,23 @@ END SUBROUTINE MakeODESet
 
 					!! Start a loop over all of the terms in the ODE string
 					!! Take the derivative of each term and attach it appropriately
-10					DerivativeTerm => DerivativeOfODEElement(Current,J)
+10					Continue
+					!Patch N2: DerivativeOfODEElement returns NULL when dChem is absent from the term,
+					!but only after copying (malloc) the whole term.  Scan first and skip the copy.
+					ChemFound = .FALSE.
+					ScanChem => Current%DerefChem
+					DO WHILE (ASSOCIATED(ScanChem))
+						IF (ScanChem%WhichChem == J) THEN
+							ChemFound = .TRUE.
+							EXIT
+						END IF
+						ScanChem => ScanChem%Next
+					END DO
+					IF (ChemFound) THEN
+						DerivativeTerm => DerivativeOfODEElement(Current,J)
+					ELSE
+						NULLIFY(DerivativeTerm)
+					END IF
 
 					!! Attach the derivative, if not NULL, to the Jacobian Structure
 					IF (Associated(DerivativeTerm)) THEN

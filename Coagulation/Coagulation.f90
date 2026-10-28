@@ -172,6 +172,11 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	REAL*8, ALLOCATABLE	:: PreR(:), PreD(:), PreMass(:), PreDel(:), PreRe(:), PreVt(:)
 	LOGICAL, ALLOCATABLE	:: PreSect(:)
 	REAL*8	:: PreDynVisc, PreTemp, PreAirDensity
+	!! Species-independent coagulation terms (collected once per step)
+	REAL*8, ALLOCATABLE	:: LowerK(:), EntW(:)
+	INTEGER, ALLOCATABLE	:: KStart(:), EntI(:), EntJ(:)
+	LOGICAL, ALLOCATABLE	:: EntLast(:)
+	INTEGER	:: NEnt, NGroupStart, N
 
 	TYPE(Particle), POINTER :: Particle1, Particle2, ParticleK, & 
                                    Runner, ReplicaPlaceholder, &
@@ -554,35 +559,72 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	END DO
 
 !	WRITE(*,*) "Coag Check 3"
-	!Calculate change in total volume conc. and use that to get change in number
-	DO K = 1, HowManyLinks    
-        LowerSum=0
-		DO J=1, HowManyLinks
-			IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(K,J) .NE. 0.0 .AND. VolumeFractions(K,J,K) .NE. 1.0) THEN 
+	!! The weights VolumeFractions(I,J,K)*CoagArray(I,J) and the conditions under which a (I,J,K)
+	!! term contributes do not depend on the chemical species, and neither does LowerSum.
+	!! They are collected once here (in the same I, J, K order as the original loops) and reused
+	!! for the total volume and for every species, instead of being re-derived for each species.
+	ALLOCATE (LowerK(HowManyLinks), KStart(HowManyLinks+1), STAT = I)
+	IF (I > 0) CALL ERROR("In StepSectionalCoagulationJacobson(), couldn't allocate LowerK/KStart at size "//TRIM(INT2STR(HowManyLinks)))
+
+	NEnt = 0
+	DO K = 1, HowManyLinks
+		KStart(K) = NEnt + 1
+		LowerSum = 0
+		DO J = 1, HowManyLinks
+			IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(K,J) .NE. 0.0 .AND. VolumeFractions(K,J,K) .NE. 1.0) THEN
 				LowerSum = LowerSum + (1-VolumeFractions(K,J,K))*CoagArray(K,J)*InitNumConc(J)
 			END IF
 		END DO
-    
-        UpperSum=0
-		IF(K .EQ. 1) THEN
-			UpperSum=0
-		ELSE
-			DO J=1,K
-				InnerSum=0
-				DO I=1, K-1
-					IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(I,J) .NE. 0.0 .AND. VolumeFractions(I,J,K) .NE. 0.0) THEN 
+		LowerK(K) = LowerSum
+		IF (K .GT. 1) THEN
+			DO J = 1, K
+				IF (InitNumConc(J) .GT. 0.0D0) THEN
+					DO I = 1, K-1
+						IF (CoagArray(I,J) .NE. 0.0 .AND. VolumeFractions(I,J,K) .NE. 0.0) NEnt = NEnt + 1
+					END DO
+				END IF
+			END DO
+		END IF
+	END DO
+	KStart(HowManyLinks+1) = NEnt + 1
 
-						InnerSum = InnerSum + VolumeFractions(i,j,k)*CoagArray(i,j)*VolumeConc(i)*InitNumConc(J)
+	ALLOCATE (EntI(MAX(NEnt,1)), EntJ(MAX(NEnt,1)), EntW(MAX(NEnt,1)), EntLast(MAX(NEnt,1)), STAT = I)
+	IF (I > 0) CALL ERROR("In StepSectionalCoagulationJacobson(), couldn't allocate coagulation term lists at size "//TRIM(INT2STR(NEnt)))
 
-
+	NEnt = 0
+	DO K = 2, HowManyLinks
+		DO J = 1, K
+			IF (InitNumConc(J) .GT. 0.0D0) THEN
+				NGroupStart = NEnt + 1
+				DO I = 1, K-1
+					IF (CoagArray(I,J) .NE. 0.0 .AND. VolumeFractions(I,J,K) .NE. 0.0) THEN
+						NEnt = NEnt + 1
+						EntI(NEnt) = I
+						EntJ(NEnt) = J
+						EntW(NEnt) = VolumeFractions(I,J,K)*CoagArray(I,J)
+						EntLast(NEnt) = .FALSE.
 					END IF
-				end DO 
-				UpperSum = UpperSum + InnerSum
-			end DO
-		END IF    
-		
-		IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine, early")
+				END DO
+				IF (NEnt .GE. NGroupStart) EntLast(NEnt) = .TRUE.
+			END IF
+		END DO
+	END DO
 
+	!Calculate change in total volume conc. and use that to get change in number
+	DO K = 1, HowManyLinks
+		LowerSum = LowerK(K)
+
+		UpperSum=0
+		InnerSum=0
+		DO N = KStart(K), KStart(K+1)-1
+			InnerSum = InnerSum + EntW(N)*VolumeConc(EntI(N))*InitNumConc(EntJ(N))
+			IF (EntLast(N)) THEN
+				UpperSum = UpperSum + InnerSum
+				InnerSum = 0
+			END IF
+		END DO
+
+		IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine, early")
 
 		VolumeConc(K) = (VolumeConc(K)+TimeStep*UpperSum)/(1+TimeStep*LowerSum)
 
@@ -591,113 +633,80 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 			NumConc(K) = VolumeConc(K)/SingleParticleVolume(K)
 		END IF
 
-	END DO       
+	END DO
 
 !	WRITE(*,*) "Coag Check 4"
 
 	!Calculate change in volume conc. of individual Aq. species
 	DO q = 1, HowManyAqChems+HowManyAqCations+HowManyAqAnions
-		DO K = 1, HowManyLinks    
-			LowerSum=0
-			DO J=1, HowManyLinks
-				IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(K,J) .NE. 0.0 .AND. VolumeFractions(K,J,K) .NE. 1.0) THEN 
-					!WRITE(*,*) K, J, VolumeFractions(K,J,K), CoagArray(K,J), InitNumConc(J)
-					LowerSum = LowerSum + (1.0-VolumeFractions(K,J,K))*CoagArray(K,J)*InitNumConc(J)
-				END IF
-			END DO
-    
+		DO K = 1, HowManyLinks
+			LowerSum = LowerK(K)
+
 			UpperSum=0
-			IF(K .EQ. 1) THEN
-				UpperSum=0
-			ELSE
-				DO J=1,K
-					InnerSum=0
-					DO I=1, K-1
-						IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(I,J) .NE. 0.0 .AND. VolumeFractions(I,J,K) .NE. 0.0) THEN 
-							InnerSum = InnerSum + VolumeFractions(i,j,k)*CoagArray(i,j)*AqVolConc(i,q)*InitNumConc(J)
-	
-						END IF
-					END DO 
-					
+			InnerSum=0
+			DO N = KStart(K), KStart(K+1)-1
+				InnerSum = InnerSum + EntW(N)*AqVolConc(EntI(N),q)*InitNumConc(EntJ(N))
+				IF (EntLast(N)) THEN
 					IF (InnerSum .LT. 0.0 ) CALL ERROR("Problem in InnerSum in Coag routine")
 					UpperSum = UpperSum + InnerSum
-				END DO
-			END IF    
-				
+					InnerSum = 0
+				END IF
+			END DO
+
 			IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine")
 			IF (UpperSum .LT. 0.0 ) CALL ERROR("Problem in UpperSum in Coag routine")
-	
+
 			AqVolConc(K,q) = (AqVolConc(K,q)+TimeStep*UpperSum)/(1+TimeStep*LowerSum)
 
 			IF(AqVolConc(K,Q) .LT. 0.0) CALL ERROR("Negative inorganic concentrations from Coag Routine.")
-			
-		END DO  
+
+		END DO
 	END DO
 
 	!Calculate change in volume conc. of individual hydrophobic organic species
 	DO q = 1, HowManyOrgChems
-		DO K = 1, HowManyLinks    
-				LowerSum=0
-				DO J=1, HowManyLinks
-					IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(K,J) .NE. 0.0 .AND. VolumeFractions(K,J,K) .NE. 1.0) THEN 
-						!WRITE(*,*) K, J, VolumeFractions(K,J,K), CoagArray(K,J), NumConc(J)
-						LowerSum = LowerSum + (1-VolumeFractions(K,J,K))*CoagArray(K,J)*InitNumConc(J)
-					END IF
-				END DO
-    
-				UpperSum=0
-				IF(K .EQ. 1) THEN
-					UpperSum=0
-				ELSE
-					DO J=1,K
-						InnerSum=0
-						DO I=1, K-1
-							IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(I,J) .NE. 0.0 .AND. VolumeFractions(I,J,K) .NE. 0.0) THEN 
-								InnerSum = InnerSum + VolumeFractions(i,j,k)*CoagArray(i,j)*OrgVolConc(i,q)*InitNumConc(J)
-							END IF
-						END DO 
-						UpperSum = UpperSum + InnerSum
-					END DO
-				END IF    
-				
-				IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine")
-				OrgVolConc(K,q) = (OrgVolConc(K,q)+TimeStep*UpperSum)/(1+TimeStep*LowerSum)
-				IF(OrgVolConc(K,Q) .LT. 0.0) CALL ERROR("Negative hydrophobic organic concentrations from Coag Routine.")
-		END DO  
+		DO K = 1, HowManyLinks
+			LowerSum = LowerK(K)
+
+			UpperSum=0
+			InnerSum=0
+			DO N = KStart(K), KStart(K+1)-1
+				InnerSum = InnerSum + EntW(N)*OrgVolConc(EntI(N),q)*InitNumConc(EntJ(N))
+				IF (EntLast(N)) THEN
+					UpperSum = UpperSum + InnerSum
+					InnerSum = 0
+				END IF
+			END DO
+
+			IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine")
+			OrgVolConc(K,q) = (OrgVolConc(K,q)+TimeStep*UpperSum)/(1+TimeStep*LowerSum)
+			IF(OrgVolConc(K,Q) .LT. 0.0) CALL ERROR("Negative hydrophobic organic concentrations from Coag Routine.")
+		END DO
 	END DO
 
 	!Calculate change in volume conc. of individual hydrophilic organic species
 	DO q = 1, HowManyAqOrgChems
-		DO K = 1, HowManyLinks    
-				LowerSum=0
-				DO J=1, HowManyLinks
-					IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(K,J) .NE. 0.0 .AND. VolumeFractions(K,J,K) .NE. 1.0) THEN 
-						!WRITE(*,*) K, J, VolumeFractions(K,J,K), CoagArray(K,J), NumConc(J)
-						LowerSum = LowerSum + (1-VolumeFractions(K,J,K))*CoagArray(K,J)*InitNumConc(J)
-					END IF
-				END DO
-    
-				UpperSum=0
-				IF(K .EQ. 1) THEN
-					UpperSum=0
-				ELSE
-					DO J=1,K
-						InnerSum=0
-						DO I=1, K-1
-							IF (InitNumConc(J) .GT. 0.0D0 .AND. CoagArray(I,J) .NE. 0.0 .AND. VolumeFractions(I,J,K) .NE. 0.0) THEN 
-								InnerSum = InnerSum + VolumeFractions(i,j,k)*CoagArray(i,j)*AqOrgVolConc(i,q)*InitNumConc(J)
-							END IF
-						END DO 
-						UpperSum = UpperSum + InnerSum
-					END DO
-				END IF    
-				
-				IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine")
-				AqOrgVolConc(K,q) = (AqOrgVolConc(K,q)+TimeStep*UpperSum)/(1+TimeStep*LowerSum)
-				IF(AqOrgVolConc(K,Q) .LT. 0.0) CALL ERROR("Negative aqueous organic concentrations from Coag Routine.")
-			
-		END DO  
+		DO K = 1, HowManyLinks
+			LowerSum = LowerK(K)
+
+			UpperSum=0
+			InnerSum=0
+			DO N = KStart(K), KStart(K+1)-1
+				InnerSum = InnerSum + EntW(N)*AqOrgVolConc(EntI(N),q)*InitNumConc(EntJ(N))
+				IF (EntLast(N)) THEN
+					UpperSum = UpperSum + InnerSum
+					InnerSum = 0
+				END IF
+			END DO
+
+			IF (LowerSum .LT. 0.0 ) CALL ERROR("Problem in LowerSum in Coag routine")
+			AqOrgVolConc(K,q) = (AqOrgVolConc(K,q)+TimeStep*UpperSum)/(1+TimeStep*LowerSum)
+			IF(AqOrgVolConc(K,Q) .LT. 0.0) CALL ERROR("Negative aqueous organic concentrations from Coag Routine.")
+
+		END DO
 	END DO
+
+	DEALLOCATE(LowerK, KStart, EntI, EntJ, EntW, EntLast)
 
 	OutSumVolumeConc = 0.0
 	DO JJ = 1, HowManyLinks

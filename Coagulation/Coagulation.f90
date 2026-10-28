@@ -118,6 +118,9 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 
 	USE InfrastructuralCode, ONLY : INT2STR, ERROR
 
+	USE GridPointFields,     ONLY : GetDynamicViscosityOfAir,	&
+					GetTemp, GetAirDensity
+
 	USE Aerosols,            ONLY : Particles, Particle,		&
 				SortAerosolAtGridPointForCoagulation,	&
 					RecalculateRadius,		&
@@ -164,6 +167,11 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
                                    AqVolConc(:,:), &
 				   OrgVolConc(:,:), AqOrgVolConc(:,:), &
                                    InitNumConc(:), SumVolConc(:)
+
+	!! Single-particle kernel quantities, computed once per section per step
+	REAL*8, ALLOCATABLE	:: PreR(:), PreD(:), PreMass(:), PreDel(:), PreRe(:), PreVt(:)
+	LOGICAL, ALLOCATABLE	:: PreSect(:)
+	REAL*8	:: PreDynVisc, PreTemp, PreAirDensity
 
 	TYPE(Particle), POINTER :: Particle1, Particle2, ParticleK, & 
                                    Runner, ReplicaPlaceholder, &
@@ -314,6 +322,30 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	!! LOOP AND FILL CoagArray with Kernel Values   !!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+	!! Quantities that depend on a single particle are computed once per
+	!! section here, rather than inside the N*N pair loop.
+	ALLOCATE (PreR(HowManyLinks), PreD(HowManyLinks), PreMass(HowManyLinks), PreDel(HowManyLinks), &
+	          PreRe(HowManyLinks), PreVt(HowManyLinks), PreSect(HowManyLinks), STAT = I)
+	IF (I > 0) CALL ERROR("In StepSectionalCoagulationJacobson(), couldn't allocate single-particle kernel arrays at size "//TRIM(INT2STR(HowManyLinks)))
+	PreSect = .FALSE.
+	PreR = 0.; PreD = 0.; PreMass = 0.; PreDel = 0.; PreRe = 0.; PreVt = 0.
+	IF (.NOT. ConstantKernel) THEN
+		PreDynVisc    = GetDynamicViscosityOfAir ()
+		PreTemp       = GetTemp ()
+		PreAirDensity = GetAirDensity ()
+		Particle1 => Particles%First
+		DO I = 1, HowManyLinks
+			IF (Particle1%NumberOfParticles .NE. 0.0D0 .AND. Particle1%EffectiveRadius .NE. 0. .AND. Particle1%Sectional) THEN
+				PreSect(I) = .TRUE.
+				PreR(I)    = Particle1%EffectiveRadius
+				CALL CoagPrecomputeParticle (Particle1, PreDynVisc, PreTemp, PreD(I), PreMass(I), PreDel(I), PreRe(I), PreVt(I))
+			END IF
+			Particle1 => Particle1%Next
+		END DO
+	END IF
+	Particle1 => Particles%First
+	Particle2 => Particles%First
+
 
 
 
@@ -336,6 +368,12 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 				
 				IF(ConstantKernel) THEN
 					CoagArray(I,J) = CoagKernel
+
+				ELSE IF (PreSect(I) .AND. PreSect(J)) THEN
+					!! Both sectional: use the per-section quantities computed above
+					CoagArray(I,J) = CoagKernPairSectional (PreR(I), PreD(I), PreMass(I), PreDel(I), PreRe(I), PreVt(I), &
+					                                        PreR(J), PreD(J), PreMass(J), PreDel(J), PreRe(J), PreVt(J), &
+					                                        PreDynVisc, PreTemp, PreAirDensity)
 
 				ELSE
 					!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -785,6 +823,7 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	!call spillbeans()	
 	!! Houseclean memory
 	DEALLOCATE(CoagArray)
+	DEALLOCATE(PreR, PreD, PreMass, PreDel, PreRe, PreVt, PreSect)
 	DEALLOCATE(SingleParticleVolume)
 	DEALLOCATE(VolumeFractions)
 	DEALLOCATE(VolumeConc)

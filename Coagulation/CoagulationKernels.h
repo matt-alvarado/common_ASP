@@ -245,3 +245,125 @@ REAL*8 FUNCTION CoagKernGravCollection (Particle1, Particle2)
 	RETURN
 END FUNCTION CoagKernGravCollection
 
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Single-particle quantities used by the pair kernels below.  These   !!
+!! depend on one particle only (plus the gridpoint environment), so    !!
+!! StepSectionalCoagulationJacobson calls this once per section per    !!
+!! step instead of recomputing them for every one of the N*N pairs.    !!
+!! The expressions are copied verbatim from CoagKernBrownianDiff and   !!
+!! CoagKernGravCollection so the results are bit-identical.            !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE CoagPrecomputeParticle (Particle1, DynVisc, Temp, D1, Mass1, Del1, ReNumb1, Vt1)
+
+	USE Aerosols,		 ONLY : Particle,			&
+					ParticleKnudsen,	&
+					ParticleMass,		&
+					ReynoldsNumber,		&
+					TerminalVelocity
+
+	USE ModelParameters, ONLY : Pi, kB, ThmVelFac
+
+	IMPLICIT NONE
+
+	TYPE(Particle), POINTER :: Particle1
+	REAL*8, INTENT(IN)  :: DynVisc, Temp
+	REAL*8, INTENT(OUT) :: D1, Mass1, Del1, ReNumb1, Vt1
+
+	REAL*8 :: Knudsen1, Cs1, MFP1
+
+	Knudsen1   = ParticleKnudsen (Particle1)
+
+	!! From Fuchs 1964 (Seinfeld and Pandis, p. 661)
+	Cs1 = (5. + 4.*Knudsen1 + 6.*Knudsen1*Knudsen1 + 18.*Knudsen1*Knudsen1*Knudsen1)/&
+		  (5. - Knudsen1    + (8.+pi)*Knudsen1*Knudsen1)
+
+	D1 = kB*Temp*Cs1 / (6.*pi*DynVisc*Particle1%EffectiveRadius)
+
+	Mass1 = ParticleMass(Particle1)
+
+	MFP1 = 8.*D1*Sqrt(Mass1/Temp) / Pi / ThmVelFac
+
+	Del1 = ((2.*Particle1%EffectiveRadius + MFP1)**3. -										&
+			(4.*Particle1%EffectiveRadius * Particle1%EffectiveRadius + MFP1*MFP1)**1.5)	&
+		   /(6.*Particle1%EffectiveRadius * MFP1) - 2.*Particle1%EffectiveRadius
+
+	ReNumb1 = ReynoldsNumber (Particle1)
+	Vt1     = TerminalVelocity (Particle1)
+
+END SUBROUTINE CoagPrecomputeParticle
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Brownian + gravitational kernel for a pair of SECTIONAL particles,  !!
+!! from the quantities of CoagPrecomputeParticle.  Equivalent to       !!
+!! CoagKernBrownianDiff + CoagKernGravCollection (incl. the            !!
+!! CollisionEfficiency of Coagulation.f90) for two sectional particles.!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+REAL*8 FUNCTION CoagKernPairSectional (R1, D1, Mass1, Del1, ReNumb1, Vt1,	&
+				       R2, D2, Mass2, Del2, ReNumb2, Vt2,	&
+				       DynVisc, Temp, AirDensity)
+
+	USE InfrastructuralCode, ONLY : Error
+	USE ModelParameters, ONLY : Pi, ThmVelFac, g
+
+	IMPLICIT NONE
+
+	REAL*8, INTENT(IN) :: R1, D1, Mass1, Del1, ReNumb1, Vt1,	&
+			      R2, D2, Mass2, Del2, ReNumb2, Vt2,	&
+			      DynVisc, Temp, AirDensity
+
+	REAL*8 :: CE, BetaInv, ReNumb, ScNumb, KBrown
+	REAL*8 :: Stokes, Reynolds, Ev, Ea, Ec, dVel
+
+	!! ---- Brownian diffusion (see CoagKernBrownianDiff) ----
+	CE = 1.
+
+	BetaInv = (R1 + R2) / (R1 + R2 + Sqrt(Del1*Del1+Del2*Del2)) +					 &
+			  4.*CE*(D1+D2)/(R1 + R2)/ThmVelFac/Sqrt(Temp/Mass1 + Temp/Mass2)
+
+	KBrown = 4. * Pi * (R1 + R2) * (D1 + D2) / BetaInv
+
+	IF (R1 .GE. R2) THEN
+		ReNumb = ReNumb1
+		ScNumb = DynVisc / AirDensity / D2
+	ELSE
+		ReNumb = ReNumb2
+		ScNumb = DynVisc / AirDensity / D1
+	END IF
+
+	IF (ReNumb .LE. 1) THEN
+		KBrown = KBrown * (1. + 0.45 * (ReNumb * ScNumb)**(1./3.))
+	ELSE
+		KBrown = KBrown * (1. + 0.45 * ReNumb**0.5 * ScNumb**(1./3.))
+	END IF
+
+	!! ---- Collision efficiency (see CollisionEfficiency) ----
+	IF(R2 .GE. R1) THEN
+		Stokes = Vt1 * ABS(Vt2 - Vt1) / R2 / g
+		Reynolds = ReNumb2
+	ELSE
+		Stokes = Vt2 * ABS(Vt1 - Vt2) / R1 / g
+		Reynolds = ReNumb1
+	END IF
+	Ea = (Stokes**2.0)/((Stokes+0.5)**2.0)
+	IF(Stokes .LE. 1.214) THEN
+		Ev = 0.
+	ELSE
+		Ev = (1 + (0.75*LOG(2*Stokes))/(Stokes-1.214) )**(-2.0)
+	END IF
+	Ec = (60*Ev + Ea*Reynolds)/(60 + Reynolds)
+
+	IF (Ec .GT. 1.0 .OR. Ec .LT. 0.0) THEN
+		WRITE(*,*) Ec
+		CALL ERROR("CollisionEfficiency in Coagulation.f90 is greater than 1 or less than 0.")
+	END IF
+
+	!! ---- Gravitational collection (see CoagKernGravCollection) ----
+	dVel = DABS(Vt1 - Vt2)
+
+	CoagKernPairSectional = KBrown + Ec * 1.0 * Pi * dVel * (R1 + R2)**2
+
+	RETURN
+END FUNCTION CoagKernPairSectional

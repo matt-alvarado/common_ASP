@@ -127,6 +127,7 @@ SUBROUTINE SetGasPhaseChemistry ()
         ! 1 if they should be set to a negligible value, as in STILT mode, and 
         ! 2 if they should be read in from the emission factor slot (to have back-compatability with older input files)
         STILT = .FALSE.         
+        OLDASP = .FALSE.	!(Patch 09: was left uninitialised unless k == 2)
         CALL GetToken(CurrLine, ";", Token)
         k = STR2INT (Token)
 

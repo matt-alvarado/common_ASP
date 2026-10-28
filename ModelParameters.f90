@@ -416,6 +416,8 @@ MODULE ModelParameters
 		IF (HowManyBins .NE. 0) THEN
 
 			!! Allocate the array for bin edges
+			!! BUILDFIX(gfortran): this routine can be called more than once (OpticalPropertiesModel); ifort tolerated re-ALLOCATE, gfortran aborts.
+			IF (ALLOCATED(BinEdges)) DEALLOCATE(BinEdges)
 			ALLOCATE (BinEdges(HowManyBins,2))
 
 

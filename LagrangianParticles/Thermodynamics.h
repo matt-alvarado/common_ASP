@@ -484,6 +484,20 @@ REAL*8 FUNCTION EqCoeff (WhichEquilibrium, InParticle , Phase)
 		RETURN
 	END IF
 
+	!Patch N7: the value depends only on the reaction and the particle temperature
+	!(EqCoeffTref is a PARAMETER), so remember it per reaction and reuse while T is unchanged.
+	IF (Phase .EQ. 1) THEN
+		IF (.NOT. ALLOCATED(EqCoeffCacheT)) THEN
+			ALLOCATE (EqCoeffCacheT(SIZE(AqEquilibriaList,1)), EqCoeffCacheV(SIZE(AqEquilibriaList,1)))
+			EqCoeffCacheT = -1.0D300
+			EqCoeffCacheV = 0.0D0
+		END IF
+		IF (InParticle%Temperature .EQ. EqCoeffCacheT(WhichEquilibrium)) THEN
+			EqCoeff = EqCoeffCacheV(WhichEquilibrium)
+			RETURN
+		END IF
+	END IF
+
 	TempRatio = EqCoeffTref / InParticle%Temperature
 
 	!! It is an aqueous equilibrium reaction
@@ -492,6 +506,8 @@ REAL*8 FUNCTION EqCoeff (WhichEquilibrium, InParticle , Phase)
 	  * EXP(AqEquilibriaList(WhichEquilibrium, 10) * (TempRatio - 1.) + &
 	  AqEquilibriaList(WhichEquilibrium, 11) * &
           (LOG(TempRatio) - TempRatio + 1.))
+		EqCoeffCacheT(WhichEquilibrium) = InParticle%Temperature
+		EqCoeffCacheV(WhichEquilibrium) = EqCoeff
 	END IF
 
 	RETURN
@@ -1859,10 +1875,19 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	!! If there is a water molecule in the equilibrium, then we
 	!! need to calculate the water activity.
 	IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0  ) THEN
-		AwPow = InParticle%WaterActivity ** AqEquilibriaList(WhichEquilibriumRxn,8)
+		!Patch N8: pow(x,1.0) is exactly x
+		IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0) THEN
+			AwPow = InParticle%WaterActivity
+		ELSE
+			AwPow = InParticle%WaterActivity ** AqEquilibriaList(WhichEquilibriumRxn,8)
+		END IF
 	ELSE IF (AqEquilibriaList(WhichEquilibriumRxn,24) .NE. 0 ) THEN
 		!Hydrates
-		AwPow = InParticle%WaterActivity ** AqEquilibriaList(WhichEquilibriumRxn,25)
+		IF (AqEquilibriaList(WhichEquilibriumRxn,25) .EQ. 1.0) THEN
+			AwPow = InParticle%WaterActivity
+		ELSE
+			AwPow = InParticle%WaterActivity ** AqEquilibriaList(WhichEquilibriumRxn,25)
+		END IF
 	ELSE	
 		AwPow = 1.
 	END IF
@@ -1979,6 +2004,7 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	INTEGER					:: WhichEquilibrium
 	TYPE(PARTICLE),POINTER	:: InParticle
 	REAL*8 :: CatM, AnM, LevM	!Patch N4: molalities evaluated once, not up to 4 times
+	REAL*8 :: E4, E5, PC, PA	!Patch N8
 
 	!! If this is an empty section, we have no truck with it
         ! CMB (AER, Inc): Floating-point equality issue
@@ -2022,17 +2048,31 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	!! where m is molality, nu is a stoicheometric function, and Gamma is	!!
 	!! the mean activity coefficient					!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!Patch N8: pow(x,1.0) is exactly x; skip the pow call for unit stoichiometry
+	E4 = AqEquilibriaList(WhichEquilibrium, 4)
+	E5 = AqEquilibriaList(WhichEquilibrium, 5)
+	IF (E4 .EQ. 1.0) THEN
+		PC = CatM
+	ELSE
+		PC = CatM**E4
+	END IF
+	IF (E5 .EQ. 1.0) THEN
+		PA = AnM
+	ELSE
+		PA = AnM**E5
+	END IF
+
 	IF (AqEquilibriaList(WhichEquilibrium,22) .EQ. 0.) THEN
-		MeanActivity = CatM**AqEquilibriaList(WhichEquilibrium, 4) * &
-				   AnM **AqEquilibriaList(WhichEquilibrium, 5) * &
+		MeanActivity = PC * &
+				   PA * &
 				   InParticle%GammaMixed(WhichEquilibrium)**(AqEquilibriaList(WhichEquilibrium, 4) &
 				   + AqEquilibriaList(WhichEquilibrium, 5))
 	END IF
 
 	!Correction for Levitocite
 	IF (AqEquilibriaList(WhichEquilibrium,22) .NE. 0.) THEN
-		MeanActivity = CatM**AqEquilibriaList(WhichEquilibrium, 4) * &
-				   AnM **AqEquilibriaList(WhichEquilibrium, 5) * &
+		MeanActivity = PC * &
+				   PA * &
 				   AnionMolality(INT(AqEquilibriaList(WhichEquilibrium,22)),InParticle) **AqEquilibriaList(WhichEquilibrium, 23) * &
 				   InParticle%GammaMixed(WhichEquilibrium)**(AqEquilibriaList(WhichEquilibrium, 4) &
 				   + AqEquilibriaList(WhichEquilibrium, 5)+ AqEquilibriaList(WhichEquilibrium, 23))
@@ -2076,7 +2116,7 @@ REAL*8 FUNCTION CalcQ (EqRxn, InParticle)
 	IMPLICIT NONE
 
 	INTEGER :: EqRxn
-	TYPE (Particle) :: InParticle
+	TYPE (Particle), INTENT(IN) :: InParticle	!Patch N10
 
 	IF (KMRef(EqRxn,6) .LE. HowManyAqChems) THEN
 		CalcQ = KMRef(EqRxn,6) * (1. + KMRef(EqRxn,7) *(InParticle%Temperature-ThermoTref) /	    &
@@ -2456,6 +2496,110 @@ END FUNCTION CalcLogGammaPure
 !! to the  particle, and is used to get a sense of the derivate !!
 !! of the residual water activity.				!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Patch N11.  The integral from 0 to I of EvalIdLogGamma depends only on the   !!
+!! reaction's (Q, Stoich, Charges), i.e. on reaction and temperature.  Instead  !!
+!! of an adaptive DGAUS8 integration on every call, tabulate the cumulative     !!
+!! integral in s = sqrt(I) (where the integrand is analytic), using 8-point     !!
+!! Gauss-Legendre per cell, and evaluate by cubic Hermite interpolation using   !!
+!! the exact derivative.  The table covers s in [0, SHi]; SHi grows on demand   !!
+!! (up to sqrt(MaxIonicStrKM)).  Not thread-safe.                                !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, Result, IERR)
+
+	USE ModelParameters, ONLY : WaterContentPrecision, MaxIonicStrKM
+	USE Chemistry,       ONLY : HowManyAqEqReactions
+
+	IMPLICIT NONE
+
+	INTEGER :: K, IERR
+	REAL*8  :: Q(3), Stoich(4), Charges(4), IonicStrength, Result
+
+	EXTERNAL EvalIdLogGamma
+	REAL*8   :: EvalIdLogGamma
+
+	REAL*8, PARAMETER :: GLX(4) = (/ 0.1834346424956498D0, 0.5255324099163290D0, &
+	                                 0.7966664774136267D0, 0.9602898564975363D0 /)
+	REAL*8, PARAMETER :: GLW(4) = (/ 0.3626837833783620D0, 0.3137066458778873D0, &
+	                                 0.2223810344533745D0, 0.1012285362903763D0 /)
+
+	REAL*8  :: Key(11), S, SHi, SMax, H, T, T2, T3, X, Sum, Gm, FJ, FJ1, GJ, GJ1
+	INTEGER :: J, L, N
+
+	N = GDTabN
+	IERR = 0
+	SMax = SQRT(MaxIonicStrKM)
+
+	IF (.NOT. ALLOCATED(GDTabOK)) THEN
+		ALLOCATE (GDTabOK(HowManyAqEqReactions), GDTabBad(HowManyAqEqReactions), GDTabSHi(HowManyAqEqReactions))
+		ALLOCATE (GDTabF(0:N,HowManyAqEqReactions), GDTabG(0:N,HowManyAqEqReactions), GDTabKey(11,HowManyAqEqReactions))
+		GDTabOK = .FALSE.
+		GDTabBad = .FALSE.
+		GDTabSHi = 0.0D0
+	END IF
+
+	S = SQRT(IonicStrength)
+	Key(1:3) = Q ; Key(4:7) = Stoich ; Key(8:11) = Charges
+
+	!! A parameter change (temperature) invalidates the table
+	IF (GDTabOK(K) .OR. GDTabBad(K)) THEN
+		IF (ANY(Key .NE. GDTabKey(:,K))) THEN
+			GDTabOK(K) = .FALSE.
+			GDTabBad(K) = .FALSE.
+		END IF
+	END IF
+
+	IF (.NOT. GDTabBad(K)) THEN
+		!! (Re)build if missing or too short
+		IF (.NOT. GDTabOK(K) .OR. S .GT. GDTabSHi(K)) THEN
+			IF (GDTabOK(K)) THEN
+				SHi = MIN(SMax, MAX(2.0D0*GDTabSHi(K), 1.25D0*S))
+			ELSE
+				SHi = MIN(SMax, MAX(1.0D0, 1.25D0*S))
+			END IF
+			H = SHi / N
+			GDTabF(0,K) = 0.0D0
+			GDTabG(0,K) = 0.0D0
+			DO J = 1, N
+				Sum = 0.0D0
+				DO L = 1, 4
+					X = (J-1)*H + 0.5D0*H*(1.0D0 - GLX(L))
+					Sum = Sum + GLW(L) * 2.0D0*X*EvalIdLogGamma(X*X, Q, Stoich, Charges)
+					X = (J-1)*H + 0.5D0*H*(1.0D0 + GLX(L))
+					Sum = Sum + GLW(L) * 2.0D0*X*EvalIdLogGamma(X*X, Q, Stoich, Charges)
+				END DO
+				GDTabF(J,K) = GDTabF(J-1,K) + 0.5D0*H*Sum
+				X = J*H
+				GDTabG(J,K) = 2.0D0*X*EvalIdLogGamma(X*X, Q, Stoich, Charges)
+			END DO
+			GDTabKey(:,K) = Key
+			GDTabSHi(K) = SHi
+			GDTabOK(K) = .TRUE.
+			!! A non-finite table (integrand invalid somewhere in range) is never used
+			IF (ANY(GDTabF(:,K) .NE. GDTabF(:,K)) .OR. ANY(ABS(GDTabF(:,K)) .GT. 1.0D100)) THEN
+				GDTabOK(K) = .FALSE.
+				GDTabBad(K) = .TRUE.
+			END IF
+		END IF
+	END IF
+
+	IF (GDTabOK(K) .AND. .NOT. GDTabBad(K)) THEN
+		H = GDTabSHi(K) / N
+		J = MIN(INT(S/H), N-1)
+		T = (S - J*H)/H
+		T2 = T*T ; T3 = T2*T
+		FJ = GDTabF(J,K) ; FJ1 = GDTabF(J+1,K) ; GJ = GDTabG(J,K) ; GJ1 = GDTabG(J+1,K)
+		Result = (2.0D0*T3 - 3.0D0*T2 + 1.0D0)*FJ + (T3 - 2.0D0*T2 + T)*H*GJ &
+		       + (-2.0D0*T3 + 3.0D0*T2)*FJ1 + (T3 - T2)*H*GJ1
+	ELSE
+		CALL DGAUS8 (EvalIdLogGamma, 0., IonicStrength, Q, Stoich, Charges, &
+		             WaterContentPrecision, Result, IERR)
+	END IF
+
+	RETURN
+END SUBROUTINE GibbsDuhemIntegralTabulated
+
 SUBROUTINE UpdateWaterActivity (InParticle) 
 
 	USE Chemistry,		ONLY : HowManyAqEqReactions,     &
@@ -2485,6 +2629,7 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 			   IonicStrength
 
 	EXTERNAL EvalIdLogGamma
+	REAL*8 :: EvalIdLogGamma
 
 	!! If this is an empty section, we have no truck with it
 	IF (InParticle%NumberOfParticles .EQ. 0 .OR. InParticle%Dry) RETURN
@@ -2563,12 +2708,8 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 		END IF
 		
 		!! This routine is housed in DGAUS8.f.  It's an adaptive time step integrator, modified to pass dummy arguments to FUN.
-	    CALL DGAUS8 (EvalIdLogGamma,			&
-					 0., IonicStrength,	& ! Integration Limits
-					 Q, Stoich, Charges,		& ! Pass-Along Argument to EvalIdLogGamma
-					 WaterContentPrecision,	    & ! An error tolerance
-					 InorganicIntegral,			& ! The Result
-					 IERR)
+		!Patch N11: tabulated Gibbs-Duhem integral (falls back to DGAUS8 if the table is unusable)
+	    CALL GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, InorganicIntegral, IERR)
 
 
 		!! Consider the Flagged Result of the Integration

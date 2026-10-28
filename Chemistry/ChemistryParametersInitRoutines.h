@@ -98,6 +98,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	TYPE(ReactRate),  POINTER :: FirstRate,CurrentRate,NewRate
 
 	integer :: iter ! CMB add, debugging
+	integer :: RLen	!Patch N9
 	
 	logical, parameter :: scaffolding = .false.	! cmb in
 	!LOGICAL, PARAMETER		  :: Scaffolding = .TRUE.	! cmb out
@@ -266,14 +267,17 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	   !print *, 'CMB: prior to that if statement: '
 	   !print *, 'CMB: # products = ', NumbProducts
 	   !	   print *, 'CMB: len(trim(Rates)) = "', rates(1:len(trim(rates))), '".'
-	   IF (Rates(Len_Trim(StripToken(Rates))+1:Len_Trim(StripToken(Rates))+1) == ';') &
-	    Rates(Len_Trim(StripToken(Rates))+1:Len_Trim(StripToken(Rates))+1) = ' '
+	   !Patch N9: one StripToken/Len_Trim instead of three
+	   RLen = Len_Trim(StripToken(Rates))
+	   IF (Rates(RLen+1:RLen+1) == ';') &
+	    Rates(RLen+1:RLen+1) = ' '
 	   ! IF (Rates(Len(Trim(StripToken(Rates))) + 1:Len(Trim(StripToken(Rates)))+1) == ';') &
 	   ! 	Rates(Len(Trim(StripToken(Rates))) + 1:Len(Trim(StripToken(Rates)))+1) = ' '
 	   !print *, 'CMB: after that if statement'
 	   !print *, 'CMB: # products = ', NumbProducts
 	   !print *, 'CMB: len(trim(Rates)) = "', rates(1:len(trim(rates))), '".'
-	   DO I = 1, len(Rates)
+	   !Patch N9: the characters beyond Len_Trim are blanks, so scanning them for ';' is wasted work
+	   DO I = 1, Len_Trim(Rates)
 	   	   !print *, '    CMB: i = ', i
 		IF (Rates(i:i) .EQ. ';') then
 			!print *, '        CMB: found semicolon at i = ', i

@@ -346,6 +346,12 @@ TYPE (ParticleArray) :: BoundaryParticles
 
 !
 
+	!Patch N7/N11 caches (see Thermodynamics.h).  NOT thread-safe: fill eagerly or make per-thread before OpenMP.
+	REAL*8, ALLOCATABLE, SAVE :: EqCoeffCacheT(:), EqCoeffCacheV(:)
+	INTEGER, PARAMETER :: GDTabN = 256
+	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
+	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)
+
 CONTAINS
 
 INCLUDE "InitializationAndSamplingRoutines.h"
@@ -452,7 +458,7 @@ REAL*8 FUNCTION Molality (ChemIndex, InParticle)
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
-	TYPE(Particle) :: InParticle
+	TYPE(Particle), INTENT(IN) :: InParticle	!Patch N10
 
     ! CMB: mods for floating-point equality and function initialization
     Molality = 0.0
@@ -471,7 +477,7 @@ REAL*8 FUNCTION CationMolality (ChemIndex, InParticle)
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
-	TYPE(Particle) :: InParticle
+	TYPE(Particle), INTENT(IN) :: InParticle	!Patch N10
 
     ! CMB: mods for floating-point equality and function initialization
     CationMolality = 0.0
@@ -490,7 +496,7 @@ REAL*8 FUNCTION AnionMolality (ChemIndex, InParticle)
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
-	TYPE(Particle) :: InParticle
+	TYPE(Particle), INTENT(IN) :: InParticle	!Patch N10
 
     ! CMB: mods for floating-point equality and function initialization
     AnionMolality = 0.0

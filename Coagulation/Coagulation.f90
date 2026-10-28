@@ -827,7 +827,7 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	!(Also calls aqueous equilibrium, and resets temperature)
 	!write(*,*) 'Before RegridAerosol in Coagulation.f90 calling spillbeans...'
 	!call spillbeans()
-	CALL RegridAerosol()
+	CALL RegridAerosol(RadiiCurrent = .TRUE.)
 	!write(*,*) 'After RegridAerosol in Coagulation.f90 calling spillbeans...'
 	!call spillbeans()	
 	!! Houseclean memory

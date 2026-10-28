@@ -275,7 +275,7 @@ SUBROUTINE SortAerosolAtGridPointForCoagulation ()
 		RETURN
 END SUBROUTINE SortAerosolAtGridPointForCoagulation
 
-SUBROUTINE RegridAerosol ()
+SUBROUTINE RegridAerosol (RadiiCurrent)
 
 !! Copyright Matt Alvarado, 2005
 !! This subroutine reallocates sectional particles when the
@@ -315,9 +315,16 @@ SUBROUTINE RegridAerosol ()
 	REAL*8, ALLOCATABLE	::	NumConc(:)
 	TYPE(Particle), POINTER :: CurrentParticle, BiggerParticle, SmallerParticle
 	LOGICAL :: IonReset
+	!! If RadiiCurrent is .TRUE., the caller has just run RecalculateRadius on every
+	!! non-empty particle and not changed them since (the particle order is the only
+	!! thing the sort below changes), so repeating it would reproduce the same values.
+	LOGICAL, OPTIONAL, INTENT(IN) :: RadiiCurrent
+	LOGICAL :: SkipRadii
 				
 	!Reorder particles, smallest to biggest 
 	!WRITE(*,*) " Just in Regrid Aerosol()"
+	SkipRadii = .FALSE.
+	IF (PRESENT(RadiiCurrent)) SkipRadii = RadiiCurrent
 	CALL SortAerosolAtGridPointForCoagulation ()
 	!WRITE(*,*) "After SortAerosolAtGridPointForCoagulation ()"		
 	!Count # of bins, # of Aq. Chems, 
@@ -332,7 +339,7 @@ SUBROUTINE RegridAerosol ()
 		!WRITE(*,*) 'currentparticle%EffectiveRadius = ',currentparticle%EffectiveRadius,NumBins
 		!WRITE(*,*) "Before RecalculateRadius()"
 		!WRITE(*,*) 'currentparticle%EffectiveRadius = ',currentparticle%EffectiveRadius,NumBins
-		CALL RecalculateRadius(currentparticle)	
+		IF (.NOT. (SkipRadii .AND. currentparticle%NumberOfParticles .GT. 1.0D-40)) CALL RecalculateRadius(currentparticle)
 		!WRITE(*,*) "After RecalculateRadius()"	
 		!WRITE(*,*) 'currentparticle%EffectiveRadius = ',currentparticle%EffectiveRadius,NumBins
 		if (associated(currentparticle%next)) then

@@ -1528,6 +1528,20 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 	REAL*8, ALLOCATABLE	:: AqVolConc(:), &
 				OrgVolConc(:), AqOrgVolConc(:), MolFrac(:)
 
+        !Patch 1.2 (OpticalPropertiesModel optimization plan): per-RefIndFlag-
+        !category refractive-index terms, precomputed once per wavelength band
+        !instead of once per aqueous species inside the Solid Salts loop, since
+        !species sharing a category previously recomputed identical values.
+        !RefIndFlag values run 0:3, so these are indexed 0:3 to match.
+        INTEGER :: CatIdx
+        REAL*8  :: CatN_real(0:3), CatN_imag(0:3), CatEr(0:3), CatEi(0:3)
+
+        !Sum of organic and hydrophilic-organic volume concentrations used by
+        !the Insoluble/Hydrophilic Organics terms below. OrgVolConc and
+        !AqOrgVolConc do not depend on wavelength, so these sums are computed
+        !once per particle (see below) rather than once per species per band.
+        REAL*8  :: OrgVolConcSum, AqOrgVolConcSum
+
         !These are refractive indices given as data statements
         !!Wavelength-dependent refractive indices from version 3.1a
         !!of Optical Properties of Aerosols and Clouds (OPAC) 
@@ -1620,6 +1634,21 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
 
 		!Calculate shell volume conc (Total - BC)
 		ShellVolumeConc = VolumeConc - OrgVolConc(1)
+
+		!Patch 1.2: precompute the organic/hydrophilic-organic volume-
+		!concentration sums once per particle (they are wavelength-
+		!independent), instead of inside the per-wavelength-band loop below.
+		!Index 1 of OrgVolConc is BC (the core), so the Insoluble Organics
+		!shell term starts at index 2, matching the original per-species loop.
+		!(explicit loops: a local variable named Sum in this routine shadows the SUM intrinsic)
+		OrgVolConcSum = 0.0
+		DO I = 2, HowManyOrgChems
+			OrgVolConcSum = OrgVolConcSum + OrgVolConc(I)
+		END DO
+		AqOrgVolConcSum = 0.0
+		DO I = 1, HowManyAqOrgChems
+			AqOrgVolConcSum = AqOrgVolConcSum + AqOrgVolConc(I)
+		END DO
 			
 	ELSE    !No particles, use dummy numbers
 		InParticle%ExtEff = 1.0
@@ -1718,46 +1747,52 @@ SUBROUTINE ShellRefIndAndRad(InParticle)
              SumEr = SumEr + (SolutionVolConc/ShellVolumeConc)*Er
 	     SumEi = SumEi + (SolutionVolConc/ShellVolumeConc)*Ei
 
+             !Solid Salts: precompute the complex refractive-index term
+             !(CatEr/CatEi) once per RefIndFlag category -- there are only 4
+             !categories (0:3) -- instead of recomputing the identical
+             !wavelength interpolation for every species that shares a
+             !category. The species loop then just indexes the precomputed
+             !table by RefIndFlag(I). NOTE: the RefIndFlag(I) .EQ. 0 case
+             !mixes WATER_REAL/IMAG(w_ind_low) with SULF_REAL/IMAG(w_ind_low+1)
+             !in the original code; that asymmetry is preserved unchanged here.
+             CatN_real(0) = a_w*WATER_REAL(w_ind_low)+b_w*SULF_REAL(w_ind_low+1)
+             CatN_imag(0) = -1.0*(a_w*WATER_IMAG(w_ind_low)+b_w*SULF_IMAG(w_ind_low+1))
+             CatN_real(1) = a_w*SULF_REAL(w_ind_low)+b_w*SULF_REAL(w_ind_low+1)
+             CatN_imag(1) = -1.0*(a_w*SULF_IMAG(w_ind_low)+b_w*SULF_IMAG(w_ind_low+1))
+             CatN_real(2) = a_w*SEASALT_REAL(w_ind_low)+b_w*SEASALT_REAL(w_ind_low+1)
+             CatN_imag(2) = -1.0*(a_w*SEASALT_IMAG(w_ind_low)+b_w*SEASALT_IMAG(w_ind_low+1))
+             CatN_real(3) = a_w*DUST_REAL(w_ind_low)+b_w*DUST_REAL(w_ind_low+1)
+             CatN_imag(3) = -1.0*(a_w*DUST_IMAG(w_ind_low)+b_w*DUST_IMAG(w_ind_low+1))
+             DO CatIdx = 0, 3
+                CatEr(CatIdx) = CatN_real(CatIdx)**2 - CatN_imag(CatIdx)**2
+                CatEi(CatIdx) = 2*CatN_real(CatIdx)*CatN_imag(CatIdx)
+             END DO
+
              !Solid Salts
              DO I = 2, HowManyAqChems
-                IF(RefIndFlag(I) .EQ. 0) THEN
-                   n_real = a_w*WATER_REAL(w_ind_low)+b_w*SULF_REAL(w_ind_low+1)
-                   n_imag = -1.0*(a_w*WATER_IMAG(w_ind_low)+b_w*SULF_IMAG(w_ind_low+1))
-                ELSE IF(RefIndFlag(I) .EQ. 1) THEN
-                   n_real = a_w*SULF_REAL(w_ind_low)+b_w*SULF_REAL(w_ind_low+1)
-                   n_imag = -1.0*(a_w*SULF_IMAG(w_ind_low)+b_w*SULF_IMAG(w_ind_low+1))
-                ELSE IF(RefIndFlag(I) .EQ. 2) THEN
-                   n_real = a_w*SEASALT_REAL(w_ind_low)+b_w*SEASALT_REAL(w_ind_low+1)
-                   n_imag = -1.0*(a_w*SEASALT_IMAG(w_ind_low)+b_w*SEASALT_IMAG(w_ind_low+1))
-                ELSE IF(RefIndFlag(I) .EQ. 3) THEN
-                   n_real = a_w*DUST_REAL(w_ind_low)+b_w*DUST_REAL(w_ind_low+1)
-                   n_imag = -1.0*(a_w*DUST_IMAG(w_ind_low)+b_w*DUST_IMAG(w_ind_low+1))
-                ENDIF
-	        Er = n_real**2 - n_imag**2
-	        Ei = 2*n_real*n_imag
-                SumEr = SumEr + (AqVolConc(I)/ShellVolumeConc)*Er
-		SumEi = SumEi + (AqVolConc(I)/ShellVolumeConc)*Ei
+                SumEr = SumEr + (AqVolConc(I)/ShellVolumeConc)*CatEr(RefIndFlag(I))
+		SumEi = SumEi + (AqVolConc(I)/ShellVolumeConc)*CatEi(RefIndFlag(I))
 	     END DO
          
-             !Insoluble organics, skipping BC core
+             !Insoluble organics, skipping BC core. Er/Ei don't depend on I, so
+             !sum the organic volume concentrations once (OrgVolConcSum,
+             !precomputed above, outside the wavelength-band loop) instead of
+             !adding the same Er/Ei-weighted term in a per-species loop.
 	     n_real = a_w*WASO_REAL(w_ind_low)+b_w*WASO_REAL(w_ind_low+1)
              n_imag = -1.0*(a_w*WASO_IMAG(w_ind_low)+b_w*WASO_IMAG(w_ind_low+1))
 	     Er = n_real**2 - n_imag**2
 	     Ei = 2*n_real*n_imag
-             DO I = 2, HowManyOrgChems
-		SumEr = SumEr + (OrgVolConc(I)/ShellVolumeConc)*Er
-		SumEi = SumEi + (OrgVolConc(I)/ShellVolumeConc)*Ei
-	     END DO
+             SumEr = SumEr + (OrgVolConcSum/ShellVolumeConc)*Er
+	     SumEi = SumEi + (OrgVolConcSum/ShellVolumeConc)*Ei
 
-             !Hydrophilic Organics
+             !Hydrophilic Organics: same reasoning as Insoluble Organics above,
+             !using the precomputed AqOrgVolConcSum.
 	     n_real = a_w*WASO_REAL(w_ind_low)+b_w*WASO_REAL(w_ind_low+1)
              n_imag = -1.0*(a_w*WASO_IMAG(w_ind_low)+b_w*WASO_IMAG(w_ind_low+1))
 	     Er = n_real**2 - n_imag**2
 	     Ei = 2*n_real*n_imag
-             DO I = 1, HowManyAqOrgChems
-		SumEr = SumEr + (AqOrgVolConc(I)/ShellVolumeConc)*Er
-		SumEi = SumEi + (AqOrgVolConc(I)/ShellVolumeConc)*Ei
-	     END DO
+             SumEr = SumEr + (AqOrgVolConcSum/ShellVolumeConc)*Er
+	     SumEi = SumEi + (AqOrgVolConcSum/ShellVolumeConc)*Ei
 
             !!For core-in-shell mixing rule
 	    Factor = SQRT(SumEr**2 + SumEi**2)

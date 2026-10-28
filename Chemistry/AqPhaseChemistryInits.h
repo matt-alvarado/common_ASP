@@ -468,17 +468,17 @@ SUBROUTINE SetAqPhaseChemistry ()
 			CALL MakeODESet('AqChemicalMechanism.in',AqPhaseODESet,HowManyEvolveAqChems,HowManyAqChems,"+",AqPhase)
 
 			!! And Print its Results
-			CALL PrintODESet (AqPhaseODESet,HowManyEvolveAqChems,AqPhase,"AqPhaseODESet.txt")
+			IF (ChemSetupLevel .EQ. 0) CALL PrintODESet (AqPhaseODESet,HowManyEvolveAqChems,AqPhase,"AqPhaseODESet.txt")
 			IF (Transcribe) THEN
 				CALL Transcript("")
 				CALL Transcript("Printing Aqueous Phase ODE Set to (AqPhaseODESet.txt)")
 			END IF
 
 			!! Now Use that ODE Set to Make a Jacobian
-			CALL MakeJacobian(AqPhaseJacobian, AqPhaseODESet, HowManyEvolveAqChems, AqPhase)
+			IF (ChemSetupLevel .EQ. 0) CALL MakeJacobian(AqPhaseJacobian, AqPhaseODESet, HowManyEvolveAqChems, AqPhase)
 
 			!! And Print its Results
-			CALL PrintJacobian (AqPhaseJacobian,HowManyEvolveAqChems,AqPhase,"AqPhaseJacobian.txt")
+			IF (ChemSetupLevel .EQ. 0) CALL PrintJacobian (AqPhaseJacobian,HowManyEvolveAqChems,AqPhase,"AqPhaseJacobian.txt")
 			IF (Transcribe) CALL Transcript("Printing Aqueous Phase Jacobian to (AqPhaseJacobian.txt)")
 		END IF
 

@@ -102,7 +102,8 @@ MODULE Chemistry
 			HowManyKMParams,		&	!     "
 			GasPhaseReactionRates,		&
 			GasPhaseReactionRateArraySize,  &	
-			SetChemistryParams,		&	! Subroutines
+			SetChemistryParams,		&
+			SetChemSetupLevel,		&	! N13: how much ODE/Jacobian setup to do	! Subroutines
 			SetPhaseIfs,			&	!     "
 			ReadPhotolysisRates,		&
 			GasPhaseChemicalNames,		&	! Names for Error Checking and Messaging
@@ -374,6 +375,12 @@ MODULE Chemistry
 	!! LSODES Related Values
 	INTEGER :: LRW, GasLIW, YLEN
 
+	!! N13: how much gas/aqueous ODE-set and Jacobian setup SetChemistryParams does.
+	!!  0 = full (default; all modes that integrate the chemistry)
+	!!  1 = ODE-set tables only: MakeODESet runs, but MakeJacobian, PrintJacobian, PrintODESet are skipped
+	!!  2 = no ODE set / Jacobian at all (modes that never integrate the chemistry)
+	INTEGER :: ChemSetupLevel = 0
+
 	!! The Phases to Include
 	LOGICAL :: IFGAS, IFAQ
 
@@ -419,6 +426,12 @@ MODULE Chemistry
 	!! This must be called after the grid point fields are  !!
 	!! initialized.						!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	SUBROUTINE SetChemSetupLevel(iLevel)
+		IMPLICIT NONE
+		INTEGER :: iLevel
+		ChemSetupLevel = iLevel
+	END SUBROUTINE SetChemSetupLevel
+
 	SUBROUTINE SetChemistryParams()
 
 		IMPLICIT NONE
@@ -450,7 +463,9 @@ MODULE Chemistry
 			!! Set the Gas Phase Chemistry ODE Set and Jacobian
             !            print *, 'CMB: setting gas phase ODE stuff'
                         !call flush(6)
-			CALL SetGasPhaseODEandJacobian ()
+			!! N13: the sparse-Jacobian size is only set by MakeJacobian; keep it defined if that is skipped
+			IF (ChemSetupLevel .GE. 1) HowManyNonZeroGasJacTerms = 0
+			IF (ChemSetupLevel .LE. 1) CALL SetGasPhaseODEandJacobian ()
 
 			!! This Routine Sets the LSODES-related code
             !            print *, 'CMB: setting evolvegaschemconstants'
@@ -465,7 +480,7 @@ MODULE Chemistry
             !            print *, 'CMB: Setting aqueous phase ODE set, etc'
             !            call flush(6)
 			!! Set the Aqueous Phase Chemistry ODE Set and Jacobian
-			CALL SetAqPhaseODEandJacobian ()
+			IF (ChemSetupLevel .LE. 1) CALL SetAqPhaseODEandJacobian ()
                 endif
 
 		!! Prepare the Dissociation Reactions

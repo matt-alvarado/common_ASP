@@ -90,7 +90,7 @@ PROGRAM ASP
                                          GridGasChem,                   &
                                          UpdateChemicalConcentrations
 
-	USE Chemistry,            ONLY : FindChem,                      &
+	USE Chemistry,            ONLY : SetChemSetupLevel, FindChem,                      &
                                          IfGas, IfAq,                   &
                                          AqMolecularMass,               &
                                          OrgMolecularMass,              &
@@ -224,6 +224,7 @@ PROGRAM ASP
              GADS = .FALSE. !Flag for GADS comparison
 
              ! INITIALIZE the CHEMISTRY 
+	     CALL SetChemSetupLevel(2)	!(N13: no gas/aq chemistry integration in this mode)
 	     CALL SetChemistryParams
 
 	     !! INITIALIZE the DISSOLUTION routine
@@ -1089,6 +1090,7 @@ PROGRAM ASP
            CALL TRANSCRIPT("Bulk Thermodynamics Model Selected.")		
 	
            ! INITIALIZE the CHEMISTRY 
+           CALL SetChemSetupLevel(1)	!(N13: ODE-set tables only)
            CALL SetChemistryParams
            CALL RecalculateReactionRates(IFGAS,IFAQ)
            
@@ -1200,6 +1202,7 @@ PROGRAM ASP
            CALL TRANSCRIPT("Coagulation Test Selected.")
 	
            ! INITIALIZE the CHEMISTRY 
+           CALL SetChemSetupLevel(2)	!(N13: no chemistry integration in this mode)
            CALL SetChemistryParams
 		
            !! INITIALIZE the PARTICLES
@@ -1385,6 +1388,7 @@ PROGRAM ASP
            CALL TRANSCRIPT("Condensation Test Selected.")
                 
            ! INITIALIZE the CHEMISTRY 
+           CALL SetChemSetupLevel(1)	!(N13: ODE-set tables only)
            CALL SetChemistryParams
            CALL ReadPhotolysisRates
 		

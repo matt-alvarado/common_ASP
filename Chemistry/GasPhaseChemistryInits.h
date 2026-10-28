@@ -432,19 +432,19 @@ SUBROUTINE SetGasPhaseODEandJacobian ()
 	!! Now Create the appropriate ODE Set
 	CALL MakeODESet('GasChemicalMechanism.in',GasPhaseODESet,HowManyEvolveGasChems,HowManyGasChems,"+",GasPhase)
 	!! And Print its Results
-	CALL PrintODESet (GasPhaseODESet,HowManyEvolveGasChems,GasPhase,"GasPhaseODESet.txt")
+	IF (ChemSetupLevel .EQ. 0) CALL PrintODESet (GasPhaseODESet,HowManyEvolveGasChems,GasPhase,"GasPhaseODESet.txt")
 
-	IF (Transcribe) THEN
+	IF (Transcribe .AND. ChemSetupLevel .EQ. 0) THEN
 		CALL Transcript ("")
 		CALL Transcript ("Printing Gas Phase ODE Set to (GasPhaseODESet.txt)")
 	END IF
 
 	!! Now Use that ODE Set to Make a Jacobian
-	CALL MakeJacobian(GasPhaseJacobian, GasPhaseODESet, HowManyEvolveGasChems, GasPhase)
+	IF (ChemSetupLevel .EQ. 0) CALL MakeJacobian(GasPhaseJacobian, GasPhaseODESet, HowManyEvolveGasChems, GasPhase)
 
 	!! And Print its Results
-	CALL PrintJacobian (GasPhaseJacobian,HowManyEvolveGasChems,GasPhase,"GasPhaseJacobian.txt")
-	IF (Transcribe) CALL Transcript ("Printing Gas Phase Jacobian to (GasPhaseJacobian.txt)")
+	IF (ChemSetupLevel .EQ. 0) CALL PrintJacobian (GasPhaseJacobian,HowManyEvolveGasChems,GasPhase,"GasPhaseJacobian.txt")
+	IF (Transcribe .AND. ChemSetupLevel .EQ. 0) CALL Transcript ("Printing Gas Phase Jacobian to (GasPhaseJacobian.txt)")
 
 	RETURN
 END SUBROUTINE SetGasPhaseODEandJacobian

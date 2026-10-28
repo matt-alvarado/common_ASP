@@ -1688,6 +1688,8 @@ FUNCTION MakeMonodisperse(Boundary)
         ENDIF
 
 	MakeMonodisperse%Sectional	      = .TRUE.
+	MakeMonodisperse%Edges(1)	      = 0.	!(Edge fix: these were never set, so SizeDist_Opt_Mono printed uninitialised memory)
+	MakeMonodisperse%Edges(2)	      = 0.
 
 	!! For Now, the Initial Temperature of the Particle is that of the 
 	!! Local Environment (1/2002)

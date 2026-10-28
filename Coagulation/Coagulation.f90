@@ -177,6 +177,7 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	INTEGER, ALLOCATABLE	:: KStart(:), EntI(:), EntJ(:)
 	LOGICAL, ALLOCATABLE	:: EntLast(:)
 	INTEGER	:: NEnt, NGroupStart, N
+	REAL*8	:: SPVK
 
 	TYPE(Particle), POINTER :: Particle1, Particle2, ParticleK, & 
                                    Runner, ReplicaPlaceholder, &
@@ -533,28 +534,32 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	
 	!!Calculate the volume fractions 
 
+	!! For a combined volume BigV, VolumeFractions(I,J,K) can only be non-zero where
+	!!   (a) SingleParticleVolume(K) <= BigV < SingleParticleVolume(K+1)   (K < N): the formula below,
+	!!       and then K+1 gets 1 minus that value (the K+1 test above cannot also be true there), or
+	!!   (b) K = N and BigV >= SingleParticleVolume(N): 1.
+	!! Every other element is zero.  This is exactly what the original K loop evaluated (same
+	!! comparisons, so NaN volumes behave identically); it finds the brackets in one pass over K
+	!! instead of testing three conditions at every K.
+	VolumeFractions = 0.0
 	DO I = 1, HowManyLinks
 		DO J = 1, HowManyLinks
 			!Calculate volume of the combined particle
 			BigV = SingleParticleVolume(I) + SingleParticleVolume(J)
-		
-			DO K = 1, HowManyLinks
-				
-				IF(K .EQ. HowManyLinks .AND. BigV .GE. SingleParticleVolume(K)) THEN
-					VolumeFractions(I,J,K) = 1.0
-				ELSE IF(K .LT. HowManyLinks .AND. BigV .GE. SingleParticleVolume(K) .AND. BigV .LT. SingleParticleVolume(K+1)) THEN
+
+			SPVK = SingleParticleVolume(1)
+			DO K = 1, HowManyLinks-1
+				IF (BigV .GE. SPVK .AND. BigV .LT. SingleParticleVolume(K+1)) THEN
 					VolumeFractions(I,J,K) = (SingleParticleVolume(K)/BigV)*((SingleParticleVolume(K+1)-BigV)/(SingleParticleVolume(K+1)-SingleParticleVolume(K)))
 					IF(VolumeFractions(I,J,K) .GT. 1.0) THEN
 						WRITE(*,*) "Volume Fraction out of bounds"
 						STOP
 					END IF
-				ELSE IF(K .GT. 1 .AND. BigV .GE. SingleParticleVolume(K-1) .AND. BigV .LT. SingleParticleVolume(K)) THEN
-					VolumeFractions(I,J,K) = 1-VolumeFractions(I,J,K-1)
-				ELSE
-					VolumeFractions(I,J,K) = 0.0
+					VolumeFractions(I,J,K+1) = 1-VolumeFractions(I,J,K)
 				END IF
-			
+				SPVK = SingleParticleVolume(K+1)
 			END DO
+			IF (BigV .GE. SingleParticleVolume(HowManyLinks)) VolumeFractions(I,J,HowManyLinks) = 1.0
 		END DO
 	END DO
 

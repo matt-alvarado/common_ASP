@@ -315,10 +315,12 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 						
         !Thermal 3rd order rate constant
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 2) THEN
-           GasPhaseChemicalRates(L) = Mgas*ReactionRates(L,3)*	&
-					Temp**ReactionRates(L,4)    *	&
-					EXP(ReactionRates(L,5)/Temp)**	&
-					ReactionRates(L,6)
+           !k = Mgas * A * T**B * EXP(C/T)**D, with A, B, C, D in ReactionRates(L,4:7)
+           !(ReactionRates(L,3) holds the flag itself)
+           GasPhaseChemicalRates(L) = Mgas*ReactionRates(L,4)*	&
+					Temp**ReactionRates(L,5)    *	&
+					EXP(ReactionRates(L,6)/Temp)**	&
+					ReactionRates(L,7)
 
         !From MCM v3.2 for PAN formation (Also IUPAC format?)
         !See KFPAN on http://mcm.leeds.ac.uk/MCM/parameters/complex.htt

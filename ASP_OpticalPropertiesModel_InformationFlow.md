@@ -198,3 +198,22 @@ After the `OpticalPropertiesModel` branch completes (falling through the `ELSE I
 - `AeroOptCIS.txt`, `AeroOptEXT.txt`, `AeroOptVA.txt`, `AeroOptMG.txt` — the four bulk aerosol-optical-property spectra (wavelength vs. extinction, SSA, asymmetry parameter, backscatter, and their submicron counterparts), one file per internal-mixing assumption.
 
 **Core computational engine used:** `DMiLay` (core-shell Mie scattering), fed by wavelength-dependent OPAC refractive-index data mixed according to four alternative rules (core-in-shell, external mixture, volume-average dielectric, Maxwell-Garnett), applied to a thermodynamically-equilibrated (via `EquilibrateInternallyAtGridPoint`) sectional aerosol population built from user-specified mode/size/composition inputs (via `ReadDistributionsOrganic` and `PopulateParticlesSectionsRightAway`).
+
+## 5. Patches that affect this run mode (branch `asp_v_2.2.1`)
+
+The description above is of the code path as read; the patches below change how it is implemented, not what it computes, except where a result change is stated. Details, timings and verification are in `ASP_Patch_Summary.docx` (00–10) and the other summaries named in the table.
+
+| Patch | Where | Effect on this mode | Result change |
+|---|---|---|---|
+| 00 | `ModelParameters.f90` `SetSectionalParameters` | `BinEdges` is deallocated before the second `ALLOCATE` (this mode calls it twice; gfortran aborts otherwise) | None |
+| 01, 02 | `ShellRefIndAndRad` | OPAC tables made module constants; refractive-index category lookups hoisted | Byte-identical |
+| 03 (N1–N5) | `StripToken`, `MakeJacobian`, `EquilibriumConstantsRatio`, `MeanActivity`, `EquilibrateAqueousDissociationReaction` | Remove redundant setup and equilibrium work | Byte-identical |
+| 04 (N6–N11) | Gibbs–Duhem integrand, `EqCoeff` cache, `pow(x,1)`, tabulated integral | N11 is the largest speedup | N6–N10 byte-identical; N11 about 2e-4 relative in the `AeroOpt*` files (more in a few size-distribution bins) |
+| 05 | `ShellRefIndAndRad` | MIEV0 for the four homogeneous-sphere Mie calls (call 1 stays on `DMiLay`) | At most about 1e-5 relative against the N1–N11 build |
+| 06, 07 | `MakeODESet`, `SetChemSetupLevel` | Gas ODE set and Jacobian are not built in this mode (setup level 2); `GasPhaseODESet.txt` and `GasPhaseJacobian.txt` are no longer written | None in numerical files |
+| 08–10 | `MakeMonodisperse`, particle creation, `OLDASP` | Uninitialised values removed. Patch 10 changes the initial gas concentrations (CO 1.0e4 ppb from the deck instead of 75.8 ppb) | `AeroOpt*` identical; the gas columns of the `SizeDist_Opt` files and the transcript change |
+| 12 | `7c15ef6` | `MakeSection(1,J)` in `PopulateParticlesSectionsRightAway` | None (checked on the three decks at RH 0.20, 0.55, 0.90) |
+| 16–19, 24, 25 | `Thermodynamics.h`, `RegridAerosol` | Shared thermodynamics improvements (see `ASP_CondTest_InformationFlow.md` section 8) | Byte-identical in this mode (check below) |
+| 20 | `ReadInputDeck.f90`, `Thermodynamics.h` | Optional deck lines `GDTableMode` and `GDTableCells`; `GDTableMode = 0` restores the original `DGAUS8` integral | None at defaults |
+
+Check made for this document: builds at patch 15 (`89d60a6`) and at the branch tip were run on Williams, Timbavati and RemConMode1 with the Optical Properties Model flag set (the decks' default relative humidity). All 8 output files of each deck are byte-identical between the two builds (`Transcript.TXT` excluded), so patches 16–25 do not change the optical-mode results at that humidity. Only that one humidity was run, not the 45-run sweep used for patches 00–10.

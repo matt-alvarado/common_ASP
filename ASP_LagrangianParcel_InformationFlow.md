@@ -1,6 +1,6 @@
 # ASP Model — Information Flow for `DevelopmentDriver.f90` with the Lagrangian Parcel Model (gas + aerosol)
 
-Source basis: `common_ASP` branch `asp_v_2.2.1` (commit `fdf2da9`, patches 00–19 applied). Line numbers refer to `DevelopmentDriver.f90` in that tree.
+Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–6 were written against commit `fdf2da9` (patches 00–19) and their line numbers and profiles refer to that tree; section 7 is updated for patches 20–25 (branch tip `65d2ac9`, tag `asp_v_2.2.1`).
 
 ## 1. Scope and purpose
 
@@ -202,3 +202,14 @@ Over a longer run the mix shifts from gas chemistry to condensation: in the 90-m
 3. **Zeroing in `DPRJS` (memset 4.2%).** After patch 23 one full zeroing of `FTEM` per Jacobian column remains. Clearing only the entries the Jacobian wrote is not safe byte-for-byte: the sparsity pattern is found by differencing at the start of each call, and `GasJacobianEvaluator` can write entries outside it, so those would stay dirty. Needs `GasJacobianEvaluator` to report which rows it touched.
 4. **Not byte-identical, listed for completeness:** replacing `x**y` for small integer exponents by multiplication (libm `pow` is 10% but the last bit can differ), continuing `DLSODES` with `istate = 2` (changes the step-size history), and re-using the sparsity structure found by differencing (it depends on the state).
 5. **Per-call allocation in `StepGasChemistry`** (about 40 MB of `rwork` per call, no visible cost in the profile), **stdout writes** (not measured), **optics** (3.5%, 30 calls) and **coagulation** (0.4%): not worth attention in this mode.
+
+### 7.4 Overall speed against the baseline (Williams, 60 min parcel run)
+
+Alternating solo runs on the same machine, wall time:
+
+| Build | Run 1 | Run 2 | Run 3 | Mean |
+|---|---|---|---|---|
+| Baseline (`master`, plus the one-line `BinEdges` gfortran build fix) | 149.0 s | 150.7 s | 153.0 s | **150.9 s** |
+| Branch tip (patch 25) | 40.6 s | 40.9 s | 37.8 s | **39.8 s** |
+
+That is 73.6% less wall time (3.8 times faster). The comparison is not between identical physics: the baseline uses the original `DGAUS8` Gibbs–Duhem integral (about 2e-4 away from the table, section 7.1 and the N11 bullet in section 6) and reads uninitialised memory for the initial gas concentrations (patch 10). Most of the gain is the tabulated integral plus the speed patches 16–25. The baseline aborts after about 1 s on RemConMode1 and Timbavati (SLATEC `DGAUS8`), so these decks have no baseline wall time. Instruction counts for the full baseline run were attempted and stopped as too slow under callgrind; the only exact instruction counts are the 30-minute figures in section 7.1 and 7.2 (59.4 G at patch 21, 53.9 G at patch 24, 50.9 G at patch 25).

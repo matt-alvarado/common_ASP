@@ -1,6 +1,6 @@
 # ASP Model — Information Flow for `DevelopmentDriver.f90` with `CondTest = .TRUE.`
 
-Source basis: `common_ASP` branch `asp_v_2.2.1` (commit `deab03b`, patches 00–15 applied). Line numbers refer to that tree.
+Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–5 were written against commit `deab03b` (patches 00–15) and their line numbers and profile refer to that tree; section 6 and 7 have been updated for patches 16–25 (branch tip `65d2ac9`, tag `asp_v_2.2.1`). Section 8 lists every patch that touches this mode.
 
 ## 1. Scope and purpose
 
@@ -148,7 +148,7 @@ After the loop: `SpillBeans()`, final gas values (NH3, HNO3, HCl, H2SO4, POA1) i
 | `SizeDist0min.txt` ... `SizeDist30min.txt` | 31 size-distribution snapshots (one per minute) |
 | Transcript and standard output | Banner, `SpillBeans` dumps, per-step "<t> minutes done", final gas values; the thermodynamics warnings (see section 6) |
 
-## 5. Measured profile (Williams deck, current branch)
+## 5. Measured profile (Williams deck, at `deab03b`, before patches 16–25)
 
 A callgrind run of the CondTest on the Williams deck (the only one of the three test decks that completes, see section 6) on the current branch (`asp_v_2.2.1`, optimized gfortran build) gives 54.4 G instructions in total, about 4.5 s of wall time. For comparison, the original `master` code takes about 15.7 s on the same deck (see the caveat in section 6 on comparing results).
 
@@ -178,7 +178,7 @@ Reading: the stiff ODE integration is negligible. The cost is the repeated elect
 
 ## 6. Compatibility and issues found while preparing this document
 
-- **Which decks run.** The three test decks share `ASPInputDeck.in` and differ in `AerosolModes.in`. With the deck switched to CondTest (line 50 = 0, line 51 = 1), only the Williams deck runs to completion (30 steps). Timbavati and RemConMode1 stop early:
+- **Which decks run (status after patches 16–17: all three run).** The description below is of `deab03b`, kept for the record. Patch 16 (`5b4647e`) initialises `IonReset` in the `RegridAerosol` grow branch, which was the root cause of the empty-water, NaN-ionic-strength bin; patch 17 (`8766c40`) guards the tabulated Gibbs–Duhem integral against NaN (the "small fix" described below). With both, Timbavati and RemConMode1 run to completion under CondTest (75 output files each). The three test decks share `ASPInputDeck.in` and differ in `AerosolModes.in`. With the deck switched to CondTest (line 50 = 0, line 51 = 1), only the Williams deck runs to completion (30 steps). Timbavati and RemConMode1 stop early:
   - the original `master` code (with the BinEdges build fix only) prints "JOB ABORT DUE TO UNRECOVERED ERROR" from SLATEC (`DGAUS8`: "ANS is probably insufficient") after "Ionic Strength Error in PKweightings!" warnings, i.e. non-finite ionic strength in the initial equilibration;
   - the current branch **segfaults** in the same place: `GibbsDuhemIntegralTabulated` (`Thermodynamics.h`, added by patch N11) computes the table index `J = MIN(INT(S/H), N-1)` from `S = SQRT(IonicStrength)`; when `S` is NaN, `INT(S/H)` is undefined and the table is indexed out of range. The original code only ever called `DGAUS8`, which aborted cleanly. The fix is small (use the table only when `S` is finite, non-negative and not above the table's range, otherwise call `DGAUS8` as before). It would not change any result in the range where the table is valid. This is not applied yet.
   - Both failures are consistent with the particles in those two decks not being equilibrated before the condensation starts. A working CondTest therefore needs a deck whose initial composition can be equilibrated.
@@ -186,7 +186,9 @@ Reading: the stiff ODE integration is negligible. The cost is the repeated elect
 - **Standard output.** Each `StepCondensationAll` pass prints "---> Calling StepOrgCondensation if doing flux" and flushes unit 6; 30 times in total, negligible.
 - **Hard-coded values.** Step size (60 s), run length (30 min), photolysis time (8.75 h) and the one-output-per-minute rule are in the driver.
 
-## 7. Optimization hypotheses (from the profile above; none implemented or tested yet)
+## 7. Optimization hypotheses (from the profile above) and what became of them
+
+Status after patches 16–25 (details in section 8): hypothesis 1 partly done (patches 19, and N8 earlier; exponent 2 is deliberately not shortcut), 2 partly done (patches 24 and 25 remove repeated evaluations inside one solver call; re-solving unchanged reactions across calls is not done), 3 done (patch 18), 4 not needed (cache exists), 5, 6, 7, 8 not done. The text of each hypothesis is left as originally written.
 
 Every item below needs a bit-exactness check on CondTest outputs (the Williams deck, plus any other deck that works) before a change is kept, as with the CoagTest patches.
 
@@ -203,3 +205,23 @@ Every item below needs a bit-exactness check on CondTest outputs (the Williams d
 Suggested order: 3 (easy and bit-exact), 4, 1, then 2 and 5 (the biggest, needing care), with 6 last because it may not be bit-exact.
 
 Not yet determined: the number of occupied sections in each deck, how many `FindElectrolyteEquilibrium` calls per section per step are really needed, and the behaviour on decks other than Williams (which do not currently run).
+
+## 8. Patches that affect this run mode (branch `asp_v_2.2.1`)
+
+Verification used throughout: `cmp` of every file in `OutputFiles` except `Transcript.TXT` (which differs in its timing line). A CondTest run writes 75 files.
+
+| Patch | Commit | Effect on CondTest | Result change |
+|---|---|---|---|
+| 00–15 | see `ASP_Patch_Summary.docx`, `ASP_CoagTest_Optimization_Summary.docx` | Optical-path, setup and thermodynamics speedups (N1–N13 etc.); N11 (tabulated Gibbs–Duhem integral) is the large one for this mode | N11 changes results by about 2e-4 relative (the original `DGAUS8` tolerance); patch 10 changes the initial gas concentrations (`OLDASP`) |
+| 16 | `5b4647e` | `IonReset` initialised in `RegridAerosol` grow branch; lets Timbavati and RemConMode1 run | Bug fix. Williams unchanged |
+| 17 | `8766c40` | Gibbs–Duhem table used only for `S >= 0` (NaN falls back to `DGAUS8`) | None on decks that already ran |
+| 18 | `46b4665` | Per-reaction name flags instead of string compares | Byte-identical |
+| 19 | `86d3a78` | `PowMemo` for repeated `x**y` | Byte-identical |
+| 20 | `189da4e`, `d6ee616` | Input-deck switch for N11 (`GDTableMode` 1 = table, 0 = full `DGAUS8`; `GDTableCells`, default 256). Optional last lines of `ASPInputDeck.in`; defaults apply if omitted | None at the defaults. `GDTableMode = 0` reproduces the original integral |
+| 21–23 | `22dbf94`, `2f83092`, `97e1d64` | Gas-chemistry solver and `LagrangianParcel` driver only; not used by CondTest | None |
+| 24 | `f08134b` | `EquilibriumConstantsRatio` evaluated once at entry of `EquilibrateAqueousDissociationReaction` and reused | Byte-identical |
+| 25 | `9e33a67` | Per-reaction `AqEquilibriaList` reads and index arithmetic done once before the iteration loop; inline NaN test | Byte-identical |
+
+Check made for this document: a build at patch 19 (`0671d9f`) and a build at the branch tip were run on Williams, Timbavati and RemConMode1 with only the Condensation Test flag set. All 75 files of each deck are byte-identical between the two builds, so patches 20–25 do not change CondTest output. Wall time on the two-core container, one run each (noisy, about 5–10%): Williams 5.08 s to 4.28 s, Timbavati 4.90 s to 4.35 s, RemConMode1 3.81 s to 3.06 s. Instruction counts were not re-measured for this mode after patch 19 (46.8 G, 51.6 G and 31.1 G for Williams, Timbavati and RemConMode1 in `ASP_CondTest_Optimization_Summary.docx`).
+
+Not yet done for this mode: the profile in section 5 has not been repeated after patches 24 and 25, and `SurfaceTension` (hypothesis 7) is untouched, awaiting the run-mode test noted in `ASP_Pending_Patch_Notes.md`.

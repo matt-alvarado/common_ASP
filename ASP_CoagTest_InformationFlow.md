@@ -1,6 +1,6 @@
 # ASP Model — Information Flow for `DevelopmentDriver.f90` with `CoagTest = .TRUE.`
 
-Source basis: `common_ASP` branch `asp_v_2.2.1` (patches 00–10 applied). Line numbers refer to that tree.
+Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–4 were written against the tree with patches 00–10 and their line numbers refer to it; section 5 and the new section 6 are updated for patches 11–25 (branch tip `65d2ac9`, tag `asp_v_2.2.1`).
 
 ## 1. Scope and purpose
 
@@ -142,9 +142,9 @@ Semi-implicit scheme of Jacobson (*Fundamentals of Atmospheric Modeling*, 2nd ed
 | `SizeDist0min.txt`, `SizeDist60min.txt`, ... `SizeDist600min.txt` | Eleven size-distribution snapshots |
 | Transcript and standard output | Banner, `SpillBeans` dumps, `RegridAerosol` diagnostics ("Shrink", "Below 0!") when triggered |
 
-## 5. Structure relevant to optimization (from reading the code; not yet profiled)
+## 5. Structure relevant to optimization (from reading the code; status after patches 11–15 in section 6)
 
-These are hypotheses to be checked with a profile of an actual `CoagTest` run before any change:
+These were the hypotheses written before the first profile of a `CoagTest` run. Section 6 records which were implemented:
 
 1. **Single-particle quantities recomputed inside the N² kernel loop.** `TerminalVelocity`, `ReynoldsNumber`, `ParticleKnudsen`, `ParticleMass` and the slip factor depend on one particle only, but are evaluated several times per pair. Precomputing them once per section per step would turn that part from O(N²) into O(N).
 2. **Kernel symmetry.** The kernel is evaluated for all N² ordered pairs; if it is symmetric in its arguments, half the work can be saved.
@@ -156,3 +156,29 @@ These are hypotheses to be checked with a profile of an actual `CoagTest` run be
 8. **Per-minute output and driver diagnostics** (the unused total sums, the per-step totals loops) are small, but the 600 `CoagTestOut.txt` writes and the `RegridAerosol` diagnostic `WRITE`s to standard output may matter if regridding triggers often.
 
 Not yet determined: the number of bins N in the three test decks, how often `RegridAerosol` actually moves particles (and so how often `FindElectrolyteEquilibrium` runs), and the actual time split between the kernel array, the cubic loops and the thermodynamics. The next step is a build and profile of the `CoagTest` mode to see which of the items above is worth doing first.
+
+## 6. Patches that affect this run mode (branch `asp_v_2.2.1`)
+
+| Patch | Commit | Hypothesis in section 5 | Effect on CoagTest |
+|---|---|---|---|
+| 11 | `24670d0` | 1 and 3 | `CoagPrecomputeParticle`/`CoagKernPairSectional`: per-section kernel quantities once per step; environment lookups hoisted |
+| 12 | `7c15ef6` | (valgrind finding) | `MakeSection(1,J)` instead of an uninitialised index; no effect on results |
+| 13 | `c20e470` | 4 | Species-independent terms of the cubic loops collected once per step |
+| 14 | `cf81a74` | 6 | `RegridAerosol(RadiiCurrent)` skips the repeated `RecalculateRadius` pass |
+| 15 | `89d60a6` | 5 | `VolumeFractions` built with one bracket scan per (I,J) |
+| 16 | `5b4647e` | — | `IonReset` initialised in the `RegridAerosol` grow branch. **Changes results for Timbavati and RemConMode1** (below) |
+| 17–19, 24, 25 | `8766c40`, `46b4665`, `86d3a78`, `f08134b`, `9e33a67` | — | Thermodynamics code reached through `RecalculateRadius` and `RegridAerosol`; byte-identical in this mode |
+| 20 | `189da4e`, `d6ee616` | — | N11 on/off switch; no change at the defaults |
+| 21–23 | `22dbf94`, `2f83092`, `97e1d64` | — | Gas chemistry and `LagrangianParcel` driver only; not used here |
+
+Hypotheses 2 (kernel symmetry), 7 (per-step allocation) and 8 (output) were not pursued; `SurfaceTension` inside `RecalculateRadius` is unchanged.
+
+**Patch 16 changes CoagTest output.** Patches 11–15 were each verified byte-identical against the build before them, but all of that work was done with the uninitialised `IonReset` still in place. Check made for this document: builds at patch 15 (`89d60a6`), patch 16 (`5b4647e`) and the branch tip, run on the three decks with only the Coagulation Test flag set (13 output files):
+
+- Williams: byte-identical at patches 15, 16 and the tip.
+- Timbavati and RemConMode1: patch 16 differs from patch 15 in 12 of the 13 files (`CoagTestOut.txt` and the 11 `SizeDist*min.txt`; `Transcript.TXT` is compared separately). Patches 17 to 25 add no further change; the tip is byte-identical to patch 16.
+- At patch 15 most bins print `NaN` in `CoagTestOut.txt` from step 1 on, and `Transcript.TXT` has 46,802 lines containing "NaN" (Timbavati) and 12,002 (RemConMode1). At patch 16 the same bins are finite and the transcript has 2 such lines in each deck. The remaining difference is therefore a bug fix (the grow branch no longer reverts the receiving bin's aqueous species), not a numerical perturbation.
+
+Consequences: any CoagTest result or timing reference taken at patches 00–15 for Timbavati or RemConMode1 is not comparable with the current branch. The wall times in `ASP_CoagTest_Optimization_Summary.docx` were measured on the NaN-producing state, where the NaN diagnostics cost time. After patch 16 the surface-tension NaN output the summary discusses is largely gone, so the profile in that summary should be repeated before deciding on `SurfaceTension`. The RemConMode1 coagulation volume-check mismatch described in `ASP_LagrangianParcel_InformationFlow.md` section 6 is a separate issue and is unaffected.
+
+Wall time at the branch tip (one run each, noisy): Williams 0.63 s, Timbavati 0.83 s, RemConMode1 0.62 s.

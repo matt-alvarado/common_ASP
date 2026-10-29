@@ -899,7 +899,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 				END IF
 			END DO
 
-		!k = k1 + k3*M(1+k3*M/k2) case (Flag = 5)
+		!k = k1 + k3*M/(1+k3*M/k2) case (Flag = 5)
 		ELSE IF (RateFlag .EQ. 5) THEN
 		!! This number should match the number of rate inputs for 
                 !! this reaction type

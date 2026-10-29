@@ -256,12 +256,12 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  k2 = ReactionRates(L,6)*exp(ReactionRates(L,7)/TEMP)
 	  GasPhaseChemicalRates(L) = k1 + k2*Mgas
 							
-	!This is a k = k1 + k3*M*(1+k3*M/k2) case 
+	!This is a k = k1 + k3*M/(1+k3*M/k2) case (JPL/IUPAC OH + HNO3 form) 
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 5) THEN
 	   k1 = ReactionRates(L,4)*exp(ReactionRates(L,5)/TEMP)
 	   k2 = ReactionRates(L,6)*exp(ReactionRates(L,7)/TEMP)
 	   k3 = ReactionRates(L,8)*exp(ReactionRates(L,9)/TEMP)
-	  GasPhaseChemicalRates(L) = k1 + k3*Mgas*(1 + k3*Mgas/k2)
+	  GasPhaseChemicalRates(L) = k1 + k3*Mgas/(1.0 + k3*Mgas/k2)
 							
 	!This is a heterogeneous reaction 
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 6) THEN

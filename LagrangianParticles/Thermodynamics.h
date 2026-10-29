@@ -54,6 +54,10 @@
 !! 10/28  2026   Claude Sonnet 5.5 Commit a56950d: N6-N11: integrand caches, !!
 !!                                 EqCoeff cache, tabulated Gibbs-Duhem      !!
 !!                                 integral (N11 changes results ~2e-4)      !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 8766c40: Patch 17: guard          !!
+!!                                 tabulated Gibbs-Duhem integral           !!
+!!                                 against NaN or negative ionic            !!
+!!                                 strength (DGAUS8 fallback)               !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

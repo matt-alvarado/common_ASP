@@ -22,6 +22,9 @@
 !! 10/28  2026   Claude Sonnet 5.5 Commit cf81a74: CoagTest H6: skip the     !!
 !!                                 duplicate RecalculateRadius pass when     !!
 !!                                 Coag calls RegridAerosol                  !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 5b4647e: Patch 16: initialise     !!
+!!                                 IonReset in RegridAerosol grow branch    !!
+!!                                 (was uninitialised)                      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

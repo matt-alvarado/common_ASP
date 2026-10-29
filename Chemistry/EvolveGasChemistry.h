@@ -16,6 +16,9 @@
 !! 10/26  2006   Matt Alvarado     Forced LRW to be above 500000            !!
 !! 02/15  2012   Matt Alvarado     Removing Eulerian grids, making ASP      !!
 !!                                 a one-box model or subroutine.           !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 97e1d64: Patch 23: removed the   !!
+!!                                 duplicate zeroing of pdj in            !!
+!!                                 GasJacobianEvaluator                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

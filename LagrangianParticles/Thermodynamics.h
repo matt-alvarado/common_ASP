@@ -70,6 +70,10 @@
 !!                                 GDTableMode (1 = table, 0 = full      !!
 !!                                 DGAUS8 integral) and GDTableCells,    !!
 !!                                 optional last lines of ASPInputDeck.in!!
+!! 10/28  2026   Claude Sonnet 5.5 Commit f08134b: Patch 24: reuse the      !!
+!!                                 EquilibriumConstantsRatio value at     !!
+!!                                 the entry of EquilibrateAqueous        !!
+!!                                 DissociationReaction                   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

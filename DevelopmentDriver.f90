@@ -45,6 +45,9 @@
 !! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
 !!                                 set/Jacobian setup by run mode            !!
 !!                                 (SetChemSetupLevel)                       !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 2f83092: Patch 22: dropped the   !!
+!!                                 redundant first RecalculateRadius in    !!
+!!                                 the LagrangianParcel particle loop      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM ASP

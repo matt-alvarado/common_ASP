@@ -2590,7 +2590,8 @@ SUBROUTINE GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, Re
 		END IF
 	END IF
 
-	IF (GDTabOK(K) .AND. .NOT. GDTabBad(K)) THEN
+	!! A NaN or negative ionic strength (e.g. zero-water particle) must not index the table: DGAUS8 handles it as the original did
+	IF (GDTabOK(K) .AND. .NOT. GDTabBad(K) .AND. S .GE. 0.0D0) THEN
 		H = GDTabSHi(K) / N
 		J = MIN(INT(S/H), N-1)
 		T = (S - J*H)/H

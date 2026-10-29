@@ -177,14 +177,27 @@ The `memset` total is almost all in two places: `DPRJS` (1.85 G) and `GasJacobia
 5. **Allocation.** `StepGasChemistry` allocates `rwork` of at least 5,000,000 doubles (40 MB) on each of its 605+ calls. The profile shows no large cost from this, but it is a candidate for a one-time allocation.
 6. **LSODES options.** `mf = 21` with `istate = 1` on every call, while the code also loads `GasIa`/`GasJa` (sparsity structure) into `iwork`. I did not check which LSODES structure option `mf = 21` selects or whether the supplied structure is used; this matters for hypothesis 1.
 
-## 7. Optimization hypotheses (from the profile above; none implemented or tested yet)
+## 7. Optimization status and next candidates
 
-1. **Sparse set-up repeated on every `DLSODES` call (30% of the run).** `DPREP` (815 calls, about 19.5 M instructions each) computes the sparse structure and minimum-degree ordering again at the start of each call because `istate = 1`. The sparsity pattern of the mechanism never changes. Options: reuse the ordering across calls (needs a change inside the OPK routines; continuing with `istate = 2` instead would change the step-size history and so is probably **not** byte-identical), or choose the LSODES structure option that takes the supplied `GasIa`/`GasJa` (check the LSODES documentation first, see section 6 item 6). The ordering result is deterministic, so a cached copy should give identical numbers; this is the largest single saving and also the riskiest.
-2. **Zeroing in the Jacobian path (7% of the run).** `GasJacobianEvaluator` and `DPRJS` clear full arrays 372,680 and 4,329 times. Clearing only the non-zero positions (`GasIa`/`GasJa` give them) would produce identical results.
-3. **Condensation thermodynamics (29%).** The hot spots are the same as in CondTest after patches 18 and 19: `EquilibriumConstantsRatio`, `MeanActivity`, `KusikMeissner`, `pow`. Further CondTest work carries over directly; avoiding re-solving unchanged reactions in `FindElectrolyteEquilibrium` is the biggest item.
-4. **Duplicate `RecalculateRadius` in the dilution loop (9% total, possibly half avoidable).** The first call in the loop (line 943) acts on a state that the previous iteration's second call (line 1005), or `RegridAerosol` after condensation and coagulation, has already recomputed. Like CoagTest patch 14, it should be skippable on the 590 iterations that have no condensation or coagulation step. This must be checked with a bitwise probe; temperature is set to `TEMP` only before the second call.
-5. **`SurfaceTension` inside `RecalculateRadius` (11%).** This is the option A parked earlier ("until we test other run modes that call coagulation"). Parcel mode is such a run mode. Caution: results in CoagTest ran with unequilibrated particles, but here the particles are equilibrated, so any simplification must be tested on this mode.
-6. **Per-call allocation in `StepGasChemistry`.** Allocate `Y`, `rwork`, `iwork` once. Small but free.
-7. **Stdout writes.** Commenting out the per-iteration progress messages would help only if I/O is significant. Not measured; the thermodynamics warnings should be left alone, as previously agreed.
-8. **Optics every 10 minutes (3.5% in 15 minutes).** Only 30 calls in a full run. Not worth attention unless the optical output frequency changes.
-9. **Coagulation (0.4%).** Not worth attention in this mode.
+### 7.1 Implemented after this profile (byte-identical output)
+
+| Patch | Commit | What | Evidence |
+|---|---|---|---|
+| 21 | `22dbf94` | `DPREP` caches the minimum-degree ordering (`ODRV`) and reuses it when the sparsity structure (`IA`, `JA`) is unchanged. Hypothesis 1 of the earlier list. | `ODRV` was 28% of the 15-minute profile. `ODRV` is deterministic in `N` and the structure, so the cached permutation is the one it would compute. |
+| 22 | `2f83092` | Removed the first `RecalculateRadius` in the parcel particle loop. Hypothesis 4. | Instrumented build: 35,600 calls on each of Williams, Timbavati and RemConMode1, 0 bitwise differences in the 11 scalar fields it sets. |
+| 23 | `97e1d64` | `GasJacobianEvaluator` no longer re-zeroes `pdj`, which `DPRJS` has already zeroed (LSODES contract). Partly hypothesis 2. | Only `DLSODES` calls this routine. |
+| 24 | `f08134b` | `EquilibrateAqueousDissociationReaction` evaluates `EquilibriumConstantsRatio` once at entry and reuses it for the second check and the first convergence test (it was evaluated up to three times on an unchanged particle). Part of hypothesis 3. | `EquilibriumConstantsRatio` reads the particle only; reuse is skipped if the neutralisation step changed it. |
+
+All four give identical output on all 109 files of Williams, Timbavati and RemConMode1 (the latter with the 30 s coagulation step, section 6 item 2). Measured on Williams, quiet machine, three runs each: **41.57 s (42.3, 41.8, 40.7) before patch 21 to 37.86 s (37.9, 37.9, 37.8) after patch 24, 8.9% faster**. A 30-minute run falls from 59.4 G to 53.9 G instructions between patch 21 and patch 24 (patches 22–24, 9%).
+
+### 7.2 Profile after patch 24 (30 minutes, 53.9 G instructions; a 90-minute profile before patches 22–24 gives the same ranking)
+
+Over a longer run the mix shifts from gas chemistry to condensation: in the 90-minute profile `StepCondensationAll` is 69% and `DLSODES` 10% (it was 46% in the 15-minute profile, which is dominated by the first ten minutes of 1 s steps). After patch 24: `StepCondensationAll` 58%, `EquilibriumConstantsRatio` 31%, `MeanActivity` 18%, `KusikMeissner` 15%, libm `pow` 10%, `SurfaceTension` 9.4% (all callers), `DLSODES` 17%, `memset` 4.2%. The largest single self cost is `EquilibrateAqueousDissociationReaction` (15%).
+
+### 7.3 Next candidates
+
+1. **`EquilibrateAqueousDissociationReaction` self cost (15%, byte-identical).** Every iteration re-reads `AqEquilibriaList(rxn, column)` (a large-stride 2-D array) and converts it with `INT` to index `AqChems` several times. Computing the per-reaction integer indices and stoichiometric coefficients once (like the name flags of patch 18) gives the same values. Not yet measured; the saving is limited to this function's own instructions.
+2. **`SurfaceTension` (9.4%).** This is the option A parked earlier "until we test other run modes that call coagulation". Parcel mode is such a run mode. Waiting for your decision; any simplification changes how often the thermodynamic state is used and must be tested on this mode.
+3. **Zeroing in `DPRJS` (memset 4.2%).** After patch 23 one full zeroing of `FTEM` per Jacobian column remains. Clearing only the entries the Jacobian wrote is not safe byte-for-byte: the sparsity pattern is found by differencing at the start of each call, and `GasJacobianEvaluator` can write entries outside it, so those would stay dirty. Needs `GasJacobianEvaluator` to report which rows it touched.
+4. **Not byte-identical, listed for completeness:** replacing `x**y` for small integer exponents by multiplication (libm `pow` is 10% but the last bit can differ), continuing `DLSODES` with `istate = 2` (changes the step-size history), and re-using the sparsity structure found by differencing (it depends on the state).
+5. **Per-call allocation in `StepGasChemistry`** (about 40 MB of `rwork` per call, no visible cost in the profile), **stdout writes** (not measured), **optics** (3.5%, 30 calls) and **coagulation** (0.4%): not worth attention in this mode.

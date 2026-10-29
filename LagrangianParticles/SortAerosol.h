@@ -385,6 +385,8 @@ SUBROUTINE RegridAerosol (RadiiCurrent)
 				!Add particle mass to larger bin
 				!Remember AqChems values are in units of mol/particle
 				I=1
+				!IonReset was never set on this path (uninitialised); start clean as the shrink branch does
+				IonReset = .FALSE.
 				DO I=1, NumAqChems
 					Store = BiggerParticle%AqChems(I)
 					BiggerParticle%AqChems(I) = (BiggerParticle%AqChems(I)*BiggerParticle%numberofparticles &

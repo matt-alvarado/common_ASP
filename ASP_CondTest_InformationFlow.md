@@ -1,6 +1,6 @@
 # ASP Model — Information Flow for `DevelopmentDriver.f90` with `CondTest = .TRUE.`
 
-Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–5 were written against commit `deab03b` (patches 00–15) and their line numbers and profile refer to that tree; section 6 and 7 have been updated for patches 16–25 (branch tip `65d2ac9`, tag `asp_v_2.2.1`). Section 8 lists every patch that touches this mode.
+Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–5 were written against commit `deab03b` (patches 00–15) and their line numbers and profile refer to that tree; section 6 and 7 have been updated for patches 16–25 (branch tip `65d2ac9`, tag `v2.2.1`). Section 8 lists every patch that touches this mode.
 
 ## 1. Scope and purpose
 

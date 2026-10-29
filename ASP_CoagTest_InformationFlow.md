@@ -1,6 +1,6 @@
 # ASP Model — Information Flow for `DevelopmentDriver.f90` with `CoagTest = .TRUE.`
 
-Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–4 were written against the tree with patches 00–10 and their line numbers refer to it; section 5 and the new section 6 are updated for patches 11–25 (branch tip `65d2ac9`, tag `asp_v_2.2.1`).
+Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–4 were written against the tree with patches 00–10 and their line numbers refer to it; section 5 and the new section 6 are updated for patches 11–25 (branch tip `65d2ac9`, tag `v2.2.1`).
 
 ## 1. Scope and purpose
 

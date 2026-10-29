@@ -1,6 +1,6 @@
 # ASP Model — Information Flow for `DevelopmentDriver.f90` with the Lagrangian Parcel Model (gas + aerosol)
 
-Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–6 were written against commit `fdf2da9` (patches 00–19) and their line numbers and profiles refer to that tree; section 7 is updated for patches 20–25 (branch tip `65d2ac9`, tag `asp_v_2.2.1`).
+Source basis: `common_ASP` branch `asp_v_2.2.1`. Sections 1–6 were written against commit `fdf2da9` (patches 00–19) and their line numbers and profiles refer to that tree; section 7 is updated for patches 20–25 (branch tip `65d2ac9`, tag `v2.2.1`).
 
 ## 1. Scope and purpose
 

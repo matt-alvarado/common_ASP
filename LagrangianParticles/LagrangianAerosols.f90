@@ -29,6 +29,10 @@
 !!                                 C1): per-reaction chemical-name flags    !!
 !!                                 replace string compares in the           !!
 !!                                 dissociation solver                      !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 86d3a78: Patch 19 (CondTest       !!
+!!                                 C2): memoise repeated x**y (PowMemo)     !!
+!!                                 in MeanActivity and                      !!
+!!                                 EquilibriumConstantsRatio                !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

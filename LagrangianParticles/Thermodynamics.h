@@ -58,6 +58,10 @@
 !!                                 tabulated Gibbs-Duhem integral           !!
 !!                                 against NaN or negative ionic            !!
 !!                                 strength (DGAUS8 fallback)               !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 46b4665: Patch 18 (CondTest       !!
+!!                                 C1): per-reaction chemical-name flags    !!
+!!                                 replace string compares in the           !!
+!!                                 dissociation solver                      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

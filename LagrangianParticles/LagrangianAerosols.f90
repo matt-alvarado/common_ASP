@@ -25,6 +25,10 @@
 !! 10/28  2026   Claude Sonnet 5.5 Commit a56950d: N6-N11: integrand caches, !!
 !!                                 EqCoeff cache, tabulated Gibbs-Duhem      !!
 !!                                 integral (N11 changes results ~2e-4)      !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 46b4665: Patch 18 (CondTest       !!
+!!                                 C1): per-reaction chemical-name flags    !!
+!!                                 replace string compares in the           !!
+!!                                 dissociation solver                      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -987,6 +987,32 @@ END SUBROUTINE FindElectrolyteEquilibrium
 !!			  				       !!
 !! Iterate a particular reaction until it reaches equilibrium. !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Patch C2: x**y with a memo of the last (x,y) per (slot, reaction).  The result is exactly what
+!pow would return for the same operands, so output is bit-identical; it only skips repeated
+!identical calls (activity coefficients and water activity are constant across solver iterations).
+!Only strictly positive finite bases are memoised.
+REAL*8 FUNCTION PowMemo (Slot, R, Base, Expo)
+	USE Chemistry, ONLY : AqEquilibriaList
+	IMPLICIT NONE
+	INTEGER :: Slot, R
+	REAL*8  :: Base, Expo
+	IF (.NOT. ALLOCATED(PowMemoBase)) THEN
+		ALLOCATE (PowMemoBase(3,SIZE(AqEquilibriaList,1)), PowMemoExp(3,SIZE(AqEquilibriaList,1)), &
+		          PowMemoVal(3,SIZE(AqEquilibriaList,1)))
+		PowMemoBase = -1.0D0 ; PowMemoExp = 0.0D0 ; PowMemoVal = 0.0D0
+	END IF
+	IF (Base .GT. 0.0D0 .AND. Base .LE. HUGE(Base)) THEN
+		IF (Base .EQ. PowMemoBase(Slot,R) .AND. Expo .EQ. PowMemoExp(Slot,R)) THEN
+			PowMemo = PowMemoVal(Slot,R)
+			RETURN
+		END IF
+		PowMemo = Base ** Expo
+		PowMemoBase(Slot,R) = Base ; PowMemoExp(Slot,R) = Expo ; PowMemoVal(Slot,R) = PowMemo
+	ELSE
+		PowMemo = Base ** Expo
+	END IF
+END FUNCTION PowMemo
+
 !Patch C1: chemical-name tests of EquilibrateAqueousDissociationReaction depend only on the reaction.
 SUBROUTINE InitEqRxnNameFlags ()
 	USE Chemistry, ONLY : AqEquilibriaList, AqPhaseChemicalNames, AqAnionNames
@@ -1914,14 +1940,14 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 		IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0) THEN
 			AwPow = InParticle%WaterActivity
 		ELSE
-			AwPow = InParticle%WaterActivity ** AqEquilibriaList(WhichEquilibriumRxn,8)
+			AwPow = PowMemo(2, WhichEquilibriumRxn, InParticle%WaterActivity, AqEquilibriaList(WhichEquilibriumRxn,8))
 		END IF
 	ELSE IF (AqEquilibriaList(WhichEquilibriumRxn,24) .NE. 0 ) THEN
 		!Hydrates
 		IF (AqEquilibriaList(WhichEquilibriumRxn,25) .EQ. 1.0) THEN
 			AwPow = InParticle%WaterActivity
 		ELSE
-			AwPow = InParticle%WaterActivity ** AqEquilibriaList(WhichEquilibriumRxn,25)
+			AwPow = PowMemo(3, WhichEquilibriumRxn, InParticle%WaterActivity, AqEquilibriaList(WhichEquilibriumRxn,25))
 		END IF
 	ELSE	
 		AwPow = 1.
@@ -2100,7 +2126,7 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	IF (AqEquilibriaList(WhichEquilibrium,22) .EQ. 0.) THEN
 		MeanActivity = PC * &
 				   PA * &
-				   InParticle%GammaMixed(WhichEquilibrium)**(AqEquilibriaList(WhichEquilibrium, 4) &
+				   PowMemo(1, WhichEquilibrium, InParticle%GammaMixed(WhichEquilibrium), AqEquilibriaList(WhichEquilibrium, 4) &
 				   + AqEquilibriaList(WhichEquilibrium, 5))
 	END IF
 

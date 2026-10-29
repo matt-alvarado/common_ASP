@@ -18,6 +18,10 @@
 !! 07/03  2013   Matt Alvarado     Updated main input deck to allow input    !!
 !!                                   of CO emission rate to Eulerian Box     !!
 !!                                   routines.                               !!
+!! 10/28  2026   Claude Sonnet 5.5 Commit 189da4e: N11 input-deck switch: !!
+!!                                 GDTableMode (1 = table, 0 = full      !!
+!!                                 DGAUS8 integral) and GDTableCells,    !!
+!!                                 optional last lines of ASPInputDeck.in!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

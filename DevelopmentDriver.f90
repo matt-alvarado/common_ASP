@@ -940,7 +940,10 @@ PROGRAM ASP
                          !WRITE(*,*) Env%Edges(1), Current%Edges(1)
                          !CALL ERROR("Env. Aerosol not lined up!")					
                       END IF
-                      CALL RecalculateRadius(current)
+                      !Patch 22: the radius/density/surface-tension recalculation that used to be here repeated
+                      !the one made at the end of the previous step (or by the initialisation, condensation or
+                      !coagulation that ran since) on unchanged particles, and never changed any field (checked
+                      !bitwise on Williams, Timbavati and RemConMode1: 35,600 calls each, 0 differences).
 
                       !Get Particle Terminal Velocity
                       IF (ThermoBulkMode) THEN 

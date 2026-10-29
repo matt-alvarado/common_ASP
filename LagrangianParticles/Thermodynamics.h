@@ -74,6 +74,11 @@
 !!                                 EquilibriumConstantsRatio value at     !!
 !!                                 the entry of EquilibrateAqueous        !!
 !!                                 DissociationReaction                   !!
+!! 10/29  2026   Claude Sonnet 5.5 Commit 9e33a67: Patch 25: hoist the   !!
+!!                                 per-reaction AqEquilibriaList reads    !!
+!!                                 and index arithmetic out of the        !!
+!!                                 EquilibrateAqueousDissociationReaction !!
+!!                                 iteration loop                         !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

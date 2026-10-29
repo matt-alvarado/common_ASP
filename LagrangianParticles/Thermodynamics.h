@@ -1069,7 +1069,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Local Variables
 	INTEGER :: I, J
-	LOGICAL :: HaveEqRatio, Converged	!Patch N5
+	LOGICAL :: HaveEqRatio, Converged, StateChanged	!Patch N5, Patch 24
 	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                    ActivityCoefficients, ErrorTolerance, DRH, RH
 	LOGICAL :: WaterRxn
@@ -1217,6 +1217,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!!Matt Alvarado added this to check for solid electrolyte reactions that are already in
 	!!Equilibrium, as the solid conc = 0.0 and the solution is subsaturated
+	!Patch 24: this EqRatio is reused below (the particle is not modified until the neutralisation step)
+	StateChanged = .FALSE.
 	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	! CMB: mod for floating-point inequality
         if (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) &
@@ -1315,7 +1317,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		
 	IF(SCAFFOLDING) WRITE(*,*) "Before Eq Ratio"
 	!! If equilibrium has been established, then it has been established...
-	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
+	!Patch 24: EqRatio from the entry check above is still valid (nothing modifies the particle in between)
 	IF(SCAFFOLDING) WRITE(*,*) "After Eq Ratio"
 
 	! CMB: mod for double precision
@@ -1338,6 +1340,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		    InParticle%AqChems(HydroxyIndex) .GT. 0.) THEN			
 
 
+			StateChanged = .TRUE.	!Patch 24
 			!! Make enough H+ to neutralize the OH-
 			dX = MIN (InParticle%AqChems(HydroxyIndex) / AqEquilibriaList(WhichEquilibriumRxn,4),&
 					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))))
@@ -1374,6 +1377,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 			InParticle%AqChems(ProtonIndex) .GT. InParticle%AqChems(HydroxyIndex)   .AND. &
 		    InParticle%AqChems(ProtonIndex) .GT. 0.) THEN
 
+			StateChanged = .TRUE.	!Patch 24
 			!! Make enough H+ to neutralize the OH-
 			dX = MIN (InParticle%AqChems(ProtonIndex) / AqEquilibriaList(WhichEquilibriumRxn,5),	&
 					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))))
@@ -1472,7 +1476,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!the previous iteration ended by evaluating the same function on the same (unmodified)
 	!state.  Reuse that EqRatio instead of recomputing it (not valid for the infinitely
 	!dissociating branch, which the test handles differently).
-	HaveEqRatio = .FALSE.
+	!Patch 24: if neutralisation did not change the particle, the entry EqRatio is also the first iteration's ratio
+	HaveEqRatio = (.NOT. StateChanged) .AND. (DABS(AqEquilibriaList(WhichEquilibriumRxn, 9) - 1) .GT. 1.0e-40)
 	DO
 		IF (HaveEqRatio) THEN
 			Converged = (ErrorTolerance .GE. ABS(EqRatio - 1.))

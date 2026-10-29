@@ -717,6 +717,36 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 						   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
 				END IF
 			END DO
+		!Generic fall-off with explicit Troe N, unimolecular / equilibrium-reverse case (Flag = 13)
+		ELSE IF (RateFlag .EQ. 13) THEN
+			NumbRateFacs = 11
+
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 900 apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+
+			DO I = 2, NumbRateFacs
+
+				CALL GetToken(Rates,";",Rate)
+
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 901 apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
 		END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1273,6 +1303,36 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 				END IF
 			END DO
 
+		!THIRD ORDER fall-off with explicit Troe N (Flag = 4)
+		ELSE IF (RateFlag .EQ. 4) THEN
+			NumbRateFacs = 9
+
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 902 apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+
+			DO I = 2, NumbRateFacs
+
+				CALL GetToken(Rates,";",Rate)
+
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 903 apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
 		ELSE
 			CALL ERROR("The following line from "//Trim(InputDeck)//	&
 						   " is a third-order reaction that doesn't fit the current code:  "//TRIM(FullLine))

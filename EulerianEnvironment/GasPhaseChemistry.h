@@ -199,6 +199,17 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 					 Temp**ReactionRates(L,5)    *	&
 					 EXP(ReactionRates(L,6)/Temp)**	&
 					 ReactionRates(L,7)	
+	!Generic fall-off with explicit Troe N (unimolecular decomposition or equilibrium reverse)
+	!k0 = A0*(T/300)^(-n0)*exp(E0/T)*M ; ki = Ai*(T/300)^(-ni)*exp(Ei/T) ; F, N explicit
+	!k = [k0 ki/(k0+ki)] F^(1/(1+(log10(k0/ki)/N)^2)) / (KeqA*exp(KeqE/T))
+	!(use KeqA=1, KeqE=0 for a plain unimolecular fall-off rate)
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 13) THEN
+	  k0  = ReactionRates(L,4)*(Temp/300.)**(-1.*ReactionRates(L,5))*EXP(ReactionRates(L,6)/Temp)*Mgas
+	  ki  = ReactionRates(L,7)*(Temp/300.)**(-1.*ReactionRates(L,8))*EXP(ReactionRates(L,9)/Temp)
+	  kf  = (k0*ki)/(k0+ki) * ReactionRates(L,10)**			&
+			(1./(1.+(DLOG10(dble(k0/ki))/ReactionRates(L,11))**2.))
+	  Keq = ReactionRates(L,12)*EXP(ReactionRates(L,13)/TEMP)
+	  GasPhaseChemicalRates(L) = kf/Keq
 	ELSE
 	   CALL ERROR("Error in ResetGasPhaseReactionRates - your 1st order rate constant doesn't make sense")								
 	END IF
@@ -330,6 +341,13 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  NCD = 0.75-1.27*(DLOG10(dble(ReactionRates(L,8))))
           FD = 10.**(DLOG10(dble(ReactionRates(L,8)))/(1.+(DLOG10(dble(k0/ki))/NCD)**2))
           GasPhaseChemicalRates(L) = FD*(k0*ki)/(k0+ki)													
+	!Fall-off with explicit Troe N (same form as flag 13 without the equilibrium constant)
+	!Effective second-order rate constant; k0 and ki as in 1-body flag 13
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 4) THEN
+	  k0  = ReactionRates(L,4)*(Temp/300.)**(-1.*ReactionRates(L,5))*EXP(ReactionRates(L,6)/Temp)*Mgas
+	  ki  = ReactionRates(L,7)*(Temp/300.)**(-1.*ReactionRates(L,8))*EXP(ReactionRates(L,9)/Temp)
+	  GasPhaseChemicalRates(L) = (k0*ki)/(k0+ki) * ReactionRates(L,10)**	&
+			(1./(1.+(DLOG10(dble(k0/ki))/ReactionRates(L,11))**2.))
 	!Calculate pseudo-2nd order rate constant
 	ELSE !JPL Style							
 	  k0 = ReactionRates(L,3)*(Temp/300.)**(-1.*ReactionRates(L,4)) * Mgas

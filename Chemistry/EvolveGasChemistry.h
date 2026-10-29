@@ -579,10 +579,9 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 	GP(2) = y(HowManyGasChems+2)
 	GP(3) = y(HowManyGasChems+3)
 
-	!! Initialize variables
-	DO J = 1, neq
-		pdj(J) = 0.
-	END DO
+	!! Patch 23: pdj is NOT zeroed here.  DLSODES (DPRJS, and DPREP for MOSS=1) zeroes the array
+	!! before every call of this routine (LSODES contract), so zeroing it again here repeated
+	!! an O(neq) fill for each of the neq columns of every Jacobian.  Only DLSODES calls this routine.
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! If Gas Phase Chemistry Occurs !!

@@ -983,6 +983,24 @@ END SUBROUTINE FindElectrolyteEquilibrium
 !!			  				       !!
 !! Iterate a particular reaction until it reaches equilibrium. !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Patch C1: chemical-name tests of EquilibrateAqueousDissociationReaction depend only on the reaction.
+SUBROUTINE InitEqRxnNameFlags ()
+	USE Chemistry, ONLY : AqEquilibriaList, AqPhaseChemicalNames, AqAnionNames
+	IMPLICIT NONE
+	INTEGER :: R, I1, I3
+	ALLOCATE (EqRxnAnionIsCO3(SIZE(AqEquilibriaList,1)), EqRxnIsLevitocite(SIZE(AqEquilibriaList,1)), &
+	          EqRxnIsAmmSulfate(SIZE(AqEquilibriaList,1)))
+	EqRxnAnionIsCO3 = .FALSE. ; EqRxnIsLevitocite = .FALSE. ; EqRxnIsAmmSulfate = .FALSE.
+	DO R = 1, SIZE(AqEquilibriaList,1)
+		I1 = INT(AqEquilibriaList(R,1)) ; I3 = INT(AqEquilibriaList(R,3))
+		IF (I1 .GE. 1 .AND. I1 .LE. SIZE(AqPhaseChemicalNames)) THEN
+			EqRxnIsLevitocite(R) = (AqPhaseChemicalNames(I1) .EQ. "(NH4)3H(SO4)2")
+			EqRxnIsAmmSulfate(R) = (AqPhaseChemicalNames(I1) .EQ. "(NH4)2SO4")
+		END IF
+		IF (I3 .GE. 1 .AND. I3 .LE. SIZE(AqAnionNames)) EqRxnAnionIsCO3(R) = (AqAnionNames(I3) .EQ. "CO3--")
+	END DO
+END SUBROUTINE InitEqRxnNameFlags
+
 RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
         (WhichEquilibriumRxn, InParticle, OptErrorTolerance, ReturnType)
 
@@ -1020,6 +1038,9 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! SCSCSCSCSC
 	LOGICAL :: Scaffolding = .false. 
+
+	!Patch C1: fill the per-reaction chemical-name flags once
+	IF (.NOT. ALLOCATED(EqRxnAnionIsCO3)) CALL InitEqRxnNameFlags ()
 
         !! If this is an empty section, we have no truck with it
 	!IF (InParticle%NumberOfParticles .EQ. 0 .OR. InParticle%Dry) RETURN
@@ -1181,7 +1202,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	! cmb
 	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8) - 1.0) .lt. 0.00001 & !A hydrate reaction
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
-		.AND. AqAnionNames(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. "CO3--" & !CO2 equilibrium only
+		.AND. EqRxnAnionIsCO3(WhichEquilibriumRxn) & !CO2 equilibrium only
 	    .AND. EqRatio .GT. 1.0 & !The solution is super-saturated
 		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) &
                     .LT. 1e-30) THEN !There is no anion left
@@ -1194,7 +1215,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
 		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) &
                     .LT. 1e-28) THEN !Not enough SO4--
-		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)3H(SO4)2") THEN
+		IF(EqRxnIsLevitocite(WhichEquilibriumRxn)) THEN
 			RETURN
 		END IF
 	END IF
@@ -1206,7 +1227,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		IF(EqRatio .GT. 1.0 & !The solution is supersaturated
 			.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
                             INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN !Not enough SO4--
-			IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)2SO4") THEN
+			IF(EqRxnIsAmmSulfate(WhichEquilibriumRxn)) THEN
 				RETURN
 			END IF
 		END IF
@@ -1365,7 +1386,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	IF (AqEquilibriaList(WhichEquilibriumRxn,22) .GT. 0) THEN
 		!Levitocite
-		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .NE. "(NH4)3H(SO4)2") THEN
+		IF(.NOT. EqRxnIsLevitocite(WhichEquilibriumRxn)) THEN
 			CALL ERROR("Non-levitocite complex salt detected in EquilibrateAqueousDissociationReaction."//&
                                " This is not allowed.")
 		END IF
@@ -1599,19 +1620,19 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 		!For carbonate equilibrium as CO3-- approaches 0
 		IF(AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
-		    .AND. AqAnionNames(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. "CO3--" & !CO2 equilibrium only
+		    .AND. EqRxnAnionIsCO3(WhichEquilibriumRxn) & !CO2 equilibrium only
 			.AND. InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN
 			RETURN
 		END IF
 		
 		!For levitocite equilibrium as SO4-- approaches 0
-		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)3H(SO4)2" & !levitocite
+		IF(EqRxnIsLevitocite(WhichEquilibriumRxn) & !levitocite
 		    .AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) .LT. 1e-28) THEN
 			RETURN
 		END IF
 
 		!For (NH4)2SO4 equilibrium as SO4-- approaches 0
-		IF(AqPhaseChemicalNames(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. "(NH4)2SO4" & 
+		IF(EqRxnIsAmmSulfate(WhichEquilibriumRxn) & 
 		    .AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN
 			RETURN
 		END IF

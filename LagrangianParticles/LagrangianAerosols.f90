@@ -353,6 +353,8 @@ TYPE (ParticleArray) :: BoundaryParticles
 
 	!Patch N7/N11 caches (see Thermodynamics.h).  NOT thread-safe: fill eagerly or make per-thread before OpenMP.
 	REAL*8, ALLOCATABLE, SAVE :: EqCoeffCacheT(:), EqCoeffCacheV(:)
+	!Patch C1: per-reaction name tests done once (string compares were ~6% of CondTest)
+	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLevitocite(:), EqRxnIsAmmSulfate(:)
 	INTEGER, PARAMETER :: GDTabN = 256
 	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
 	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)

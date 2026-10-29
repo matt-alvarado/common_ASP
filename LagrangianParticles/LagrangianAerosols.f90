@@ -365,7 +365,7 @@ TYPE (ParticleArray) :: BoundaryParticles
 	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLevitocite(:), EqRxnIsAmmSulfate(:)
 	!Patch C2: last-argument memo for x**y (see PowMemo in Thermodynamics.h)
 	REAL*8, ALLOCATABLE, SAVE :: PowMemoBase(:,:), PowMemoExp(:,:), PowMemoVal(:,:)
-	INTEGER, PARAMETER :: GDTabN = 256
+	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)
 	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
 	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)
 

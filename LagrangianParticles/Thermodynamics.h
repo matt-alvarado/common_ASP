@@ -2573,7 +2573,7 @@ END FUNCTION CalcLogGammaPure
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, Result, IERR)
 
-	USE ModelParameters, ONLY : WaterContentPrecision, MaxIonicStrKM
+	USE ModelParameters, ONLY : WaterContentPrecision, MaxIonicStrKM, GDTableCells
 	USE Chemistry,       ONLY : HowManyAqEqReactions
 
 	IMPLICIT NONE
@@ -2592,7 +2592,7 @@ SUBROUTINE GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, Re
 	REAL*8  :: Key(11), S, SHi, SMax, H, T, T2, T3, X, Sum, Gm, FJ, FJ1, GJ, GJ1
 	INTEGER :: J, L, N
 
-	N = GDTabN
+	N = GDTableCells
 	IERR = 0
 	SMax = SQRT(MaxIonicStrKM)
 
@@ -2678,7 +2678,7 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 					KMRef
 
 	USE ModelParameters,		ONLY : WaterContentPrecision, &
-						MaxIonicStrKm
+						MaxIonicStrKm, GDTableMode
 	USE InfrastructuralCode,	ONLY : WARN, ERROR
 
 	IMPLICIT NONE
@@ -2775,7 +2775,13 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 		
 		!! This routine is housed in DGAUS8.f.  It's an adaptive time step integrator, modified to pass dummy arguments to FUN.
 		!Patch N11: tabulated Gibbs-Duhem integral (falls back to DGAUS8 if the table is unusable)
-	    CALL GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, InorganicIntegral, IERR)
+	    IF (GDTableMode .EQ. 1) THEN
+	        CALL GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, InorganicIntegral, IERR)
+	    ELSE
+	        !! Input-deck switch: full adaptive integration on every call (original behaviour)
+	        CALL DGAUS8 (EvalIdLogGamma, 0., IonicStrength, Q, Stoich, Charges, &
+	                     WaterContentPrecision, InorganicIntegral, IERR)
+	    END IF
 
 
 		!! Consider the Flagged Result of the Integration

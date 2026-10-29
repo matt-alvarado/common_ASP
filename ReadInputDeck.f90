@@ -720,6 +720,32 @@
 		END IF
 
                 CALL LightSwitchParams(lightswitch_flag, lights_on_time, lights_off_time)
+
+		!! Patch N11 switches.  These two lines are OPTIONAL (end of deck): if absent, the
+		!! tabulated Gibbs-Duhem integral is used with 256 cells.
+		Token = GetLine(FH)
+		IF (Token .NE. EOF) THEN
+			IF (.NOT.IsInteger(Token)) &
+				CALL ERROR ("Must Supply either a 0 or 1 in ASPInputDeck.in to indicate if the "//&
+					"Gibbs-Duhem integral is tabulated (1) or fully integrated (0). Received "//StripToken(Token))
+			I = STR2INT(Token)
+			IF (I < 0 .OR. I > 1) &
+				CALL ERROR ("Must Supply either a 0 or 1 in ASPInputDeck.in to indicate if the "//&
+					"Gibbs-Duhem integral is tabulated (1) or fully integrated (0). Received "//StripToken(Token))
+			GDTableMode = I
+
+			Token = GetLine(FH)
+			IF (Token .NE. EOF) THEN
+				IF (.NOT.IsInteger(Token)) &
+					CALL ERROR ("Must Supply an integer number of Gibbs-Duhem table cells (16 to 65536) in "//&
+						"ASPInputDeck.in. Received "//StripToken(Token))
+				I = STR2INT(Token)
+				IF (I < 16 .OR. I > 65536) &
+					CALL ERROR ("Gibbs-Duhem table cells in ASPInputDeck.in must be between 16 and 65536. Received "//&
+						StripToken(Token))
+				GDTableCells = I
+			END IF
+		END IF
 	
                 !print *, 'CMB: END MAIN INPUT DECK'
 	END SUBROUTINE ReadMainInputDeck

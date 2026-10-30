@@ -1298,7 +1298,87 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
 				END IF
 			END DO
+		!2-body k = A exp(C/T)/(1 + m M) (Flag = 14): [14; A; C; m]
+		ELSE IF (RateFlag .EQ. 14) THEN
+			NumbRateFacs = 4
 
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 944a apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+			DO I = 2, NumbRateFacs
+				CALL GetToken(Rates,";",Rate)
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 944b apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
+		!2-body k = M k1/(1 + k2), k_i = A_i exp(C_i/T) (Flag = 15): [15; A1; C1; A2; C2]
+		ELSE IF (RateFlag .EQ. 15) THEN
+			NumbRateFacs = 5
+
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 946a apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+			DO I = 2, NumbRateFacs
+				CALL GetToken(Rates,";",Rate)
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 946b apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
+		!2-body JPL19 form k = k3 (1 - kf/kinf) (Flag = 16): [16; A0; n0; Ai; ni; F; A3; C3]
+		ELSE IF (RateFlag .EQ. 16) THEN
+			NumbRateFacs = 8
+
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 948a apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+			DO I = 2, NumbRateFacs
+				CALL GetToken(Rates,";",Rate)
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 948b apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
 		END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

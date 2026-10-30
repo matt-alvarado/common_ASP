@@ -342,7 +342,21 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	    k3 = ReactionRates(L,6)/(k2+ReactionRates(L,6))
 	  END IF
 	  GasPhaseChemicalRates(L) = MAX(ReactionRates(L,4)*(ReactionRates(L,8)-Temp*ReactionRates(L,9))*EXP(ReactionRates(L,5)/Temp)*k3, 0.0D0)
-
+       !k = A exp(C/T)/(1 + m M)   [14; A; C; m]  (GEOS-Chem GC_EPO_a)
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 14) THEN
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)/(ReactionRates(L,6)*Mgas+1.0D0)
+       !k = M k1/(1 + k2), k_i = A_i exp(C_i/T)   [15; A1; C1; A2; C2]  (GEOS-Chem GC_DMSOH_acac)
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 15) THEN
+	  k1 = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)
+	  k2 = ReactionRates(L,6)*EXP(ReactionRates(L,7)/Temp)
+	  GasPhaseChemicalRates(L) = Mgas*k1/(1.0D0+k2)
+       !JPL19 form  k = k3 (1 - kf/kinf), kf = Troe fall-off (N = 1)   [16; A0; n0; Ai; ni; F; A3; C3]  (GEOS-Chem GCJPLAC_ababac)
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 16) THEN
+	  k0 = ReactionRates(L,4)*(Temp/300.0D0)**(-1.0D0*ReactionRates(L,5))*Mgas
+	  ki = ReactionRates(L,6)*(Temp/300.0D0)**(-1.0D0*ReactionRates(L,7))
+	  kf = (k0*ki)/(k0+ki)*ReactionRates(L,8)**(1.0D0/(1.0D0+(DLOG10(DBLE(k0/ki)))**2))
+	  k3 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
+	  GasPhaseChemicalRates(L) = k3*(1.0D0-kf/ki)
         END IF
 
      !! Three body reactions, using the troe pressure-broadening 

@@ -357,6 +357,16 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  kf = (k0*ki)/(k0+ki)*ReactionRates(L,8)**(1.0D0/(1.0D0+(DLOG10(DBLE(k0/ki)))**2))
 	  k3 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
 	  GasPhaseChemicalRates(L) = k3*(1.0D0-kf/ki)
+       !k = A exp(C/T) (X + K)/(2 X + K), X = fO2 M   [17; A; C; K; fO2]  (GEOS-Chem GC_GLYXNO3_ac)
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 17) THEN
+	  k1 = ReactionRates(L,7)*Mgas
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*(k1+ReactionRates(L,6))/(2.0D0*k1+ReactionRates(L,6))
+       !k = A exp(C/T) f(T) (sel = 0) or A exp(C/T) (1 - f(T)) (sel = 1), f = max(1 - a exp(-T/b), 0)   [18; A; C; a; b; sel]
+       !(GEOS-Chem GC_GLYCOH_A/B, GC_HACOH_A/B)
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 18) THEN
+	  k1 = MAX(1.0D0-ReactionRates(L,6)*EXP(-Temp/ReactionRates(L,7)), 0.0D0)
+	  IF (ReactionRates(L,8) .GT. 0.5D0) k1 = 1.0D0 - k1
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*k1
         END IF
 
      !! Three body reactions, using the troe pressure-broadening 

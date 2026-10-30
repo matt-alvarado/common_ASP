@@ -214,19 +214,6 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 14) THEN
 	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*Temp**ReactionRates(L,5)*		&
 					EXP(ReactionRates(L,6)/Temp)*EXP(ReactionRates(L,7)/Temp**3)
-	!1-body GEOS-Chem isoprene isomerisation (GC_ISO1): k = a exp(b/T) (1 - c k0/(k0+k1)),
-	!k0 = d exp(e/T) exp(1e8/T^3), k1 = f exp(g/T)    [15; a; b; c; d; e; f; g]
-	ELSE IF (INT(ReactionRates(L,3)) .EQ. 15) THEN
-	  k0 = ReactionRates(L,7)*EXP(ReactionRates(L,8)/Temp)*EXP(1.0D8/Temp**3)
-	  k1 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
-	  k2 = ReactionRates(L,6)*k0/(k0+k1)
-	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*(1.0D0-k2)
-	!1-body GEOS-Chem isoprene isomerisation (GC_ISO2): k = a exp(b/T) c k0/(k0+k1)   [16; a; b; c; d; e; f; g]
-	ELSE IF (INT(ReactionRates(L,3)) .EQ. 16) THEN
-	  k0 = ReactionRates(L,7)*EXP(ReactionRates(L,8)/Temp)*EXP(1.0D8/Temp**3)
-	  k1 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
-	  k2 = ReactionRates(L,6)*k0/(k0+k1)
-	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*k2
 	!1-body: k = max(A (D + T E) exp(B/T) exp(C/T^3), 0)   [17; A; B; C; D; E]  (GEOS-Chem ARRPLUS_*, TUNPLUS_abcde)
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 17) THEN
 	  GasPhaseChemicalRates(L) = MAX(ReactionRates(L,4)*(ReactionRates(L,7)+Temp*ReactionRates(L,8))*EXP(ReactionRates(L,5)/Temp)*EXP(ReactionRates(L,6)/Temp**3), 0.0D0)
@@ -373,6 +360,14 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
        !k = max(A (D + T E) exp(B/T) exp(C/T^3), 0)   [19; A; B; C; D; E]  (GEOS-Chem ARRPLUS_ade / ARRPLUS_abde)
        ELSE IF (INT(ReactionRates(L,3)) .EQ. 19) THEN
 	  GasPhaseChemicalRates(L) = MAX(ReactionRates(L,4)*(ReactionRates(L,7)+Temp*ReactionRates(L,8))*EXP(ReactionRates(L,5)/Temp)*EXP(ReactionRates(L,6)/Temp**3), 0.0D0)
+       !k = a exp(b/T) (1 - c k0/(k0+k1)) [20]  or  a exp(b/T) c k0/(k0+k1) [21];  k0 = d exp(e/T) exp(1e8/T^3), k1 = f exp(g/T)
+       !(GEOS-Chem GC_ISO1 / GC_ISO2: ISOP + OH)   [flag; a; b; c; d; e; f; g]
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 20 .OR. INT(ReactionRates(L,3)) .EQ. 21) THEN
+	  k0 = ReactionRates(L,7)*EXP(ReactionRates(L,8)/Temp)*EXP(1.0D8/Temp**3)
+	  k1 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
+	  k2 = ReactionRates(L,6)*k0/(k0+k1)
+	  IF (INT(ReactionRates(L,3)) .EQ. 20) k2 = 1.0D0 - k2
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*k2
         END IF
 
      !! Three body reactions, using the troe pressure-broadening 

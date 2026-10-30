@@ -7,8 +7,8 @@
 !! it that goes to organosulfate.  Used by rate flag 18 through the hook     !!
 !! Chemistry:AcidStateHook, which SetOrganicDissolution registers.           !!
 !!                                                                           !!
-!! Concentrations are molarities of the particle's aqueous solution          !!
-!! (mol/L, same basis as AerosolPH): H+, HSO4-, SO4--, NO3-, water.          !!
+!! Concentrations are moles per litre of TOTAL PARTICLE volume (4/3 pi r^3    !!
+!! of the wet particle, as CMAQ's inv_volume): H+, HSO4-, SO4--, NO3-, water. !!
 !! Rate constants [M-1 s-1 per M of nucleophile] from CMAQ AERO6/7           !!
 !! (Eddingsaas et al. 2010; Piletic et al. 2013):                            !!
 !!                   H+ acid        HSO4- acid                               !!
@@ -53,9 +53,9 @@ SUBROUTINE FillAcidState (NumberBins, KPart, FracOS)
 	DO WHILE (ASSOCIATED(Cur) .AND. I .LT. NumberBins)
 		I = I + 1
 		IF (Cur%NumberOfParticles .GT. 1.0D-40 .AND. .NOT. Cur%Dry) THEN
-			Mass = AqueousSolutionMass(Cur)
+			Mass = 4.0D0/3.0D0*3.14159265358979D0*Cur%EffectiveRadius**3*1.0D-3	!particle volume [L] (EffectiveRadius in cm)
 			IF (Mass .GT. 0.0D0) THEN
-				Fac = Cur%SolutionDensity*1000.0D0/Mass		!mol/L per (mol per particle)
+				Fac = 1.0D0/Mass		!mol/L of particle per (mol per particle)
 				H = 0.0D0; HS = 0.0D0; S = 0.0D0; N = 0.0D0
 				IF (ProtonIndex .GT. 0) H  = MAX(Cur%AqChems(ProtonIndex), 0.0D0)*Fac
 				IF (IHSO4 .GT. 0)       HS = MAX(Cur%AqChems(IHSO4), 0.0D0)*Fac

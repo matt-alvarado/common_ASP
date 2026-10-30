@@ -214,6 +214,19 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	ELSE IF (INT(ReactionRates(L,3)) .EQ. 14) THEN
 	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*Temp**ReactionRates(L,5)*		&
 					EXP(ReactionRates(L,6)/Temp)*EXP(ReactionRates(L,7)/Temp**3)
+	!1-body GEOS-Chem isoprene isomerisation (GC_ISO1): k = a exp(b/T) (1 - c k0/(k0+k1)),
+	!k0 = d exp(e/T) exp(1e8/T^3), k1 = f exp(g/T)    [15; a; b; c; d; e; f; g]
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 15) THEN
+	  k0 = ReactionRates(L,7)*EXP(ReactionRates(L,8)/Temp)*EXP(1.0D8/Temp**3)
+	  k1 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
+	  k2 = ReactionRates(L,6)*k0/(k0+k1)
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*(1.0D0-k2)
+	!1-body GEOS-Chem isoprene isomerisation (GC_ISO2): k = a exp(b/T) c k0/(k0+k1)   [16; a; b; c; d; e; f; g]
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 16) THEN
+	  k0 = ReactionRates(L,7)*EXP(ReactionRates(L,8)/Temp)*EXP(1.0D8/Temp**3)
+	  k1 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
+	  k2 = ReactionRates(L,6)*k0/(k0+k1)
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*k2
 	ELSE
 	   CALL ERROR("Error in ResetGasPhaseReactionRates - your 1st order rate constant doesn't make sense")								
 	END IF

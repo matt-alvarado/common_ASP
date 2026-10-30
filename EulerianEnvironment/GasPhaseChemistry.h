@@ -118,8 +118,8 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 					 EXP(ReactionRates(L,6)/Temp)**	&
 					 ReactionRates(L,7)					
 	!Heterogeneous Case
-	ELSE IF (INT(ReactionRates(L,3)) .EQ. 3 .OR. INT(ReactionRates(L,3)) .EQ. 18) THEN
-	  !Temporary - call ResetHeteroRates to set rate (flag 18: acidity-dependent epoxide uptake)!
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 3 .OR. INT(ReactionRates(L,3)) .GE. 18) THEN
+	  !Temporary - call ResetHeteroRates to set rate (flags 18-20: acidity-dependent epoxide uptake, NTR2 hydrolysis, N2O5 uptake)!
 	  GasPhaseChemicalRates(L) = 0.0 
 
 	!Equilibrium Degradation case

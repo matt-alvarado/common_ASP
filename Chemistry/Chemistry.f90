@@ -134,6 +134,7 @@ MODULE Chemistry
 			RecalculateReactionRates,	&! 
 			RecalculateHeteroRates,         &
 			AcidStateHook, AcidStateIface,  &
+			BulkStateHook, BulkStateIface,  &
 			RecalculatePhotoRates,          &
 			FindChem,			&! Indexing Functions & Variables
 			FindIon,			&	!	  "
@@ -404,6 +405,16 @@ MODULE Chemistry
 		END SUBROUTINE AcidStateIface
 	END INTERFACE
 	PROCEDURE(AcidStateIface), POINTER :: AcidStateHook => NULL()
+
+	!! Bulk fine-particle state for rate flags 19 (NTR2 hydrolysis) and 20 (N2O5 uptake): total organic
+	!! aerosol OA [ug/m3] and the NH4+, NO3-, SO4-- content [mol/m3, all forms] of the particles with
+	!! radius below 1.25 um (CMAQ's I + J modes).  Filled by the Condensation module (FillBulkState).
+	ABSTRACT INTERFACE
+		SUBROUTINE BulkStateIface (OA, NH4, NO3, SO4)
+			REAL*8, INTENT(out) :: OA, NH4, NO3, SO4
+		END SUBROUTINE BulkStateIface
+	END INTERFACE
+	PROCEDURE(BulkStateIface), POINTER :: BulkStateHook => NULL()
 
 	CONTAINS
 ! cmb add	
@@ -679,6 +690,15 @@ MODULE Chemistry
 				CALL ResetAcidUptakeRate (L, ReactionRates(L,4), ReactionRates(L,5), INT(ReactionRates(L,6)), &
 				                          INT(ReactionRates(L,7)), Radius, NumberConc, NumberBins, FirstTime)
 
+			!Organic nitrate (NTR2) hydrolysis (flag 19) and N2O5 uptake with the Davis et al. (2008) gamma (flag 20)
+			ELSE IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
+			         INT(ReactionRates(L,3)) .EQ. 19) THEN
+				CALL ResetNTR2Rate (L, ReactionRates(L,4), FirstTime)
+
+			ELSE IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
+			         INT(ReactionRates(L,3)) .EQ. 20) THEN
+				CALL ResetN2O5Rate (L, ReactionRates(L,4), ReactionRates(L,5), Radius, NumberConc, NumberBins, FirstTime)
+
 			ELSE IF (INT(ReactionRates(L,1)) .EQ. 2 .AND. &
                                  INT(ReactionRates(L,3)) .EQ. 6) THEN	
 				!Sum surface area over all particle bins
@@ -788,6 +808,194 @@ MODULE Chemistry
 			" Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
 
 	END SUBROUTINE ResetAcidUptakeRate
+
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!! ResetNTR2Rate -- 1-body rate flag 19                                    !!
+	!!                                                                         !!
+	!! Deck line:  NTR2 => HNO3 ; 19 ; scale ;                                 !!
+	!! CMAQ HETERO_NTR2: k = scale * F_part * KHON * f(RH) [1/s] with          !!
+	!!   F_part = 0.34/(1 + 0.73/OA) + 0.66/(1 + 1000/OA)  (Rollins et al.     !!
+	!!            2013 organic-nitrate partitioning; OA in ug/m3, zero below   !!
+	!!            1e-4 ug/m3)                                                  !!
+	!!   KHON   = 2.7778e-3 /min = 4.6296e-5 /s  (about 4 per day)             !!
+	!!   f(RH)  = 0 below RH 0.2, 5 RH - 1 between 0.2 and 0.4, 1 above        !!
+	!! scale is the coefficient in front of the CMAQ rate (1.4 for CB6r5).     !!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	SUBROUTINE ResetNTR2Rate (L, Scale, FirstTime)
+
+		USE InfrastructuralCode, ONLY : Transcript, Int2Str, Real2Str
+		USE GridPointFields,	 ONLY :	GasPhaseChemicalRates, GetRelativeHumidity
+
+		IMPLICIT NONE
+
+		INTEGER, INTENT(in) :: L
+		REAL*8,  INTENT(in) :: Scale
+		LOGICAL, INTENT(in) :: FirstTime
+
+		REAL*8, PARAMETER :: Alpha1 = 0.34D0, Alpha2 = 0.66D0, Cstar1 = 0.73D0, Cstar2 = 1000.0D0
+		REAL*8, PARAMETER :: MinOA = 1.0D-4, KHON = 2.7778D-3/60.0D0
+		REAL*8 :: OA, NH4, NO3, SO4, Fpart, RH, Ramp
+
+		GasPhaseChemicalRates(L) = 0.0D0
+		IF (.NOT. ASSOCIATED(BulkStateHook)) RETURN
+		CALL BulkStateHook (OA, NH4, NO3, SO4)
+		IF (OA .LT. MinOA) RETURN
+		Fpart = Alpha1/(1.0D0 + Cstar1/OA) + Alpha2/(1.0D0 + Cstar2/OA)
+		RH = GetRelativeHumidity()
+		IF (RH .LE. 0.2D0) THEN
+			Ramp = 0.0D0
+		ELSE IF (RH .GE. 0.4D0) THEN
+			Ramp = 1.0D0
+		ELSE
+			Ramp = 5.0D0*RH - 1.0D0
+		END IF
+		GasPhaseChemicalRates(L) = Scale*Fpart*KHON*Ramp
+		IF (FirstTime) CALL TRANSCRIPT("NTR2 hydrolysis reaction #"//TRIM(INT2STR(L))// &
+			" Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
+
+	END SUBROUTINE ResetNTR2Rate
+
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!! ResetN2O5Rate -- 1-body rate flag 20                                    !!
+	!!                                                                         !!
+	!! Deck line:  N2O5 => 2 HNO3 ; 20 ; scale ; MW ;                          !!
+	!! Uptake with the CMAQ default reaction probability (Davis et al. 2008,   !!
+	!! eq. 15; N2O5_GAMMA with GPARAM = 0): a function of T, RH, the NH4+ /    !!
+	!! NO3- / SO4-- composition of the fine particles and their phase state    !!
+	!! (crystallised below the Martin et al. 2003 CRH, ice above the ice RH).  !!
+	!! One gamma for all bins (CMAQ: one value for the I + J modes); the loss  !!
+	!! rate is summed over the bins with the flag-3 transition-regime formula. !!
+	!! scale multiplies the rate; MW is the gas molar mass in g/mol.           !!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	SUBROUTINE ResetN2O5Rate (L, Scale, MWingrams, Radius, NumberConc, NumberBins, FirstTime)
+
+		Use ModelParameters
+		USE InfrastructuralCode, ONLY : Transcript, Int2Str, Real2Str
+		USE GridPointFields,	 ONLY :	GasPhaseChemicalRates, GetTemp, GetAirDensity, GetRelativeHumidity
+
+		IMPLICIT NONE
+
+		INTEGER, INTENT(in) :: L, NumberBins
+		REAL*8,  INTENT(in) :: Scale, MWingrams
+		REAL*8,  INTENT(in) :: Radius(:), NumberConc(:)
+		LOGICAL, INTENT(in) :: FirstTime
+
+		REAL*8 :: OA, NH4, NO3, SO4, Temp, RH, Gam, MW, Dg, R, c_bar, Surf_Conc, Term, Total
+		INTEGER :: N
+
+		GasPhaseChemicalRates(L) = 0.0D0
+		IF (.NOT. ASSOCIATED(BulkStateHook)) RETURN
+		CALL BulkStateHook (OA, NH4, NO3, SO4)
+		Temp = GetTemp()
+		RH   = GetRelativeHumidity()
+		Gam  = N2O5GammaDavis (Temp, RH, NH4, NO3, SO4)
+		IF (Gam .LE. 0.0D0) RETURN
+
+		MW = MWingrams/1000.0D0
+		Dg = 0.375/(4.5*Angstrom)**2./GetAirDensity()* &
+			SQRT(Rstar*Temp*AirMolecMass*ChemScale/	&
+			Avogadro/MWingrams*(MWingrams+		&
+			Avogadro*AirMolecMass)/2/Pi)
+		Dg = Dg/1e4			!m2/s
+		R = Rstar/1e7
+		c_bar = SQRT(8.0*R*Temp/pi/MW)	!m/s
+		Total = 0.0D0
+		DO N = 1, NumberBins
+			Surf_Conc = 4.0*pi*(Radius(N)**2)*(NumberConc(N)*1e6)
+			Term = Surf_Conc*((Radius(N)/Dg + 4/Gam/c_bar)**(-1.0))
+			Total = Total + Term
+		END DO
+		GasPhaseChemicalRates(L) = Scale*Total
+		IF (FirstTime) CALL TRANSCRIPT("N2O5 uptake reaction #"//TRIM(INT2STR(L))//" gamma "//TRIM(REAL2STR(Gam))// &
+			" Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
+
+	END SUBROUTINE ResetN2O5Rate
+
+	!! N2O5 reaction probability of CMAQ (AEROSOL_CHEMISTRY.F, N2O5_GAMMA default branch = Davis et al. 2008 eq. 15,
+	!! with the appendix A forms).  NH4, NO3, SO4 in any common mole unit.
+	REAL*8 FUNCTION N2O5GammaDavis (Temp, RH, NH4, NO3, SO4) RESULT (Gam)
+
+		IMPLICIT NONE
+		REAL*8, INTENT(in) :: Temp, RH, NH4, NO3, SO4
+		REAL*8 :: NANI, NCAT, X, Y, X1, X2, X3, LAM1, LAM2, LAM3, LAMD, GAM1, GAM2, GAM3, GAMD
+		REAL*8 :: T293, T291, RH46, CRH, XX, X2s, XY, Y2, X2Y, XY2, RDEN
+		LOGICAL :: Crystal, Frozen
+
+		Gam = 0.0D0
+		NANI = NO3 + SO4
+		IF (NANI .LE. 0.0D0) RETURN
+
+		Frozen = IceFormed (Temp, RH)
+		IF (Frozen) THEN
+			Gam = 0.02D0
+			RETURN
+		END IF
+
+		!! crystallisation (Martin et al. 2003, complete CRH)
+		Crystal = .FALSE.
+		IF (RH .LE. 0.01D0) THEN
+			Crystal = .TRUE.
+		ELSE IF (RH .LE. 0.351D0) THEN
+			NCAT = MAX(NH4, 2.0D0*SO4 + NO3)
+			X = NH4/NCAT
+			Y = SO4/NANI
+			IF (.NOT. (X .LT. 0.5D0 .OR. Y .LT. 0.22D0)) THEN
+				X2s = X*X; XY = X*Y; X2Y = X2s*Y; Y2 = Y*Y; XY2 = X*Y2
+				RDEN = 1.0D0/(25.0D0 + (X - 0.7D0)*(Y - 0.5D0))
+				CRH = 3143.44D0 + 63.07D0*X + 0.114D0*X2s + 87.97D0*Y - 125.73D0*XY + 0.586D0*X2Y + 0.95D0*Y2 &
+				      - 1.384D0*XY2 - 79692.5D0*RDEN
+				Crystal = (RH .LE. CRH)
+			END IF
+		END IF
+
+		X3 = NO3/NANI
+		X2 = MAX(0.0D0, MIN(1.0D0 - X3, NH4/NANI - 1.0D0))
+		X1 = 1.0D0 - (X2 + X3)
+		LAM3 = -8.10774D0 + 4.902D0*RH
+		GAM3 = MIN(1.0D0/(1.0D0 + EXP(-LAM3)), 0.0154D0)
+		IF (Crystal) THEN
+			T293 = MAX(0.0D0, Temp - 293.0D0)
+			LAMD = -6.13376D0 + 3.592D0*RH - 0.19688D0*T293
+			GAMD = MIN(1.0D0/(1.0D0 + EXP(-LAMD)), 0.0124D0)
+			Gam  = (X1 + X2)*GAMD + X3*MIN(GAMD, GAM3)
+		ELSE
+			T291 = MAX(0.0D0, Temp - 291.0D0)
+			RH46 = MIN(0.0D0, RH - 0.46D0)
+			LAM2 = -3.64849D0 + 9.553D0*RH46
+			LAM1 = LAM2 + 0.97579D0 - 0.20427D0*T291
+			GAM1 = MIN(1.0D0/(1.0D0 + EXP(-LAM1)), 0.08585D0)
+			GAM2 = MIN(1.0D0/(1.0D0 + EXP(-LAM2)), 0.053D0)
+			Gam  = X1*GAM1 + X2*GAM2 + X3*GAM3
+		END IF
+
+	END FUNCTION N2O5GammaDavis
+
+	!! RH above which ice forms (CMAQ FREEZES: polynomial screen, Goff-Gratch inside +-0.005)
+	LOGICAL FUNCTION IceFormed (Temp, RH) RESULT (Frozen)
+
+		IMPLICIT NONE
+		REAL*8, INTENT(in) :: Temp, RH
+		REAL*8, PARAMETER :: TST = 373.16D0, T0 = 273.16D0, LOGPST = 3.0057149D0, LOGP0 = 0.78583503D0
+		REAL*8 :: EIRH, TSDT, TDTS, T0DT, TDT0, LOGPW, LOGPI, IRH
+
+		Frozen = .FALSE.
+		IF (Temp .GE. T0) RETURN
+		EIRH = 1.61299D0 + Temp*(4.4117437D-5*Temp - 1.4293888D-2)
+		IF (RH .GT. EIRH + 0.005D0) THEN
+			Frozen = .TRUE.
+		ELSE IF (RH .LT. EIRH - 0.005D0) THEN
+			Frozen = .FALSE.
+		ELSE
+			TSDT = TST/Temp; TDTS = Temp/TST; T0DT = T0/Temp; TDT0 = Temp/T0
+			LOGPW = -7.90298D0*(TSDT - 1.0D0) + 5.02808D0*LOG10(TSDT) &
+			        - 1.3816D-7*(10.0D0**(11.344D0*(1.0D0 - TDTS)) - 1.0D0) &
+			        + 8.1328D-3*(10.0D0**(-3.49149D0*(TSDT - 1.0D0)) - 1.0D0) + LOGPST
+			LOGPI = -9.09718D0*(T0DT - 1.0D0) - 3.56654D0*LOG10(T0DT) + 0.876793D0*(1.0D0 - TDT0) + LOGP0
+			IRH = 10.0D0**(LOGPI - LOGPW)
+			Frozen = (RH .GT. IRH)
+		END IF
+
+	END FUNCTION IceFormed
 
 	
 	SUBROUTINE ReadPhotolysisRates()

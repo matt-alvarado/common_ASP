@@ -83,3 +83,69 @@ SUBROUTINE FillAcidState (NumberBins, KPart, FracOS)
 	END DO
 
 END SUBROUTINE FillAcidState
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! FillBulkState: bulk state of the fine particles (radius < 1.25 um, CMAQ's  !!
+!! I + J modes) for rate flags 19 (NTR2 hydrolysis) and 20 (N2O5 uptake),    !!
+!! through Chemistry:BulkStateHook.                                          !!
+!!   OA   total organic aerosol, hydrophobic + hydrophilic, BC excluded [ug/m3]!!
+!!   NH4, NO3, SO4  total ammonium, nitrate, sulfate [mol/m3], dissolved ions  !!
+!!   and every electrolyte that contains them (stoichiometric counts).        !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE FillBulkState (OA, NH4, NO3, SO4)
+
+	USE Chemistry, ONLY : FindChem, HowManyOrgChems, HowManyAqOrgChems, OrgMolecularMass, AqOrgMolecularMass
+	USE Aerosols,  ONLY : Particles, Particle
+
+	IMPLICIT NONE
+
+	REAL*8, INTENT(out) :: OA, NH4, NO3, SO4
+
+	INTEGER, PARAMETER :: NSP = 32
+	REAL*8,  PARAMETER :: RMax = 1.25D-4		!cm
+	CHARACTER(len=14), PARAMETER :: SpName(NSP) = (/ CHARACTER(len=14) :: &
+		'NH4+        ', 'NH4Cl       ', 'NH4NO3      ', '(NH4)2SO4   ', 'NH4HSO4     ', '(NH4)3H(SO4)2', &
+		'NO3-        ', 'NH4NO3      ', 'KNO3        ', 'NaNO3       ', 'Mg(NO3)2    ', 'Ca(NO3)2    ', &
+		'SO4--       ', 'HSO4-       ', '(NH4)2SO4   ', 'NH4HSO4     ', 'H2SO4       ', 'K2SO4       ', 'KHSO4       ', &
+		'NaHSO4      ', 'Na2SO4      ', '(NH4)3H(SO4)2', 'MgSO4       ', 'Mg(HSO4)2   ', 'CaSO4*2H2O  ', 'Ca(HSO4)2   ', &
+		'            ', '            ', '            ', '            ', '            ', '            ' /)
+	!! element: 1 NH4, 2 NO3, 3 SO4; coefficient = number of that ion per formula unit
+	INTEGER, PARAMETER :: SpEl(NSP)  = (/ 1,1,1,1,1,1,  2,2,2,2,2,2,  3,3,3,3,3,3,3, 3,3,3,3,3,3,3, 0,0,0,0,0,0 /)
+	REAL*8,  PARAMETER :: SpCoef(NSP) = (/ 1.D0,1.D0,1.D0,2.D0,1.D0,3.D0,  1.D0,1.D0,1.D0,1.D0,2.D0,2.D0,  &
+		1.D0,1.D0,1.D0,1.D0,1.D0,1.D0,1.D0, 1.D0,1.D0,2.D0,1.D0,2.D0,1.D0,2.D0, 0.D0,0.D0,0.D0,0.D0,0.D0,0.D0 /)
+
+	LOGICAL, SAVE :: First = .TRUE.
+	INTEGER, SAVE :: Idx(NSP) = 0
+	TYPE(Particle), POINTER :: Cur
+	INTEGER :: I, J
+	REAL*8  :: Tot(3), N
+
+	IF (First) THEN
+		First = .FALSE.
+		DO I = 1, NSP
+			IF (SpEl(I) .GT. 0) Idx(I) = FindChem(TRIM(SpName(I)), 1, .TRUE.)
+		END DO
+	END IF
+
+	OA = 0.0D0
+	Tot = 0.0D0
+	Cur => Particles%First
+	DO WHILE (ASSOCIATED(Cur))
+		IF (Cur%NumberOfParticles .GT. 1.0D-40 .AND. Cur%EffectiveRadius .LT. RMax) THEN
+			N = Cur%NumberOfParticles
+			DO J = 2, HowManyOrgChems
+				OA = OA + Cur%OrgChems(J)*N*1.0D12*OrgMolecularMass(J)
+			END DO
+			DO J = 1, HowManyAqOrgChems
+				OA = OA + Cur%AqOrgChems(J)*N*1.0D12*AqOrgMolecularMass(J)
+			END DO
+			DO I = 1, NSP
+				IF (SpEl(I) .GT. 0 .AND. Idx(I) .GT. 0) &
+					Tot(SpEl(I)) = Tot(SpEl(I)) + SpCoef(I)*MAX(Cur%AqChems(Idx(I)), 0.0D0)*N*1.0D6
+			END DO
+		END IF
+		Cur => Cur%Next
+	END DO
+	NH4 = Tot(1); NO3 = Tot(2); SO4 = Tot(3)
+
+END SUBROUTINE FillBulkState

@@ -32,12 +32,13 @@
 !! with a single command
 SUBROUTINE SetAllDissolution()
 
-	USE Chemistry, ONLY : AcidStateHook
+	USE Chemistry, ONLY : AcidStateHook, BulkStateHook
 
 	IMPLICIT NONE
 
 	!! register the particle-acidity routine for rate flag 18 (acid-dependent epoxide uptake)
 	AcidStateHook => FillAcidState
+	BulkStateHook => FillBulkState
 
 	CALL SetDissolution
 	CALL SetOrganicDissolution

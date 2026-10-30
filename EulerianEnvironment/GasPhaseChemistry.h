@@ -81,7 +81,7 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
   INTEGER :: L
   REAL*8	:: Temp,Mgas,X(3),k0,ki, Y_o, Y_o_term, Y_inf_term, Z, F, &
   	   alpha, beta, m_o, m_inf, Ratio, Scale, Pres, k1, k2, k3, kf, Keq, &
-	   KINF, NCD, FD, RO2_T, RCO3_T, C_H2O, Knaught, N2gas, O2gas
+	   KINF, NCD, FD, RO2_T, RCO3_T, C_H2O, Knaught, N2gas, O2gas, FcT
 
   Temp = GetTemp()
   Mgas = GetM   ()
@@ -352,6 +352,15 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  ki  = ReactionRates(L,7)*(Temp/300.)**(-1.*ReactionRates(L,8))*EXP(ReactionRates(L,9)/Temp)
 	  GasPhaseChemicalRates(L) = (k0*ki)/(k0+ki) * ReactionRates(L,10)**	&
 			(1./(1.+(DLOG10(dble(k0/ki))/ReactionRates(L,11))**2.))
+	!Fall-off with temperature-dependent broadening factor Fc = Fa*exp(-Fb/T) + exp(-T/Fc)  (IUPAC C2H2 + OH form)
+	!N = 0.75 - 1.27 log10(Fc); k0, ki as in flag 4
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 5) THEN
+	  k0  = ReactionRates(L,4)*(Temp/300.)**(-1.*ReactionRates(L,5))*EXP(ReactionRates(L,6)/Temp)*Mgas
+	  ki  = ReactionRates(L,7)*(Temp/300.)**(-1.*ReactionRates(L,8))*EXP(ReactionRates(L,9)/Temp)
+	  FcT = ReactionRates(L,10)*EXP(-1.*ReactionRates(L,11)/Temp) + EXP(-1.*Temp/ReactionRates(L,12))
+	  NCD = 0.75-1.27*DLOG10(dble(FcT))
+	  GasPhaseChemicalRates(L) = (k0*ki)/(k0+ki) * FcT**	&
+			(1./(1.+(DLOG10(dble(k0/ki))/NCD)**2.))
 	!Calculate pseudo-2nd order rate constant
 	ELSE !JPL Style							
 	  k0 = ReactionRates(L,3)*(Temp/300.)**(-1.*ReactionRates(L,4)) * Mgas

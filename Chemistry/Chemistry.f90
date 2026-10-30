@@ -699,6 +699,16 @@ MODULE Chemistry
 			         INT(ReactionRates(L,3)) .EQ. 20) THEN
 				CALL ResetN2O5Rate (L, ReactionRates(L,4), ReactionRates(L,5), Radius, NumberConc, NumberBins, FirstTime)
 
+			!NO2 uptake (flag 21)
+			ELSE IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
+			         INT(ReactionRates(L,3)) .EQ. 21) THEN
+				Total = 0.0
+				DO N=1,NumberBins
+					IF (Radius(N) .LT. 1.25D-6) Total = Total + 4.0*pi*(Radius(N)**2)*(NumberConc(N)*1e6)
+				END DO
+				GasPhaseChemicalRates(L) = MAX(0.0D0, ReactionRates(L,4)*Total)
+				IF (FirstTime) CALL TRANSCRIPT("NO2 uptake reaction #"//TRIM(INT2STR(L))//" Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
+
 			ELSE IF (INT(ReactionRates(L,1)) .EQ. 2 .AND. &
                                  INT(ReactionRates(L,3)) .EQ. 6) THEN	
 				!Sum surface area over all particle bins

@@ -227,6 +227,9 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  k1 = ReactionRates(L,9)*EXP(ReactionRates(L,10)/Temp)
 	  k2 = ReactionRates(L,6)*k0/(k0+k1)
 	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*k2
+	!1-body: k = max(A (D + T E) exp(B/T) exp(C/T^3), 0)   [17; A; B; C; D; E]  (GEOS-Chem ARRPLUS_*, TUNPLUS_abcde)
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 17) THEN
+	  GasPhaseChemicalRates(L) = MAX(ReactionRates(L,4)*(ReactionRates(L,7)+Temp*ReactionRates(L,8))*EXP(ReactionRates(L,5)/Temp)*EXP(ReactionRates(L,6)/Temp**3), 0.0D0)
 	ELSE
 	   CALL ERROR("Error in ResetGasPhaseReactionRates - your 1st order rate constant doesn't make sense")								
 	END IF
@@ -367,6 +370,9 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  k1 = MAX(1.0D0-ReactionRates(L,6)*EXP(-Temp/ReactionRates(L,7)), 0.0D0)
 	  IF (ReactionRates(L,8) .GT. 0.5D0) k1 = 1.0D0 - k1
 	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*EXP(ReactionRates(L,5)/Temp)*k1
+       !k = max(A (D + T E) exp(B/T) exp(C/T^3), 0)   [19; A; B; C; D; E]  (GEOS-Chem ARRPLUS_ade / ARRPLUS_abde)
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 19) THEN
+	  GasPhaseChemicalRates(L) = MAX(ReactionRates(L,4)*(ReactionRates(L,7)+Temp*ReactionRates(L,8))*EXP(ReactionRates(L,5)/Temp)*EXP(ReactionRates(L,6)/Temp**3), 0.0D0)
         END IF
 
      !! Three body reactions, using the troe pressure-broadening 

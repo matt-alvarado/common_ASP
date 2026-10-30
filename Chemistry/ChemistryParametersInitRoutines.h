@@ -830,6 +830,33 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
 				END IF
 			END DO
+		!1-body linear-in-T Arrhenius, floored at zero (Flag = 17): [17; A; B; C; D; E]  k = max(A (D + T E) exp(B/T) exp(C/T^3), 0)  (GEOS-Chem ARRPLUS / TUNPLUS)
+		ELSE IF (RateFlag .EQ. 17) THEN
+			NumbRateFacs = 6
+
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 960a apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+			DO I = 2, NumbRateFacs
+				CALL GetToken(Rates,";",Rate)
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 960b apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
 		END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1430,6 +1457,33 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 				ELSE
 				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
 						 " 952b apparently has a bad rate expression ("//		&
+						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+				END IF
+			END DO
+		!2-body linear-in-T Arrhenius, floored at zero (Flag = 19): [19; A; B; C; D; E]  k = max(A (D + T E) exp(B/T) exp(C/T^3), 0)  (GEOS-Chem ARRPLUS)
+		ELSE IF (RateFlag .EQ. 19) THEN
+			NumbRateFacs = 6
+
+			IF (J .NE. NumbRateFacs) &
+				CALL ERROR("  The following line from "//Trim(InputDeck)//		&
+					   " had the wrong number of rate terms.  Expected "//	&
+					   TRIM(INT2STR(NumbRateFacs))//": >>"//TRIM(FullLine)//"<<")
+
+			IF (IsReal(StripToken(Rate))) THEN
+				RateFacs(1) = STR2REAL(StripToken(Rate))
+			ELSE
+				CALL ERROR("The following line from "//Trim(InputDeck)//	&
+					   " 962a apparently has a bad rate expression ("//		&
+					   Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
+			END IF
+
+			DO I = 2, NumbRateFacs
+				CALL GetToken(Rates,";",Rate)
+				IF (IsReal(StripToken(Rate))) THEN
+				      RateFacs(I) = STR2REAL(StripToken(Rate))
+				ELSE
+				      CALL ERROR("The following line from "//Trim(InputDeck)//	&
+						 " 962b apparently has a bad rate expression ("//		&
 						 Trim(StripToken(Rate))//"):"//"    "//TRIM(FullLine))
 				END IF
 			END DO

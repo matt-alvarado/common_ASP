@@ -109,5 +109,8 @@ INCLUDE "AqOrgCondensationIntegrator.h"
 !! First-order particle-phase organic reactions (OrgPhaseReactions.in)
 INCLUDE "OrgPhaseReactions.h"
 
+!! Particle acidity for the acid-dependent epoxide uptake (rate flag 18)
+INCLUDE "ParticleAcidity.h"
+
 END MODULE Condensation
 

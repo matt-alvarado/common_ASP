@@ -133,6 +133,7 @@ MODULE Chemistry
 			IFGAS, IFAQ, IFSOLID,		&! Logical Variables
 			RecalculateReactionRates,	&! 
 			RecalculateHeteroRates,         &
+			AcidStateHook, AcidStateIface,  &
 			RecalculatePhotoRates,          &
 			FindChem,			&! Indexing Functions & Variables
 			FindIon,			&	!	  "
@@ -390,6 +391,19 @@ MODULE Chemistry
 ! CB add
         integer :: parcelIndex, timeIndex
 ! end CB
+
+	!! Hook for the acidity-dependent epoxide uptake (1-body rate flag 18).  Chemistry cannot USE the
+	!! aerosol module, so the Condensation module (FillAcidState, ParticleAcidity.h) registers this
+	!! routine at start-up.  For each particle in list order it returns the pseudo-first-order
+	!! particle-phase ring-opening rate KPart(kind,bin) [1/s] and the organosulfate fraction
+	!! FracOS(kind,bin); kinds: 1 IEPOX (CMAQ AERO6 / CRACMM nucleophiles), 2 IMAE, 3 IEPOX (AERO7i, no nitrate).
+	ABSTRACT INTERFACE
+		SUBROUTINE AcidStateIface (NumberBins, KPart, FracOS)
+			INTEGER, INTENT(in) :: NumberBins
+			REAL*8,  INTENT(out) :: KPart(3,NumberBins), FracOS(3,NumberBins)
+		END SUBROUTINE AcidStateIface
+	END INTERFACE
+	PROCEDURE(AcidStateIface), POINTER :: AcidStateHook => NULL()
 
 	CONTAINS
 ! cmb add	
@@ -658,7 +672,13 @@ MODULE Chemistry
                                                     " Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
                                 endif
 
-			!Second order heterogeneous reactions
+			!Acidity-dependent epoxide uptake (flag 18): gamma from the particle-phase ring-opening rate
+			!(Hanson et al. 1994 resistor model with the Eddingsaas / Piletic acid-nucleophile rates, as in CMAQ CALCISOPGAMMAS)
+			ELSE IF (INT(ReactionRates(L,1)) .EQ. 1 .AND. &
+			         INT(ReactionRates(L,3)) .EQ. 18) THEN
+				CALL ResetAcidUptakeRate (L, ReactionRates(L,4), ReactionRates(L,5), INT(ReactionRates(L,6)), &
+				                          INT(ReactionRates(L,7)), Radius, NumberConc, NumberBins, FirstTime)
+
 			ELSE IF (INT(ReactionRates(L,1)) .EQ. 2 .AND. &
                                  INT(ReactionRates(L,3)) .EQ. 6) THEN	
 				!Sum surface area over all particle bins
@@ -676,6 +696,98 @@ MODULE Chemistry
 			END IF						
 		END DO
 	END SUBROUTINE ResetHeteroRates
+
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!! ResetAcidUptakeRate -- 1-body rate flag 18                              !!
+	!!                                                                         !!
+	!! Deck line:  EPOX => PRODUCT ; 18 ; scale ; MW ; kind ; channel ;       !!
+	!!   scale    multiplies the rate (1 for IEPOX / IMAE; 2 for IPX, 0.5 for  !!
+	!!            INALD in CMAQ CRACMM)                                        !!
+	!!   MW       g/mol of the gas                                             !!
+	!!   kind     1 IEPOX with H2O / sulfate / nitrate nucleophiles (AERO6,    !!
+	!!            CRACMM), 2 IMAE (AERO7i), 3 IEPOX without nitrate (AERO7i)   !!
+	!!   channel  0 all products; 1 non-sulfate products (tetrol, 2-MG);       !!
+	!!            2 organosulfate.  Splitting one species over two lines with  !!
+	!!            channels 1 and 2 reproduces the CMAQ product split.          !!
+	!!                                                                         !!
+	!! Per particle the acid-catalysed ring-opening rate kp = sum k [acid][nuc] !!
+	!! [1/s] comes from the particle's own H+, HSO4-, SO4--, NO3- and water     !!
+	!! (hook AcidStateHook, filled by the Condensation module).  The uptake     !!
+	!! coefficient is                                                           !!
+	!!   q = r sqrt(kp/D),  1/gamma = 1/alpha + v r / (4 H R T D (q/tanh q - 1))!!
+	!! (alpha 0.02, D 1e-9 m2/s, H = 3e7 (IEPOX) or 1.2e5 M/atm (IMAE)), and the!!
+	!! gas loss rate is summed over the bins with the same transition-regime   !!
+	!! formula as flag 3.  gamma = 0 for q/tanh q <= 1 (no ring opening).       !!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	SUBROUTINE ResetAcidUptakeRate (L, Scale, MWingrams, Kind, Channel, Radius, NumberConc, NumberBins, FirstTime)
+
+		Use ModelParameters
+		USE InfrastructuralCode, ONLY : Transcript, Int2Str, Real2Str
+		USE GridPointFields,	 ONLY :	GasPhaseChemicalRates, GetTemp, GetAirDensity
+
+		IMPLICIT NONE
+
+		INTEGER, INTENT(in) :: L, Kind, Channel, NumberBins
+		REAL*8,  INTENT(in) :: Scale, MWingrams
+		REAL*8,  INTENT(in) :: Radius(:), NumberConc(:)
+		LOGICAL, INTENT(in) :: FirstTime
+
+		REAL*8, PARAMETER :: InvAlpha = 1.0D0/0.02D0, DiffLiq = 1.0D-9, RgasLatm = 0.08206D0
+		REAL*8, PARAMETER :: HenryEff(3) = (/ 3.0D7, 1.2D5, 3.0D7 /)
+		REAL*8, ALLOCATABLE :: KPart(:,:), FracOS(:,:)
+		REAL*8  :: Temp, MW, Dg, R, c_bar, Surf_Conc, Term, Total, q, x, Gam, Frac, Denom
+		INTEGER :: N, K
+
+		K = MAX(1, MIN(3, Kind))
+		IF (.NOT. ASSOCIATED(AcidStateHook)) THEN
+			GasPhaseChemicalRates(L) = 0.0D0
+			RETURN
+		END IF
+
+		ALLOCATE (KPart(3,NumberBins), FracOS(3,NumberBins))
+		CALL AcidStateHook (NumberBins, KPart, FracOS)
+
+		MW   = MWingrams/1000.0D0
+		Temp = GetTemp()
+		Dg = 0.375/(4.5*Angstrom)**2./GetAirDensity()* &
+			SQRT(Rstar*Temp*AirMolecMass*ChemScale/	&
+			Avogadro/MWingrams*(MWingrams+		&
+			Avogadro*AirMolecMass)/2/Pi)
+		Dg = Dg/1e4			!m2/s
+		R = Rstar/1e7			!J/mol/K
+		c_bar = SQRT(8.0*R*Temp/pi/MW)	!m/s
+
+		Total = 0.0D0
+		DO N = 1, NumberBins
+			IF (KPart(K,N) .LE. 0.0D0 .OR. NumberConc(N) .LE. 0.0D0) CYCLE
+			q = Radius(N)*SQRT(KPart(K,N)/DiffLiq)
+			IF (q .LT. 0.05D0) THEN
+				x = q*q/3.0D0 - q**4/45.0D0			!q/tanh(q) - 1
+			ELSE
+				x = q/TANH(q) - 1.0D0
+			END IF
+			IF (x .LE. 0.0D0) CYCLE
+			Denom = InvAlpha + c_bar*Radius(N)/(4.0D0*HenryEff(K)*RgasLatm*Temp*DiffLiq*x)
+			Gam = 1.0D0/Denom
+			SELECT CASE (Channel)
+				CASE (1)
+					Frac = 1.0D0 - FracOS(K,N)
+				CASE (2)
+					Frac = FracOS(K,N)
+				CASE DEFAULT
+					Frac = 1.0D0
+			END SELECT
+			Surf_Conc = 4.0*pi*(Radius(N)**2)*(NumberConc(N)*1e6)	!1/m
+			Term = Surf_Conc*((Radius(N)/Dg + 4/Gam/c_bar)**(-1.0))	!1/s
+			Total = Total + Frac*Term
+		END DO
+
+		GasPhaseChemicalRates(L) = Scale*Total
+		DEALLOCATE (KPart, FracOS)
+		IF (FirstTime) CALL TRANSCRIPT("Acid-dependent uptake reaction #"//TRIM(INT2STR(L))// &
+			" Rate Constant:"//TRIM(REAL2STR(GasPhaseChemicalRates(L)))//"")
+
+	END SUBROUTINE ResetAcidUptakeRate
 
 	
 	SUBROUTINE ReadPhotolysisRates()

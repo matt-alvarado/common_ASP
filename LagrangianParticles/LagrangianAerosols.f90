@@ -80,6 +80,7 @@ PRIVATE
 PUBLIC	:: AerosolModeNames,			&
            AerosolModes,                        &
            AerosolPH,				&
+           AqueousSolutionMass,			&
            CurvatureCorrection,			&
            OrgCurvatureCorrection,		&
            DumpParticleContentsAtError,         &

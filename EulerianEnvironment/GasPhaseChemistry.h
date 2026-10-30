@@ -210,6 +210,10 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 			(1./(1.+(DLOG10(dble(k0/ki))/ReactionRates(L,11))**2.))
 	  Keq = ReactionRates(L,12)*EXP(ReactionRates(L,13)/TEMP)
 	  GasPhaseChemicalRates(L) = kf/Keq
+	!1-body thermal with tunnelling factor: k = A T^B exp(C/T) exp(E/T^3)  (e.g. MCM H-shift isomerisations)
+	ELSE IF (INT(ReactionRates(L,3)) .EQ. 14) THEN
+	  GasPhaseChemicalRates(L) = ReactionRates(L,4)*Temp**ReactionRates(L,5)*		&
+					EXP(ReactionRates(L,6)/Temp)*EXP(ReactionRates(L,7)/Temp**3)
 	ELSE
 	   CALL ERROR("Error in ResetGasPhaseReactionRates - your 1st order rate constant doesn't make sense")								
 	END IF

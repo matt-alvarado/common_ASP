@@ -106,5 +106,8 @@ INCLUDE "OrgCondensationIntegrator.h"
 
 INCLUDE "AqOrgCondensationIntegrator.h"
 
+!! First-order particle-phase organic reactions (OrgPhaseReactions.in)
+INCLUDE "OrgPhaseReactions.h"
+
 END MODULE Condensation
 

@@ -376,6 +376,9 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 
            END IF
 
+           !First-order particle-phase organic reactions (no-op without OrgPhaseReactions.in)
+           CALL StepOrgPhaseReactions (TimestepSize*NumTimeSteps)
+
            !WRITE(*,*) "StepDissolutionAll Check 4"
            !Move particles across bin boundaries, if necessary
 		   !write(456, *) 'Calling SpillBeans prior to RegridAerosol at line 336 of CondensationIntegrator.h"'

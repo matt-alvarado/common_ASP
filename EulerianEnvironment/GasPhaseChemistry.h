@@ -328,6 +328,21 @@ SUBROUTINE ResetGasPhaseReactionRates (ReactionRates,ArraySize, TotalPeroxy, Tot
 	  k1 = ReactionRates(L,4)*exp(ReactionRates(L,5)/TEMP)
           k2 = ReactionRates(L,6)/TEMP + ReactionRates(L,7)*PRES*100.0 + ReactionRates(L,8)
           GasPhaseChemicalRates(L) = k1*k2/100.0
+
+       !GEOS-Chem RO2 + NO branching (Flags 12 = nitrate, 13 = alkoxy):  [flag; a0; b0; c0; n; x0; y0]
+       !k = a0 (x0 - T y0) exp(b0/T) k2/(k2+c0)  (12)   or   c0/(k2+c0)  (13);  k2 = JPL fall-off of 2e-22 exp(n) M and 0.43 (T/298)^-8, Fc = 0.41
+       ELSE IF (INT(ReactionRates(L,3)) .EQ. 12 .OR. INT(ReactionRates(L,3)) .EQ. 13) THEN
+	  k0 = 2.0D-22*EXP(ReactionRates(L,7))*Mgas
+	  ki = 0.43D0*(Temp/298.0D0)**(-8)
+	  k1 = k0/ki
+	  k2 = (k0/(1.0D0+k1))*0.41D0**(1.0D0/(1.0D0+(DLOG10(DBLE(k1)))**2))
+	  IF (INT(ReactionRates(L,3)) .EQ. 12) THEN
+	    k3 = k2/(k2+ReactionRates(L,6))
+	  ELSE
+	    k3 = ReactionRates(L,6)/(k2+ReactionRates(L,6))
+	  END IF
+	  GasPhaseChemicalRates(L) = MAX(ReactionRates(L,4)*(ReactionRates(L,8)-Temp*ReactionRates(L,9))*EXP(ReactionRates(L,5)/Temp)*k3, 0.0D0)
+
         END IF
 
      !! Three body reactions, using the troe pressure-broadening 

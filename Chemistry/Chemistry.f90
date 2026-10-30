@@ -831,6 +831,7 @@ MODULE Chemistry
         INTEGER :: I,J,K,L, TimeIndex, RxnIndex
         REAL*8 :: OldRate, y1, y2, ut1, ut2, A, ut_temp
         REAL*8, PARAMETER :: Scale = 1.0
+        REAL*8 :: RxnScale   ! optional per-reaction photolysis scale (3rd rate term of flag 0)
 
         ! cb add
         integer :: lowerZenithIndex, higherZenithIndex, ii
@@ -855,6 +856,8 @@ MODULE Chemistry
                 !print *, 'OldRate/GasPhaseChemicalRates(', L, ') = ', oldrate                                    
                 !Find reaction index number
                 RxnIndex = INT(ReactionRates(L,4))
+                RxnScale = 1.0d0
+                IF (INT(ReactionRates(L,2)) .GE. 3) RxnScale = ReactionRates(L,5)
                 !print *, 'rxnindex: ', rxnindex
 !!Option 1 - if PhotoFlag = 0, find corresponding time in PhotoRates.in array
                 IF (.not. PhotoFlag) THEN
@@ -920,7 +923,7 @@ MODULE Chemistry
                                         dcos(szarad), InterpolatedRate)
                     !print *, 'Interpolated Rate = ', InterpolatedRate
                     !print *, 'Scale Factor = ', Scale
-                    GasPhaseChemicalRates(L) = Scale*transmissivity*abs(InterpolatedRate)
+                    GasPhaseChemicalRates(L) = Scale*RxnScale*transmissivity*abs(InterpolatedRate)
                     !print *, 'GasPhaseChemicalRates(', l, ') = ', GasPhaseChemicalRates(L)
                     !!Find lower time index number
                     !ut1 = UTCStartTime
@@ -983,6 +986,7 @@ MODULE Chemistry
 	INTEGER :: I,J,K,L, TimeIndex, RxnIndex
 	REAL*8 :: OldRate, y1, y2, ut1, ut2, A, ut_temp
 	REAL*8, PARAMETER :: Scale = 1.0
+        REAL*8 :: RxnScale   ! optional per-reaction photolysis scale (3rd rate term of flag 0)
 
 
         !! Loop over all reactions
@@ -998,6 +1002,8 @@ MODULE Chemistry
 								
 	            !Find reaction index number
 	            RxnIndex = INT(ReactionRates(L,4))
+                RxnScale = 1.0d0
+                IF (INT(ReactionRates(L,2)) .GE. 3) RxnScale = ReactionRates(L,5)
 
 !!Option 3 - If light_flag = 1, don't interpolate and turn lights on and off
                               
@@ -1040,7 +1046,7 @@ MODULE Chemistry
 					A = (ut2 - ut)/(ut2 - ut1)
 					!WRITE(*,*) A
 								
-					GasPhaseChemicalRates(L) = Scale*(A*y1 + (1-A)*y2)
+					GasPhaseChemicalRates(L) = Scale*RxnScale*(A*y1 + (1-A)*y2)
 !!Option 2 - if PhotoFlag = 1, interpolate between starting and ending times of photolysis as given in the input deck
                                 ELSE	
 				        !Find lower time index number
@@ -1065,7 +1071,7 @@ MODULE Chemistry
 					A = (ut2 - ut_temp)/(ut2 - ut1)
 					IF (L .EQ. 6) WRITE(*,*) ut, y1, y2, Scale*(A*y1 + (1-A)*y2)
 								
-					GasPhaseChemicalRates(L) = Scale*(A*y1 + (1-A)*y2)
+					GasPhaseChemicalRates(L) = Scale*RxnScale*(A*y1 + (1-A)*y2)
 								        
                                 ENDIF
 

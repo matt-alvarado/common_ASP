@@ -353,6 +353,8 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 		        !! This number should match the number of rate inputs 
                         !! for this reaction type
 			NumbRateFacs = 2	 
+			!! optional 3rd term: scale factor multiplying the PhotoRates.in column
+			IF (J .EQ. 3) NumbRateFacs = 3
 			!WRITE(*,*) 'J =', J
 			IF (J .NE. NumbRateFacs) &
 			CALL ERROR("The following line from "//Trim(InputDeck)//		 &

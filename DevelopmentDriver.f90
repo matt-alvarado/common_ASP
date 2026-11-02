@@ -48,6 +48,9 @@
 !! 10/28  2026   Claude Sonnet 5.5 Commit 2f83092: Patch 22: dropped the   !!
 !!                                 redundant first RecalculateRadius in    !!
 !!                                 the LagrangianParcel particle loop      !!
+!! 11/02  2026   Claude Opus 5.5   Patch 27: call MaybeReplayFEE after    !!
+!!                                 initialisation (harness replay; no     !!
+!!                                 effect unless ASP_FEE_REPLAY is set)   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM ASP
@@ -111,7 +114,7 @@ PROGRAM ASP
                                          RecalculateHeteroRates,        &
                                          StepGasChemistry
 
-	USE Aerosols,             ONLY : Particles,                     &
+	USE Aerosols,             ONLY : Particles, MaybeReplayFEE,     &
                                          Particle,                      &
                                          AerosolModes,                  &
                                          BoundaryParticles,             &
@@ -665,6 +668,8 @@ PROGRAM ASP
 		CALL EquilibrateInternallyAtGridPoint(EquilibrateWater = .TRUE., WaterOpenSystem = .TRUE.)
 		CALL RegridAerosol ()
 		!CALL SpillBeans()
+		!Patch 27: harness replay (only with ASP_FEE_REPLAY set; stops the run)
+		CALL MaybeReplayFEE ()
                 	
 		TEMP = GetTemp()
 		Mgas = GetM   ()
@@ -1887,6 +1892,8 @@ PROGRAM ASP
 		CALL EquilibrateInternallyAtGridPoint(EquilibrateWater = .TRUE., WaterOpenSystem = .TRUE.)
 		CALL RegridAerosol ()
 		!CALL SpillBeans()
+		!Patch 27: harness replay (only with ASP_FEE_REPLAY set; stops the run)
+		CALL MaybeReplayFEE ()
                 	
 		TEMP = GetTemp()
 		Mgas = GetM   ()

@@ -35,6 +35,8 @@
 !!                                 EquilibriumConstantsRatio                !!
 !! 11/02  2026   Claude Opus 5.5   Patch 26: memo arrays for              !!
 !!                                 EquilibriumConstantsRatio              !!
+!! 11/02  2026   Claude Opus 5.5   Patch 27: harness switches;            !!
+!!                                 MaybeReplayFEE public                  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -87,6 +89,7 @@ PUBLIC	:: AerosolModeNames,			&
            OrgCurvatureCorrection,		&
            DumpParticleContentsAtError,         &
            FindElectrolyteEquilibrium,	        &
+           MaybeReplayFEE,				&
            FindAqElectrolyteEquilibriumForGridPoint, &
            HypotheticalElectrolyteConcentrations, &
            InitializeParticlesSectional,        &
@@ -373,6 +376,13 @@ TYPE (ParticleArray) :: BoundaryParticles
 	INTEGER*8, ALLOCATABLE, SAVE :: ECRMemoKey(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: ECRMemoVal(:)
 	LOGICAL, ALLOCATABLE, SAVE :: ECRMemoOK(:)
+	!Patch 27: harness switches, read once from the environment (default off: unchanged behaviour).
+	!  ASP_FEE_DUMP=<file>      write sampled FindElectrolyteEquilibrium states
+	!  ASP_FEE_DUMP_EVERY=<n>   sample every n-th call (default 100)
+	!  ASP_FEE_REPLAY=<file>    replay a dump after initialisation, report timing and differences, stop
+	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE.
+	INTEGER, SAVE :: FEEDumpEvery = 100, FEEDumpUnit = -1
+	INTEGER*8, SAVE :: FEEDumpCount = 0
 	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)
 	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
 	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)

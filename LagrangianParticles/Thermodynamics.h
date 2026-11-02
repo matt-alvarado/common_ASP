@@ -82,6 +82,12 @@
 !! 11/02  2026   Claude Opus 5.5   Patch 26: by-value memo of             !!
 !!                                 EquilibriumConstantsRatio (bit-for-bit !!
 !!                                 key; byte-identical output)            !!
+!! 11/02  2026   Claude Opus 5.5   Patch 27: FindElectrolyteEquilibrium   !!
+!!                                 test harness: ASP_FEE_DUMP writes      !!
+!!                                 sampled solver states, ASP_FEE_REPLAY  !!
+!!                                 re-solves them; the solver is now      !!
+!!                                 FindElectrolyteEquilibriumCore behind a!!
+!!                                 wrapper                                !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -606,7 +612,7 @@ END SUBROUTINE FindAqElectrolyteEquilibriumForGridPoint
 !! That equilibrium is defined using Kusik-Meissner activities, user-	    !!
 !! defined equilibrium coefficients, and an interative solver.		    !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
+SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
                                        FirstEquilibration, ReturnType)
 
 	USE Chemistry,	ONLY : HowManyAqEqReactions,			&
@@ -1000,7 +1006,7 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 		"equilibrium for the system was achieved")
 
 	RETURN
-END SUBROUTINE FindElectrolyteEquilibrium
+END SUBROUTINE FindElectrolyteEquilibriumCore
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! --- EQUILIBRATE ONE AQUOEOUS DISSOCIATION REACTION ---      !!
@@ -1011,6 +1017,141 @@ END SUBROUTINE FindElectrolyteEquilibrium
 !pow would return for the same operands, so output is bit-identical; it only skips repeated
 !identical calls (activity coefficients and water activity are constant across solver iterations).
 !Only strictly positive finite bases are memoised.
+
+!Patch 27: thin wrapper.  With no ASP_FEE_DUMP set it only calls the unchanged solver.
+SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
+                                       FirstEquilibration, ReturnType)
+	IMPLICIT NONE
+	TYPE(PARTICLE),POINTER :: InParticle
+	LOGICAL :: UpdateThermo, FirstEquilibration
+	INTEGER :: ReturnType
+	LOGICAL :: Dump
+
+	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()
+	Dump = .FALSE.
+	IF (FEEDumpOn .AND. .NOT.UpdateThermo .AND. .NOT.FirstEquilibration) THEN
+		FEEDumpCount = FEEDumpCount + 1
+		Dump = (MOD(FEEDumpCount, INT(FEEDumpEvery,8)) .EQ. 0)
+	END IF
+	IF (Dump) CALL WriteFEEState (InParticle, UpdateThermo, FirstEquilibration, ReturnType, .TRUE.)
+	CALL FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, FirstEquilibration, ReturnType)
+	IF (Dump) CALL WriteFEEState (InParticle, UpdateThermo, FirstEquilibration, ReturnType, .FALSE.)
+END SUBROUTINE FindElectrolyteEquilibrium
+
+SUBROUTINE ReadAqSwitches ()
+	IMPLICIT NONE
+	CHARACTER(LEN=512) :: V
+	INTEGER :: L, ST
+	AqSwitchesRead = .TRUE.
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP_EVERY", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) READ (V, *) FEEDumpEvery
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) THEN
+		FEEDumpOn = .TRUE.
+		OPEN (NEWUNIT=FEEDumpUnit, FILE=TRIM(V), FORM="UNFORMATTED", ACCESS="STREAM", STATUS="REPLACE")
+	END IF
+END SUBROUTINE ReadAqSwitches
+
+!Patch 27: one record = everything FindElectrolyteEquilibriumCore reads (Pre) or writes (Post).
+SUBROUTINE WriteFEEState (P, UpdateThermo, FirstEquilibration, ReturnType, Pre)
+	USE GridPointFields, ONLY : GetTemp, GetPress, GetGridCellChemBurden
+	IMPLICIT NONE
+	TYPE(PARTICLE),POINTER :: P
+	LOGICAL :: UpdateThermo, FirstEquilibration, Pre
+	INTEGER :: ReturnType, IU, IF1
+	IU = FEEDumpUnit
+	IF (Pre) THEN
+		IU = FEEDumpUnit
+		IF1 = 0 ; IF (UpdateThermo) IF1 = IF1 + 1 ; IF (FirstEquilibration) IF1 = IF1 + 2
+		WRITE (IU) 1, IF1, ReturnType, GetTemp(), GetPress(), GetGridCellChemBurden(1)
+	ELSE
+		WRITE (IU) 2, 0, ReturnType
+	END IF
+	WRITE (IU) P%NumberOfParticles, P%Dry, P%Temperature, P%EmbryoRadius, P%InsolubleRadius, &
+	           P%EffectiveRadius, P%IonicStr, P%WaterActivity, P%InorgSolnDensity, P%SolutionDensity, &
+	           P%InsolubleDensity, P%ParticleDensity, P%SurfaceTension
+	WRITE (IU) SIZE(P%AqChems), SIZE(P%GammaMixed), SIZE(P%OrgChems), SIZE(P%AqOrgChems)
+	WRITE (IU) P%AqChems, P%GammaMixed, P%OrgChems, P%AqOrgChems
+END SUBROUTINE WriteFEEState
+
+SUBROUTINE ReadFEEState (IU, P, Kind, Flags, RT, T, Pr, H2O, IOS)
+	IMPLICIT NONE
+	INTEGER :: IU, Kind, Flags, RT, IOS, NA, NG, NO, NQ
+	TYPE(PARTICLE),POINTER :: P
+	REAL*8 :: T, Pr, H2O
+	READ (IU, IOSTAT=IOS) Kind, Flags, RT
+	IF (IOS .NE. 0) RETURN
+	IF (Kind .EQ. 1) READ (IU, IOSTAT=IOS) T, Pr, H2O
+	READ (IU, IOSTAT=IOS) P%NumberOfParticles, P%Dry, P%Temperature, P%EmbryoRadius, P%InsolubleRadius, &
+	           P%EffectiveRadius, P%IonicStr, P%WaterActivity, P%InorgSolnDensity, P%SolutionDensity, &
+	           P%InsolubleDensity, P%ParticleDensity, P%SurfaceTension
+	READ (IU, IOSTAT=IOS) NA, NG, NO, NQ
+	IF (NA .NE. SIZE(P%AqChems) .OR. NG .NE. SIZE(P%GammaMixed) .OR. NO .NE. SIZE(P%OrgChems) &
+	    .OR. NQ .NE. SIZE(P%AqOrgChems)) THEN
+		IOS = -99 ; RETURN
+	END IF
+	READ (IU, IOSTAT=IOS) P%AqChems, P%GammaMixed, P%OrgChems, P%AqOrgChems
+END SUBROUTINE ReadFEEState
+
+!Patch 27: replay a dump through FindElectrolyteEquilibriumCore with the solver selected now,
+!time only the solver calls, and compare each result with the dumped result.
+SUBROUTINE MaybeReplayFEE ()
+	USE GridPointFields, ONLY : GetTemp, GetPress, SetTempField, SetPressField, &
+	                            GetGridCellChemBurden, ReplaceGridCellChemBurden
+	USE ModelParameters, ONLY : PressureScale
+	IMPLICIT NONE
+	CHARACTER(LEN=512) :: V
+	INTEGER :: L, ST, IU, Kind, Flags, RT, RTref, IOS, N, NSame, NRT, I, OU
+	TYPE(PARTICLE),POINTER :: P, Ref
+	REAL*8 :: T, Pr, H2O, Dum1, Dum2, Dum3, C0, C1, TSolve, D, DMax, DSum, Scale
+	REAL*8, ALLOCATABLE :: Out(:)
+
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_REPLAY", V, L, ST)
+	IF (ST .NE. 0 .OR. L .EQ. 0) RETURN
+	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()
+	P => Particles%First
+	ALLOCATE (Ref)
+	ALLOCATE (Ref%AqChems(SIZE(P%AqChems)), Ref%GammaMixed(SIZE(P%GammaMixed)), &
+	          Ref%OrgChems(SIZE(P%OrgChems)), Ref%AqOrgChems(SIZE(P%AqOrgChems)))
+	ALLOCATE (Out(SIZE(P%AqChems)))
+	OPEN (NEWUNIT=IU, FILE=TRIM(V), FORM="UNFORMATTED", ACCESS="STREAM", STATUS="OLD")
+	N = 0 ; NSame = 0 ; NRT = 0 ; TSolve = 0. ; DMax = 0. ; DSum = 0.
+	DO
+		CALL ReadFEEState (IU, P, Kind, Flags, RT, T, Pr, H2O, IOS)
+		IF (IOS .NE. 0) EXIT
+		IF (Kind .NE. 1) STOP "ReplayFEE: record out of order"
+		CALL SetTempField (T)
+		IF (GetPress() .NE. Pr) CALL SetPressField (Pr / PressureScale)
+		IF (GetPress() .NE. Pr) STOP "ReplayFEE: cannot restore pressure exactly"
+		CALL ReplaceGridCellChemBurden (1, H2O)
+		CALL CPU_TIME (C0)
+		CALL FindElectrolyteEquilibriumCore (P, MOD(Flags,2) .EQ. 1, Flags .GE. 2, RT)
+		CALL CPU_TIME (C1)
+		TSolve = TSolve + (C1 - C0)
+		Out = P%AqChems
+		CALL ReadFEEState (IU, Ref, Kind, Flags, RTref, Dum1, Dum2, Dum3, IOS)
+		IF (IOS .NE. 0 .OR. Kind .NE. 2) STOP "ReplayFEE: missing result record"
+		N = N + 1
+		IF (ALL(TRANSFER(Out,0_8,SIZE(Out)) .EQ. TRANSFER(Ref%AqChems,0_8,SIZE(Out)))) NSame = NSame + 1
+		IF (RT .EQ. RTref) NRT = NRT + 1
+		!difference of each amount, relative to the particle's total dissolved moles
+		Scale = SUM(ABS(Ref%AqChems(2:))) + 1.0D-300
+		D = MAXVAL(ABS(Out(2:) - Ref%AqChems(2:))) / Scale
+		DMax = MAX(DMax, D) ; DSum = DSum + D
+	END DO
+	CLOSE (IU)
+	OPEN (NEWUNIT=OU, FILE="FEEReplay.txt", STATUS="REPLACE")
+	WRITE (OU, '(A,I10)')     "records          ", N
+	WRITE (OU, '(A,I10)')     "bitwise same     ", NSame
+	WRITE (OU, '(A,I10)')     "same ReturnType  ", NRT
+	WRITE (OU, '(A,ES12.4)')  "solver CPU s     ", TSolve
+	WRITE (OU, '(A,ES12.4)')  "max  |d|/total   ", DMax
+	WRITE (OU, '(A,ES12.4)')  "mean |d|/total   ", DSum / MAX(N,1)
+	CLOSE (OU)
+	STOP "ReplayFEE done"
+END SUBROUTINE MaybeReplayFEE
+
+
 REAL*8 FUNCTION PowMemo (Slot, R, Base, Expo)
 	USE Chemistry, ONLY : AqEquilibriaList
 	IMPLICIT NONE

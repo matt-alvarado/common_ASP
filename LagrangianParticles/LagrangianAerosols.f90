@@ -33,6 +33,8 @@
 !!                                 C2): memoise repeated x**y (PowMemo)     !!
 !!                                 in MeanActivity and                      !!
 !!                                 EquilibriumConstantsRatio                !!
+!! 11/02  2026   Claude Opus 5.5   Patch 26: memo arrays for              !!
+!!                                 EquilibriumConstantsRatio              !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -366,6 +368,11 @@ TYPE (ParticleArray) :: BoundaryParticles
 	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLevitocite(:), EqRxnIsAmmSulfate(:)
 	!Patch C2: last-argument memo for x**y (see PowMemo in Thermodynamics.h)
 	REAL*8, ALLOCATABLE, SAVE :: PowMemoBase(:,:), PowMemoExp(:,:), PowMemoVal(:,:)
+	!Patch 26: by-value memo of EquilibriumConstantsRatio (see Thermodynamics.h)
+	INTEGER, PARAMETER :: ECRMemoKeyLen = 11
+	INTEGER*8, ALLOCATABLE, SAVE :: ECRMemoKey(:,:)
+	REAL*8, ALLOCATABLE, SAVE :: ECRMemoVal(:)
+	LOGICAL, ALLOCATABLE, SAVE :: ECRMemoOK(:)
 	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)
 	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
 	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)

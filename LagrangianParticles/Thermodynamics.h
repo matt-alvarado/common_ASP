@@ -79,6 +79,9 @@
 !!                                 and index arithmetic out of the        !!
 !!                                 EquilibrateAqueousDissociationReaction !!
 !!                                 iteration loop                         !!
+!! 11/02  2026   Claude Opus 5.5   Patch 26: by-value memo of             !!
+!!                                 EquilibriumConstantsRatio (bit-for-bit !!
+!!                                 key; byte-identical output)            !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1926,7 +1929,68 @@ END FUNCTION CheckEquilibriumConvergenceForAqDissociationRxn
 !! case the denominator activity coefficient is simply 1), and  !!
 !! if not it stores an equivalent activity coefficient ratio.   !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!Patch 26: EquilibriumConstantsRatio is a pure function of the values listed in its memo key below
+!(the electrolyte, cation, anion and levitocite-anion amounts, the water amount, the number
+!concentration, the Dry flag, the temperature, the water activity and the two activity
+!coefficients it can read).  FindElectrolyteEquilibrium re-evaluates every major reaction on
+!every iteration although only the reaction just equilibrated changed the particle, so the
+!same arguments recur.  The key is compared bit for bit (TRANSFER to INTEGER*8), so a hit
+!returns exactly the value a fresh evaluation would.  NOT thread-safe (like patches N7/N11/C2).
 REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
+
+	USE Chemistry,       ONLY : AqEquilibriaList, HowManyAqChems, HowManyAqCations
+
+	IMPLICIT NONE
+
+	INTEGER :: WhichEquilibriumRxn
+	TYPE(PARTICLE),POINTER :: InParticle
+
+	INTEGER*8 :: Key(ECRMemoKeyLen)
+	INTEGER   :: R, NA, Idx, G2
+
+	R  = WhichEquilibriumRxn
+	NA = SIZE(InParticle%AqChems)
+	IF (.NOT. ALLOCATED(ECRMemoKey)) THEN
+		ALLOCATE (ECRMemoKey(ECRMemoKeyLen, SIZE(AqEquilibriaList,1)), ECRMemoVal(SIZE(AqEquilibriaList,1)), &
+		          ECRMemoOK(SIZE(AqEquilibriaList,1)))
+		ECRMemoOK = .FALSE.
+	END IF
+
+	Key = 0_8
+	Idx = INT(AqEquilibriaList(R,1))
+	IF (Idx .GE. 1 .AND. Idx .LE. NA) Key(1) = TRANSFER(InParticle%AqChems(Idx), 0_8)
+	Idx = HowManyAqChems + INT(AqEquilibriaList(R,2))
+	IF (Idx .GE. 1 .AND. Idx .LE. NA) Key(2) = TRANSFER(InParticle%AqChems(Idx), 0_8)
+	Idx = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,3))
+	IF (Idx .GE. 1 .AND. Idx .LE. NA) Key(3) = TRANSFER(InParticle%AqChems(Idx), 0_8)
+	Idx = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,22))
+	IF (AqEquilibriaList(R,22) .NE. 0. .AND. Idx .GE. 1 .AND. Idx .LE. NA) &
+		Key(4) = TRANSFER(InParticle%AqChems(Idx), 0_8)
+	Key(5) = TRANSFER(InParticle%AqChems(1), 0_8)
+	Key(6) = TRANSFER(InParticle%NumberOfParticles, 0_8)
+	IF (InParticle%Dry) Key(7) = 1_8
+	Key(8) = TRANSFER(InParticle%Temperature, 0_8)
+	Key(9) = TRANSFER(InParticle%WaterActivity, 0_8)
+	Key(10) = TRANSFER(InParticle%GammaMixed(R), 0_8)
+	G2 = FLOOR(AqEquilibriaList(R,16))
+	IF (G2 .GE. 1 .AND. G2 .LE. SIZE(InParticle%GammaMixed)) Key(11) = TRANSFER(InParticle%GammaMixed(G2), 0_8)
+
+	IF (ECRMemoOK(R)) THEN
+		IF (ALL(Key .EQ. ECRMemoKey(:,R))) THEN
+			EquilibriumConstantsRatio = ECRMemoVal(R)
+			RETURN
+		END IF
+	END IF
+
+	EquilibriumConstantsRatio = EquilibriumConstantsRatioEval (WhichEquilibriumRxn, InParticle)
+	ECRMemoKey(:,R) = Key
+	ECRMemoVal(R)   = EquilibriumConstantsRatio
+	ECRMemoOK(R)    = .TRUE.
+
+END FUNCTION EquilibriumConstantsRatio
+
+!Patch 26: the unchanged evaluation, called by the memo above on a miss.
+REAL*8 FUNCTION EquilibriumConstantsRatioEval (WhichEquilibriumRxn, InParticle)
 
 	USE Chemistry,       ONLY : AqEquilibriaList, HowManyAqChems, HowManyAqCations
 
@@ -1945,9 +2009,9 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 		if (dabs(inparticle%aqchems(int(aqequilibrialist(WhichEquilibriumRxn, 1))))&
 				.le. 1.0e-40) then
 		!IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. 0) THEN
-			EquilibriumConstantsRatio = 1.
+			EquilibriumConstantsRatioEval = 1.
 		ELSE
-			EquilibriumConstantsRatio = 0.000001
+			EquilibriumConstantsRatioEval = 0.000001
 		END IF
 		RETURN
 	END IF
@@ -1958,7 +2022,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 		IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. 0)  THEN
 			IF((InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2))) .EQ. 0.) .OR.	 &
 			   (InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .EQ. 0.))  THEN
-					EquilibriumConstantsRatio = 1.
+					EquilibriumConstantsRatioEval = 1.
 					RETURN
 	END IF ; END IF; END IF
 
@@ -2003,7 +2067,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 
 	!! If the solution is set to blow up, then establish a large artificial value.
 	IF (MM .eq. 0 .or. Eq .eq. 0) THEN
-		EquilibriumConstantsRatio = 1.e12
+		EquilibriumConstantsRatioEval = 1.e12
 		RETURN
 	END IF
 
@@ -2015,7 +2079,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 		(AqEquilibriaList(WhichEquilibriumRxn, 22) .EQ. 0) .AND. &
 		(AqEquilibriaList(WhichEquilibriumRxn, 24) .EQ. 0))	THEN
 
-	  EquilibriumConstantsRatio  =																								&
+	  EquilibriumConstantsRatioEval  =																								&
 		CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)),InParticle) ** AqEquilibriaList(WhichEquilibriumRxn, 4) *	&
 	    AnionMolality (INT(AqEquilibriaList(WhichEquilibriumRxn,3)),InParticle) ** AqEquilibriaList(WhichEquilibriumRxn, 5) *	&
 		InParticle%GammaMixed(FLOOR(AqEquilibriaList(WhichEquilibriumRxn, 16)))													&
@@ -2027,12 +2091,12 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	ELSE IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 .AND. &
 			 (AqEquilibriaList(WhichEquilibriumRxn, 24) .EQ. 0)) THEN
 		!Solid Formation Reaction (non-hydrate)
-		EquilibriumConstantsRatio = MeanActivity (WhichEquilibriumRxn, InParticle) / Eq 
+		EquilibriumConstantsRatioEval = MeanActivity (WhichEquilibriumRxn, InParticle) / Eq 
 	
 	ELSE IF(AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 .AND. &
 			 (AqEquilibriaList(WhichEquilibriumRxn, 24) .NE. 0)) THEN
 		!Solid formation reaction (hydrate)
-		EquilibriumConstantsRatio = MeanActivity (WhichEquilibriumRxn, InParticle)*AwPow / Eq 
+		EquilibriumConstantsRatioEval = MeanActivity (WhichEquilibriumRxn, InParticle)*AwPow / Eq 
 
 	ELSE
 		!Canonical case
@@ -2045,11 +2109,11 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 			STOP
 		END IF
 		!Patch N3: Dum1 above is this same expression; do not call MeanActivity again.
-		EquilibriumConstantsRatio = Dum1
+		EquilibriumConstantsRatioEval = Dum1
 	END IF
 
 	RETURN
-END FUNCTION EquilibriumConstantsRatio
+END FUNCTION EquilibriumConstantsRatioEval
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Fill the Ion Fraction Vectors for a given particle. !!

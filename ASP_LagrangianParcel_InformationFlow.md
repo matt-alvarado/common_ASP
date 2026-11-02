@@ -213,3 +213,11 @@ Alternating solo runs on the same machine, wall time:
 | Branch tip (patch 25) | 40.6 s | 40.9 s | 37.8 s | **39.8 s** |
 
 That is 73.6% less wall time (3.8 times faster). The comparison is not between identical physics: the baseline uses the original `DGAUS8` Gibbs–Duhem integral (about 2e-4 away from the table, section 7.1 and the N11 bullet in section 6) and reads uninitialised memory for the initial gas concentrations (patch 10). Most of the gain is the tabulated integral plus the speed patches 16–25. The baseline aborts after about 1 s on RemConMode1 and Timbavati (SLATEC `DGAUS8`), so these decks have no baseline wall time. Instruction counts for the full baseline run were attempted and stopped as too slow under callgrind; the only exact instruction counts are the 30-minute figures in section 7.1 and 7.2 (59.4 G at patch 21, 53.9 G at patch 24, 50.9 G at patch 25).
+
+### 7.5 Size-bin scaling (patches 26–28)
+
+Baseline deck, Lagrangian parcel, 5 h, one core, `common_asp` c506969. Wall time grows about linearly with the number of bins (N^0.8–0.9 from 40 to 160 bins): Williams 9.1 / 17.8 / 60.7 s, Timbavati 14.5 / 51.1 / 158.9 s at 10 / 40 / 160 bins. In Timbavati at 160 bins condensation is 71% of the profile, almost all of it the electrolyte solver: `EquilibrateGridPoint` always runs its outer loop to the 11-iteration cap, and each `FindElectrolyteEquilibrium` call takes about 45 worst-reaction-first iterations, each re-evaluating every major reaction, with a bisection (mass-flux iteration) for each single-reaction solve.
+
+| Patch | What | Evidence |
+|---|---|---|
+| 26 | `EquilibriumConstantsRatio` keeps, per reaction, the last result and the bit patterns of every value it reads (electrolyte, cation, anion and letovicite-anion amounts, water amount, number concentration, `Dry`, temperature, water activity, the two activity coefficients) and returns the stored result when all are unchanged. | Byte-identical (229 files, Timbavati 160 bins). Hit rate 35%; Timbavati 160 bins 158.9 s to 153.1 s (one run each). |

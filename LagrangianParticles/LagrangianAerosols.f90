@@ -37,6 +37,7 @@
 !!                                 EquilibriumConstantsRatio              !!
 !! 11/02  2026   Claude Opus 5.5   Patch 27: harness switches;            !!
 !!                                 MaybeReplayFEE public                  !!
+!! 11/02  2026   Claude Opus 5.5   Patch 28: AqNewtonInner switch         !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -381,6 +382,8 @@ TYPE (ParticleArray) :: BoundaryParticles
 	!  ASP_FEE_DUMP_EVERY=<n>   sample every n-th call (default 100)
 	!  ASP_FEE_REPLAY=<file>    replay a dump after initialisation, report timing and differences, stop
 	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE.
+	!Patch 28: Newton single-reaction solve; set from AqInnerSolver (deck), ASP_AQ_INNER=newton|jacobson overrides
+	LOGICAL, SAVE :: AqNewtonInner = .TRUE.
 	INTEGER, SAVE :: FEEDumpEvery = 100, FEEDumpUnit = -1
 	INTEGER*8, SAVE :: FEEDumpCount = 0
 	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)

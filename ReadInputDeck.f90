@@ -22,6 +22,8 @@
 !!                                 GDTableMode (1 = table, 0 = full      !!
 !!                                 DGAUS8 integral) and GDTableCells,    !!
 !!                                 optional last lines of ASPInputDeck.in!!
+!! 11/02  2026   Claude Opus 5.5   Patch 28: optional ASPInputDeck.in line!!
+!!                                 after GDTableCells sets AqInnerSolver  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -748,6 +750,20 @@
 					CALL ERROR ("Gibbs-Duhem table cells in ASPInputDeck.in must be between 16 and 65536. Received "//&
 						StripToken(Token))
 				GDTableCells = I
+
+				!! Patch 28: OPTIONAL line after the table cells: single-reaction solver in
+				!! FindElectrolyteEquilibrium (1 = Newton, the default; 0 = Jacobson bisection)
+				Token = GetLine(FH)
+				IF (Token .NE. EOF) THEN
+					IF (.NOT.IsInteger(Token)) &
+						CALL ERROR ("Must Supply either a 0 (Jacobson mass-flux bisection) or 1 (Newton) in "//&
+							"ASPInputDeck.in for the aqueous single-reaction solver. Received "//StripToken(Token))
+					I = STR2INT(Token)
+					IF (I < 0 .OR. I > 1) &
+						CALL ERROR ("Must Supply either a 0 (Jacobson mass-flux bisection) or 1 (Newton) in "//&
+							"ASPInputDeck.in for the aqueous single-reaction solver. Received "//StripToken(Token))
+					AqInnerSolver = I
+				END IF
 			END IF
 		END IF
 	

@@ -34,6 +34,9 @@
 !!                                 GDTableMode (1 = table, 0 = full      !!
 !!                                 DGAUS8 integral) and GDTableCells,    !!
 !!                                 optional last lines of ASPInputDeck.in!!
+!! 11/02  2026   Claude Opus 5.5   Patch 28: AqInnerSolver (1 = Newton,   !!
+!!                                 default; 0 = Jacobson mass-flux        !!
+!!                                 bisection)                             !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -225,6 +228,8 @@ MODULE ModelParameters
 	!! Patch N11 controls (optional last lines of ASPInputDeck.in; defaults used if absent)
 	INTEGER            :: GDTableMode  = 1     !! 1 = tabulated Gibbs-Duhem integral (N11), 0 = full adaptive DGAUS8 integral on every call
 	INTEGER            :: GDTableCells = 256   !! Number of table cells per reaction (only used if GDTableMode = 1)
+	!! Patch 28 control (optional line after GDTableCells; default used if absent)
+	INTEGER            :: AqInnerSolver = 1    !! 1 = Newton single-reaction solve (patch 28), 0 = Jacobson mass-flux bisection
 	REAL*8, PARAMETER  :: ThermoTref  = 298.15	        !! The reference temperature for the Kusik-Meissner Calculations
 	REAL*8, PARAMETER  :: EqCoeffTref = 298			!! The reference temperature for the Equilibrium 
 								!! Coefficient Calculations

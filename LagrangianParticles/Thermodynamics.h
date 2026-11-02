@@ -88,6 +88,12 @@
 !!                                 re-solves them; the solver is now      !!
 !!                                 FindElectrolyteEquilibriumCore behind a!!
 !!                                 wrapper                                !!
+!! 11/02  2026   Claude Opus 5.5   Patch 28: Newton single-reaction solve !!
+!!                                 in                                     !!
+!!                                 EquilibrateAqueousDissociationReaction !!
+!!                                 (safeguarded, inside the mass-flux     !!
+!!                                 bracket); selected by AqInnerSolver,   !!
+!!                                 default Newton                         !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1039,10 +1045,17 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 END SUBROUTINE FindElectrolyteEquilibrium
 
 SUBROUTINE ReadAqSwitches ()
+	USE ModelParameters, ONLY : AqInnerSolver
 	IMPLICIT NONE
 	CHARACTER(LEN=512) :: V
 	INTEGER :: L, ST
 	AqSwitchesRead = .TRUE.
+	AqNewtonInner = (AqInnerSolver .EQ. 1)
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_AQ_INNER", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) THEN
+		IF (TRIM(V) .EQ. "newton")   AqNewtonInner = .TRUE.
+		IF (TRIM(V) .EQ. "jacobson") AqNewtonInner = .FALSE.
+	END IF
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP_EVERY", V, L, ST)
 	IF (ST .EQ. 0 .AND. L .GT. 0) READ (V, *) FEEDumpEvery
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP", V, L, ST)
@@ -1147,6 +1160,7 @@ SUBROUTINE MaybeReplayFEE ()
 	WRITE (OU, '(A,ES12.4)')  "solver CPU s     ", TSolve
 	WRITE (OU, '(A,ES12.4)')  "max  |d|/total   ", DMax
 	WRITE (OU, '(A,ES12.4)')  "mean |d|/total   ", DSum / MAX(N,1)
+	WRITE (OU, '(A,L2)')      "newton inner     ", AqNewtonInner
 	CLOSE (OU)
 	STOP "ReplayFEE done"
 END SUBROUTINE MaybeReplayFEE
@@ -1229,12 +1243,17 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                    ActivityCoefficients, ErrorTolerance, DRH, RH
 	LOGICAL :: WaterRxn
+	!Patch 28 (Newton single-reaction solve)
+	REAL*8  :: B0Cat, B0An, B0An2, B0Hyd, B0El, B0W, X, XLo, XHi, XN, DG
+	INTEGER :: NTry
+	LOGICAL :: SolidRxn, Bad
 
 	!! SCSCSCSCSC
 	LOGICAL :: Scaffolding = .false. 
 
 	!Patch C1: fill the per-reaction chemical-name flags once
 	IF (.NOT. ALLOCATED(EqRxnAnionIsCO3)) CALL InitEqRxnNameFlags ()
+	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()	!Patch 28
 
         !! If this is an empty section, we have no truck with it
 	!IF (InParticle%NumberOfParticles .EQ. 0 .OR. InParticle%Dry) RETURN
@@ -1657,6 +1676,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	HalfIter = AqThermoNumbAllowedIterations/2.
 	!Patch 24: if neutralisation did not change the particle, the entry EqRatio is also the first iteration's ratio
 	HaveEqRatio = (.NOT. StateChanged) .AND. (NotInfDiss)
+	IF (.NOT. (AqNewtonInner .AND. NotInfDiss)) THEN
 	DO
 		IF (HaveEqRatio) THEN
 			Converged = (ErrorTolerance .GE. ABS(EqRatio - 1.))
@@ -1883,7 +1903,88 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		EXIT
 	END IF
 
-	END DO ; END IF
+	END DO
+	ELSE
+	!Patch 28: Newton single-reaction solve (AqInnerSolver = 1, the default).  The mass-flux iteration moves the
+	!extent X by a halving step Z (bisection).  Here X is found by Newton's method on
+	!G(X) = ln(EqRatio), kept inside the same bracket [-Qnumer, Qdenom], with a bisection step
+	!whenever Newton would leave it.  Every state is base + stoichiometry * X, so mass and charge
+	!are conserved exactly, as in the mass-flux iteration.  The activity coefficients and the
+	!water activity are held fixed, as above.  Convergence test and early returns are the same.
+	SolidRxn = (DABS(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .LT. 0.00001)
+	B0Cat = InParticle%AqChems(ICatI) ; B0An = InParticle%AqChems(IAnI)
+	B0An2 = 0. ; IF (R22 .GT. 0) B0An2 = InParticle%AqChems(IAn2I)
+	B0Hyd = 0. ; IF (DABS(R24) .GT. 1.0e-40) B0Hyd = InParticle%AqChems(IHydI)
+	B0El  = 0. ; IF (R1 .GT. 0) B0El = InParticle%AqChems(IEl)
+	B0W   = InParticle%AqChems(1)
+	XLo = -Qnumer ; XHi = Qdenom ; X = 0.
+	IF (.NOT. HaveEqRatio) EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
+	I = 1
+	DO
+		IF (ErrorTolerance .GE. ABS(EqRatio - 1.)) EXIT
+		IF (EqRatio .GT. 1.) THEN
+			XHi = X
+		ELSE
+			XLo = X
+		END IF
+		!dG/dX: each species enters ln Q as stoich*ln(n/W); W is the water amount
+		DG = R4*R4/MAX(InParticle%AqChems(ICatI),1.0D-300) + R5*R5/MAX(InParticle%AqChems(IAnI),1.0D-300) &
+		     + (R4 + R5)*R8/MAX(InParticle%AqChems(1),1.0D-300)
+		IF (R22 .GT. 0) DG = DG + R23*R23/MAX(InParticle%AqChems(IAn2I),1.0D-300) &
+		                        + R23*R8/MAX(InParticle%AqChems(1),1.0D-300)
+		IF (R1 .GT. 0 .AND. .NOT.SolidRxn) DG = DG + 1./MAX(InParticle%AqChems(IEl),1.0D-300) &
+		                                         - R8/MAX(InParticle%AqChems(1),1.0D-300)
+		IF (EqRatio .GT. 0. .AND. EqRatio .LT. 1.0D300 .AND. DG .GT. 0.) THEN
+			XN = X - LOG(EqRatio)/DG
+		ELSE
+			XN = 0.5*(XLo + XHi)
+		END IF
+		!A solid that is still undersaturated with all of it dissolved: dissolve it all
+		IF (SolidRxn .AND. R1 .GT. 0 .AND. EqRatio .LT. 1. .AND. XN .GE. XHi .AND. XHi .EQ. B0El) THEN
+			XN = XHi
+		ELSE IF (.NOT. (XN .GT. XLo .AND. XN .LT. XHi)) THEN
+			XN = 0.5*(XLo + XHi)
+		END IF
+		DO NTry = 1, 60
+			InParticle%AqChems(ICatI) = B0Cat + XN*R4
+			InParticle%AqChems(IAnI)  = B0An  + XN*R5
+			IF (R22 .GT. 0) InParticle%AqChems(IAn2I) = B0An2 + XN*R23
+			IF (DABS(R24) .GT. 1.0e-40) InParticle%AqChems(IHydI) = B0Hyd + XN*R25
+			IF (R1 .GT. 0) InParticle%AqChems(IEl) = B0El - XN
+			InParticle%AqChems(1) = B0W - XN*R8
+			Bad = (InParticle%AqChems(ICatI) .LT. 0. .OR. InParticle%AqChems(IAnI) .LT. 0.)
+			IF (R22 .GT. 0) Bad = Bad .OR. (InParticle%AqChems(IAn2I) .LT. 0.)
+			IF (Bad) THEN
+				XLo = XN ; XN = 0.5*(XLo + XHi) ; CYCLE
+			END IF
+			Bad = .FALSE.
+			IF (R1 .GT. 0) Bad = (InParticle%AqChems(IEl) .LT. 0.)
+			Bad = Bad .OR. (InParticle%AqChems(1) .LE. 0.)
+			IF (Bad) THEN
+				XHi = XN ; XN = 0.5*(XLo + XHi) ; CYCLE
+			END IF
+			EXIT
+		END DO
+		X = XN
+		EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
+		if (EqRatio .NE. EqRatio) then
+			write(*, *) 'EqRatio is NaN for EquilibriumRxn#', WhichEquilibriumRxn
+			write(*,*) 'Setting to 1 and returning'
+			call flush(6)
+			EqRatio = 1.0D0
+			return
+		endif
+		IF (R1 .GT. 0) THEN
+			IF (InParticle%AqChems(IEl) .LT. 1.0e-28) RETURN !Much less than a molecule per particle
+			IF (R8 .EQ. 1.0 .AND. LCO3 .AND. InParticle%AqChems(INT(R3)) .LT. 1e-28) RETURN
+			IF (LLev .AND. InParticle%AqChems(IAn2I) .LT. 1e-28) RETURN
+			IF (LAmm .AND. InParticle%AqChems(IAnI) .LT. 1e-28) RETURN
+		END IF
+		IF (R1 .LT. 0. .AND. InParticle%AqChems(IAnI) .LT. 1e-40 .AND. I .GT. HalfIter) RETURN
+		I = I+1
+		IF (I .GT. AqThermoNumbAllowedIterations) EXIT
+	END DO
+	END IF ; END IF
 
 	!! Report number of iterations if transcribing
 	IF (SCAFFOLDING) CALL TRANSCRIPT("Number of Iterations to Converge Reaction "//  &

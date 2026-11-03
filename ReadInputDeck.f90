@@ -24,6 +24,8 @@
 !!                                 optional last lines of ASPInputDeck.in!!
 !! 11/02  2026   Claude Opus 5.5   Patch 28: optional ASPInputDeck.in line!!
 !!                                 after GDTableCells sets AqInnerSolver  !!
+!! 11/02  2026   Claude Opus 5.5   Patch 30: optional ASPInputDeck.in line!!
+!!                                 after AqInnerSolver sets AqOuterSolver !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -763,6 +765,20 @@
 						CALL ERROR ("Must Supply either a 0 (Jacobson mass-flux bisection) or 1 (Newton) in "//&
 							"ASPInputDeck.in for the aqueous single-reaction solver. Received "//StripToken(Token))
 					AqInnerSolver = I
+
+					!! Patch 30: OPTIONAL line after the single-reaction solver: electrolyte
+					!! equilibrium solver (1 = coupled Newton solve; 0 = worst-first loop)
+					Token = GetLine(FH)
+					IF (Token .NE. EOF) THEN
+						IF (.NOT.IsInteger(Token)) &
+							CALL ERROR ("Must Supply either a 0 (worst-first loop) or 1 (coupled Newton solve) in "//&
+								"ASPInputDeck.in for the electrolyte equilibrium solver. Received "//StripToken(Token))
+						I = STR2INT(Token)
+						IF (I < 0 .OR. I > 1) &
+							CALL ERROR ("Must Supply either a 0 (worst-first loop) or 1 (coupled Newton solve) in "//&
+								"ASPInputDeck.in for the electrolyte equilibrium solver. Received "//StripToken(Token))
+						AqOuterSolver = I
+					END IF
 				END IF
 			END IF
 		END IF

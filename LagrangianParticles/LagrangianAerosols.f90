@@ -40,6 +40,9 @@
 !! 11/02  2026   Claude Opus 5.5   Patch 28: AqNewtonInner switch         !!
 !! 11/02  2026   Claude Opus 5.5   Patch 29: AqDevCache, ECRDepIdx and    !!
 !!                                 harness counters                       !!
+!! 11/02  2026   Claude Opus 5.5   Patch 30: switches, counters and solid-!!
+!!                                 circuit arrays for the coupled solve   !!
+!!                                 and harness                            !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -383,12 +386,24 @@ TYPE (ParticleArray) :: BoundaryParticles
 	!  ASP_FEE_DUMP=<file>      write sampled FindElectrolyteEquilibrium states
 	!  ASP_FEE_DUMP_EVERY=<n>   sample every n-th call (default 100)
 	!  ASP_FEE_REPLAY=<file>    replay a dump after initialisation, report timing and differences, stop
-	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE.
+	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE., FEEDumpAll = .FALSE.	!ASP_FEE_DUMP_ALL: also calls with UpdateThermo
 	!Patch 28: Newton single-reaction solve; set from AqInnerSolver (deck), ASP_AQ_INNER=newton|jacobson overrides
 	LOGICAL, SAVE :: AqNewtonInner = .TRUE.
 	!Patch 29: deviation cache in the worst-first loop (ASP_FEE_DEVCACHE=0 turns it off), the
 	!amounts each reaction ratio reads, harness counters and replay options
 	LOGICAL, SAVE :: AqDevCache = .TRUE.
+	LOGICAL, SAVE :: AqOuterNewton = .FALSE.	!Patch 30: coupled solve; set from AqOuterSolver, ASP_FEE_OUTER overrides
+	INTEGER*8, SAVE :: FEECountNewtonFail = 0, FEECountNewtonSing = 0, FEECountNewtonMaxIt = 0
+	INTEGER*8, SAVE :: FEECountNewtonDrop = 0, FEECountNewtonCycles = 0, FEECountPairRefuse = 0, FEECountResolved = 0
+	!Solid circuits (InitSolidCircuits) and the precipitation rule switch (ASP_FEE_PAIRRULE=1)
+	INTEGER, SAVE :: NCirc = 0
+	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
+	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
+	LOGICAL, SAVE :: AqPairRule = .FALSE.
+	INTEGER, SAVE :: AqExitFix = 0	!ASP_FEE_EXITFIX: 1 = no early exit on II, 2 = also re-check every reaction at the end
+	!ViolationDiag tallies (harness); EADRExit is set only by instrumented builds
+	INTEGER, SAVE :: EADRExit = 0, VDViol(200) = 0, VDMoved(200) = 0, VDFixed(200) = 0, VDStuck(200) = 0, VDExit(0:999) = 0
+	REAL*8, SAVE :: VDSize(200) = 0.
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
 	INTEGER*8, SAVE :: FEECountEADR = 0, FEECountOuter = 0, FEECountECREval = 0
 	CHARACTER(LEN=512), SAVE :: FEEReplayOut = ""

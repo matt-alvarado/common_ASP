@@ -397,6 +397,7 @@ TYPE (ParticleArray) :: BoundaryParticles
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
 	LOGICAL, SAVE :: AqPairRule = .FALSE.
+	INTEGER, SAVE :: AqExitFix = 0	!ASP_FEE_EXITFIX: 1 = no early exit on II, 2 = also re-check every reaction at the end
 	!ViolationDiag tallies (harness); EADRExit is set only by instrumented builds
 	INTEGER, SAVE :: EADRExit = 0, VDViol(200) = 0, VDMoved(200) = 0, VDFixed(200) = 0, VDStuck(200) = 0, VDExit(0:999) = 0
 	REAL*8, SAVE :: VDSize(200) = 0.

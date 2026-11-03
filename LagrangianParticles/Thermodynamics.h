@@ -922,7 +922,10 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	!WRITE(*,*) "Worst: ", WorstEqIndex, WorstEqValue
 
 	!If Worst equilibrium is below error tolerance, we're done
-	IF (II .LT. AqThermoEquilibriumError .AND. K .GT. 5*DemoteAfterThisIteration) THEN
+	!II is the deviation of the last major reaction evaluated above, not the largest.  With
+	!ASP_FEE_EXITFIX >= 1 this early exit is skipped, so the loop ends only when no major reaction is
+	!out of tolerance (WorstEqIndex = 0 below) or at the iteration cap.
+	IF (AqExitFix .EQ. 0 .AND. II .LT. AqThermoEquilibriumError .AND. K .GT. 5*DemoteAfterThisIteration) THEN
 		EXIT
 	END IF
 
@@ -967,6 +970,10 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 				GOTO 25 !Go to top of main loop and try again
 		END IF
 		END DO
+		!ASP_FEE_EXITFIX = 2: the minor reactions too must meet the equilibrium conditions
+		IF (AqExitFix .GE. 2 .AND. K .LE. LocalNumbIterations) THEN
+			IF (EqViolation(InParticle) .GT. AqThermoEquilibriumError) GOTO 25
+		END IF
 
 		EXIT
 	END IF
@@ -1701,6 +1708,8 @@ SUBROUTINE ReadAqSwitches ()
 	AqNewtonInner = (AqInnerSolver .EQ. 1)
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_OUTER", V, L, ST)
 	IF (ST .EQ. 0 .AND. L .GT. 0) AqOuterNewton = (TRIM(V) .EQ. "newton")
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_EXITFIX", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) READ (V, *) AqExitFix
 	AqPairRule = AqOuterNewton	!the solid-circuit rule goes with the coupled solve unless set explicitly
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_PAIRRULE", V, L, ST)
 	IF (ST .EQ. 0 .AND. L .GT. 0) AqPairRule = (TRIM(V) .EQ. "1")

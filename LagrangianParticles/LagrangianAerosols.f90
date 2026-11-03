@@ -389,6 +389,8 @@ TYPE (ParticleArray) :: BoundaryParticles
 	!Patch 29: deviation cache in the worst-first loop (ASP_FEE_DEVCACHE=0 turns it off), the
 	!amounts each reaction ratio reads, harness counters and replay options
 	LOGICAL, SAVE :: AqDevCache = .TRUE.
+	LOGICAL, SAVE :: AqOuterNewton = .FALSE.	!experiment: ASP_FEE_OUTER=newton
+	INTEGER*8, SAVE :: FEECountNewtonFail = 0, FEECountNewtonSing = 0, FEECountNewtonMaxIt = 0
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
 	INTEGER*8, SAVE :: FEECountEADR = 0, FEECountOuter = 0, FEECountECREval = 0
 	CHARACTER(LEN=512), SAVE :: FEEReplayOut = ""

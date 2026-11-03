@@ -674,6 +674,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	LOGICAL :: DevOK(HowManyAqEqReactions), SnapOK
 	INTEGER*8, ALLOCATABLE :: Snap(:)
 	INTEGER :: IC, IR
+	LOGICAL :: NewtonOK
 !	LOGICAL :: MajorReaction(HowManyAqEqReactions), InitiallyEquilibrated(HowManyAqEqReactions),	&
 !			   LocalFirstEquilibration, LocalNumbIterations, NumbInitIterations, AlreadyEquilibrated
 
@@ -805,6 +806,16 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	!END IF
 
 	IF (AlreadyEquilibrated) RETURN
+	IF (AqOuterNewton .AND. .NOT. LocalFirstEquilibration) THEN	!experiment
+		CALL CoupledElectrolyteNewton (InParticle, NewtonOK)
+		IF (NewtonOK) THEN
+			IF (UpdateThermo) THEN
+				CALL KusikMeissner (InParticle)
+				CALL RecalculateRadius(InParticle)
+			END IF
+			RETURN
+		END IF
+	END IF
 
 
 	IF (Scaffolding) WRITE(*,*) "Before Second Loop."
@@ -1107,6 +1118,229 @@ SUBROUTINE InitECRDepIdx (NA)
 	END DO
 END SUBROUTINE InitECRDepIdx
 
+!Experiment (ASP_FEE_OUTER=newton): coupled Newton solve of all movable equilibria at once.
+!Unknowns are the extents of the active reactions; amounts are updated as n = n + nu*dXi, so mass and
+!charge are conserved exactly.  Equations: ln(ratio_r) = 0 with activity coefficients, water activity
+!and temperature fixed (as in the worst-first loop).  Solids follow complementarity: a solid is active
+!while present or supersaturated; a step that would make it negative stops at zero and drops it.
+!Infinitely dissociating electrolytes, solids above their deliquescence RH and other special cases are
+!left to EquilibrateAqueousDissociationReaction, which also runs a validation pass after each Newton
+!cycle.  On any failure the particle is restored and the caller falls back to the worst-first loop.
+SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
+	USE Chemistry,       ONLY : AqEquilibriaList, HowManyAqEqReactions, HowManyAqChems, HowManyAqCations
+	USE ModelParameters, ONLY : AqThermoEquilibriumError
+	USE GridPointFields, ONLY : GetRelativeHumidity
+	IMPLICIT NONE
+	TYPE(PARTICLE),POINTER :: InParticle
+	LOGICAL :: Success
+	INTEGER, PARAMETER :: MaxNu = 6, MaxCycles = 4, MaxIter = 40
+	INTEGER :: NR, NA, R, S, I, J, M, It, Cyc, Ret, NChanged, Hit, NIdx(HowManyAqEqReactions)
+	INTEGER :: Idx(MaxNu, HowManyAqEqReactions), Act(HowManyAqEqReactions)
+	REAL*8  :: Nu(MaxNu, HowManyAqEqReactions), Qe(MaxNu, HowManyAqEqReactions), QSum(HowManyAqEqReactions)
+	REAL*8  :: Ratio(HowManyAqEqReactions), F(HowManyAqEqReactions), Jac(HowManyAqEqReactions,HowManyAqEqReactions)
+	REAL*8  :: Dxi(HowManyAqEqReactions), Save(SIZE(InParticle%AqChems)), Dn(SIZE(InParticle%AqChems))
+	REAL*8  :: Alpha, Lim, RH, Tol, WaterNu, FMax
+	LOGICAL :: Solid(HowManyAqEqReactions), Movable(HowManyAqEqReactions), Converged, Singular
+
+	NR = HowManyAqEqReactions ; NA = SIZE(InParticle%AqChems)
+	Tol = AqThermoEquilibriumError
+	Save = InParticle%AqChems
+	Success = .FALSE.
+	RH = GetRelativeHumidity ()
+
+	!Stoichiometry (dissociation direction) and the exponents of ln Q (molalities), per reaction
+	Idx = 0 ; Nu = 0. ; Qe = 0. ; NIdx = 0
+	DO R = 1, NR
+		Solid(R) = (DABS(AqEquilibriaList(R,6) - 1.) .LT. 1.0D-5)
+		Movable(R) = (DABS(AqEquilibriaList(R,9) + 1.) .GE. 1.0D-6)				!not infinitely dissociating
+		IF (Solid(R) .AND. RH .GE. DeliquesenceRH(R, InParticle)) Movable(R) = .FALSE.	!forced to dissolve
+		CALL AddNu (R, 1, 0, -AqEquilibriaList(R,8), 0.D0)						!water (Q uses aw, fixed)
+		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
+			IF (Solid(R)) THEN
+				CALL AddNu (R, INT(AqEquilibriaList(R,1)), 0, -1.D0, 0.D0)
+			ELSE
+				CALL AddNu (R, INT(AqEquilibriaList(R,1)), 0, -1.D0, -1.D0)
+			END IF
+		END IF
+		CALL AddNu (R, HowManyAqChems+INT(AqEquilibriaList(R,2)), 0, AqEquilibriaList(R,4), AqEquilibriaList(R,4))
+		CALL AddNu (R, HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,3)), 0, &
+		            AqEquilibriaList(R,5), AqEquilibriaList(R,5))
+		IF (AqEquilibriaList(R,22) .GT. 0.) &
+			CALL AddNu (R, HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,22)), 0, &
+			            AqEquilibriaList(R,23), AqEquilibriaList(R,23))
+		IF (DABS(AqEquilibriaList(R,24)) .GT. 1.0D-5) &
+			CALL AddNu (R, INT(AqEquilibriaList(R,24)), 0, AqEquilibriaList(R,25), 0.D0)
+		QSum(R) = SUM(Qe(1:NIdx(R),R))
+	END DO
+
+	DO Cyc = 1, MaxCycles
+		Converged = .FALSE.
+		DO It = 1, MaxIter
+			FEECountOuter = FEECountOuter + 1
+			!Active set and residuals
+			M = 0 ; FMax = 0.
+			DO R = 1, NR
+				IF (.NOT. Movable(R)) CYCLE
+				Ratio(R) = EquilibriumConstantsRatio (R, InParticle)
+				IF (.NOT. (Ratio(R) .GT. 0. .AND. Ratio(R) .LT. 1.0D11)) CYCLE		!a Q amount is zero: leave to the validation pass
+				IF (AnyZeroInQ(R)) CYCLE
+				IF (AqEquilibriaList(R,1) .GT. 0.) THEN
+					IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 0. .AND. Ratio(R) .LE. 1.) CYCLE	!nothing to dissociate
+				END IF
+				M = M + 1 ; Act(M) = R ; F(M) = LOG(Ratio(R))
+				FMax = MAX(FMax, ABS(1. - Ratio(R)))
+			END DO
+			IF (FMax .LE. Tol) THEN
+				Converged = .TRUE. ; EXIT
+			END IF
+			!Jacobian d ln Q_a / d xi_b
+			DO I = 1, M
+				R = Act(I)
+				DO J = 1, M
+					S = Act(J)
+					Jac(I,J) = 0.
+					WaterNu = 0.
+					DO Hit = 1, NIdx(S)
+						IF (Idx(Hit,S) .EQ. 1) WaterNu = Nu(Hit,S)
+					END DO
+					Jac(I,J) = -QSum(R) * WaterNu / InParticle%AqChems(1)
+					CALL AddJ (R, S, Jac(I,J))
+				END DO
+				Dxi(I) = -F(I)
+			END DO
+			CALL SmallGauss (Jac, Dxi, M, NR, Singular)
+			IF (Singular) THEN
+				FEECountNewtonSing = FEECountNewtonSing + 1 ; GOTO 900
+			END IF
+			!Amount changes and the largest step that keeps every amount positive (solids may reach zero)
+			Dn = 0.
+			DO I = 1, M
+				R = Act(I)
+				DO J = 1, NIdx(R)
+					Dn(Idx(J,R)) = Dn(Idx(J,R)) + Nu(J,R) * Dxi(I)
+				END DO
+			END DO
+			Alpha = 1. ; Hit = 0
+			DO I = 1, M
+				R = Act(I)
+				IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
+					J = INT(AqEquilibriaList(R,1))
+					IF (Dn(J) .LT. 0.) THEN
+						Lim = InParticle%AqChems(J) / (-Dn(J))
+						IF (Lim .LT. Alpha) THEN
+							Alpha = Lim ; Hit = J
+						END IF
+					END IF
+				END IF
+			END DO
+			DO J = 1, NA
+				IF (Dn(J) .LT. 0. .AND. J .NE. Hit) THEN
+					IF (IsSolidAmount(J)) CYCLE
+					Lim = 0.95 * InParticle%AqChems(J) / (-Dn(J))
+					IF (Lim .LT. Alpha) THEN
+						Alpha = Lim ; Hit = 0
+					END IF
+				END IF
+			END DO
+			IF (.NOT. (Alpha .GT. 0.)) GOTO 900
+			InParticle%AqChems = InParticle%AqChems + Alpha * Dn
+			IF (Hit .GT. 0) InParticle%AqChems(Hit) = 0.
+			IF (InParticle%AqChems(1) .LE. 0.) GOTO 900
+		END DO
+		IF (.NOT. Converged) THEN
+			FEECountNewtonMaxIt = FEECountNewtonMaxIt + 1 ; GOTO 900
+		END IF
+		!Validation pass: the single-reaction solver handles the special cases and confirms the state
+		NChanged = 0
+		DO R = 1, NR
+			CALL EquilibrateAqueousDissociationReaction (R, InParticle, OptErrorTolerance = Tol, ReturnType = Ret)
+			IF (Ret .EQ. 1) NChanged = NChanged + 1
+		END DO
+		IF (NChanged .EQ. 0) THEN
+			Success = .TRUE.
+			RETURN
+		END IF
+	END DO
+900	InParticle%AqChems = Save
+	FEECountNewtonFail = FEECountNewtonFail + 1
+	RETURN
+
+CONTAINS
+
+	SUBROUTINE AddNu (R, I, Dummy, V, Q)
+		INTEGER :: R, I, Dummy, K
+		REAL*8  :: V, Q
+		IF (I .LT. 1 .OR. I .GT. NA) RETURN
+		IF (V .EQ. 0. .AND. Q .EQ. 0.) RETURN
+		DO K = 1, NIdx(R)
+			IF (Idx(K,R) .EQ. I) THEN
+				Nu(K,R) = Nu(K,R) + V ; Qe(K,R) = Qe(K,R) + Q ; RETURN
+			END IF
+		END DO
+		NIdx(R) = NIdx(R) + 1
+		Idx(NIdx(R),R) = I ; Nu(NIdx(R),R) = V ; Qe(NIdx(R),R) = Q
+	END SUBROUTINE AddNu
+
+	SUBROUTINE AddJ (R, S, V)
+		INTEGER :: R, S, K, L
+		REAL*8  :: V
+		DO K = 1, NIdx(R)
+			IF (Qe(K,R) .EQ. 0.) CYCLE
+			DO L = 1, NIdx(S)
+				IF (Idx(L,S) .EQ. Idx(K,R)) V = V + Qe(K,R) * Nu(L,S) / InParticle%AqChems(Idx(K,R))
+			END DO
+		END DO
+	END SUBROUTINE AddJ
+
+	LOGICAL FUNCTION AnyZeroInQ (R)
+		INTEGER :: R, K
+		AnyZeroInQ = .FALSE.
+		DO K = 1, NIdx(R)
+			IF (Qe(K,R) .NE. 0. .AND. InParticle%AqChems(Idx(K,R)) .LE. 0.) AnyZeroInQ = .TRUE.
+		END DO
+	END FUNCTION AnyZeroInQ
+
+	LOGICAL FUNCTION IsSolidAmount (J)
+		INTEGER :: J, K
+		IsSolidAmount = .FALSE.
+		DO K = 1, NR
+			IF (Solid(K) .AND. INT(AqEquilibriaList(K,1)) .EQ. J) IsSolidAmount = .TRUE.
+		END DO
+	END FUNCTION IsSolidAmount
+
+	SUBROUTINE SmallGauss (A, B, N, LD, Singular)
+		INTEGER :: N, LD, I, J, P
+		REAL*8  :: A(LD,LD), B(LD), T, Row(LD)
+		LOGICAL :: Singular
+		Singular = .FALSE.
+		DO I = 1, N
+			P = I
+			DO J = I+1, N
+				IF (ABS(A(J,I)) .GT. ABS(A(P,I))) P = J
+			END DO
+			IF (.NOT. (ABS(A(P,I)) .GT. 0.)) THEN
+				Singular = .TRUE. ; RETURN
+			END IF
+			IF (P .NE. I) THEN
+				Row(1:N) = A(I,1:N) ; A(I,1:N) = A(P,1:N) ; A(P,1:N) = Row(1:N)
+				T = B(I) ; B(I) = B(P) ; B(P) = T
+			END IF
+			DO J = I+1, N
+				T = A(J,I) / A(I,I)
+				A(J,I:N) = A(J,I:N) - T * A(I,I:N)
+				B(J) = B(J) - T * B(I)
+			END DO
+		END DO
+		DO I = N, 1, -1
+			B(I) = (B(I) - SUM(A(I,I+1:N) * B(I+1:N))) / A(I,I)
+			IF (.NOT. (ABS(B(I)) .LT. 1.0D300)) THEN
+				Singular = .TRUE. ; RETURN
+			END IF
+		END DO
+	END SUBROUTINE SmallGauss
+
+END SUBROUTINE CoupledElectrolyteNewton
+
 SUBROUTINE ReadAqSwitches ()
 	USE ModelParameters, ONLY : AqInnerSolver
 	IMPLICIT NONE
@@ -1114,6 +1348,8 @@ SUBROUTINE ReadAqSwitches ()
 	INTEGER :: L, ST
 	AqSwitchesRead = .TRUE.
 	AqNewtonInner = (AqInnerSolver .EQ. 1)
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_OUTER", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) AqOuterNewton = (TRIM(V) .EQ. "newton")
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DEVCACHE", V, L, ST)	!Patch 29
 	IF (ST .EQ. 0 .AND. L .GT. 0) AqDevCache = (TRIM(V) .NE. "0")
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_REPLAY_OUT", V, L, ST)
@@ -1198,7 +1434,7 @@ SUBROUTINE MaybeReplayFEE ()
 	ALLOCATE (Out(SIZE(P%AqChems)))
 	OPEN (NEWUNIT=IU, FILE=TRIM(V), FORM="UNFORMATTED", ACCESS="STREAM", STATUS="OLD")
 	N = 0 ; NSame = 0 ; NRT = 0 ; TSolve = 0. ; DMax = 0. ; DSum = 0.
-	FEECountEADR = 0 ; FEECountOuter = 0 ; FEECountECREval = 0 ; KHist = 0
+	FEECountEADR = 0 ; FEECountOuter = 0 ; FEECountECREval = 0 ; KHist = 0 ; FEECountNewtonFail = 0
 	IF (LEN_TRIM(FEEReplayOut) .GT. 0) OPEN (NEWUNIT=RU, FILE=TRIM(FEEReplayOut), FORM="UNFORMATTED", &
 	                                        ACCESS="STREAM", STATUS="REPLACE")
 	NRep = 1
@@ -1251,6 +1487,7 @@ SUBROUTINE MaybeReplayFEE ()
 	WRITE (OU, '(A,F10.2)')   "1-rxn solves/call", DBLE(FEECountEADR)/MAX(N,1)
 	WRITE (OU, '(A,F10.2)')   "ratio evals/call ", DBLE(FEECountECREval)/MAX(N,1)
 	WRITE (OU, '(A,5I8)')     "outer iter <=10,30,60,100,>100", KHist
+	WRITE (OU, '(A,3I10)')    "coupled fallbacks (all, singular, max iter)", FEECountNewtonFail, FEECountNewtonSing, FEECountNewtonMaxIt
 	CLOSE (OU)
 	STOP "ReplayFEE done"
 END SUBROUTINE MaybeReplayFEE

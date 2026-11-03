@@ -397,6 +397,9 @@ TYPE (ParticleArray) :: BoundaryParticles
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
 	LOGICAL, SAVE :: AqPairRule = .FALSE.
+	!ViolationDiag tallies (harness); EADRExit is set only by instrumented builds
+	INTEGER, SAVE :: EADRExit = 0, VDViol(200) = 0, VDMoved(200) = 0, VDFixed(200) = 0, VDStuck(200) = 0, VDExit(0:999) = 0
+	REAL*8, SAVE :: VDSize(200) = 0.
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
 	INTEGER*8, SAVE :: FEECountEADR = 0, FEECountOuter = 0, FEECountECREval = 0
 	CHARACTER(LEN=512), SAVE :: FEEReplayOut = ""

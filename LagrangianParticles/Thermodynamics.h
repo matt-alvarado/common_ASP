@@ -1621,6 +1621,52 @@ REAL*8 FUNCTION EqViolation (InParticle)
 	END DO
 END FUNCTION EqViolation
 
+!Harness check (global-newton-test): for every reaction that violates the equilibrium conditions by more
+!than 2 x tolerance in a result, apply the single-reaction solver to a copy and record whether it moves
+!the state, whether that fixes the reaction, and (EADRExit) where the solver returned.
+SUBROUTINE ViolationDiag (InParticle, Tmp)
+	USE Chemistry, ONLY : AqEquilibriaList, HowManyAqEqReactions
+	USE GridPointFields, ONLY : GetRelativeHumidity
+	USE ModelParameters, ONLY : WaterEquilibriumIndex, AqThermoEquilibriumError
+	IMPLICIT NONE
+	TYPE(PARTICLE),POINTER :: InParticle, Tmp
+	INTEGER :: R, Ret
+	REAL*8  :: Ratio, RH, V, V2
+	LOGICAL :: Solid
+	RH = GetRelativeHumidity ()
+	DO R = 1, HowManyAqEqReactions
+		IF (R .EQ. WaterEquilibriumIndex) CYCLE
+		IF (DABS(AqEquilibriaList(R,9) + 1.) .LT. 1.0D-6) CYCLE
+		Solid = (DABS(AqEquilibriaList(R,6) - 1.) .LT. 1.0D-5)
+		IF (Solid) THEN
+			IF (RH .GE. DeliquesenceRH(R, InParticle)) CYCLE
+		END IF
+		Ratio = EquilibriumConstantsRatio (R, InParticle)
+		IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D11)) CYCLE
+		V = ABS(1. - Ratio)
+		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
+			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) V = MAX(0.D0, Ratio - 1.)
+		END IF
+		IF (V .LE. 2.*AqThermoEquilibriumError) CYCLE
+		VDViol(R) = VDViol(R) + 1 ; VDSize(R) = VDSize(R) + V
+		Tmp%AqChems = InParticle%AqChems ; Tmp%GammaMixed = InParticle%GammaMixed
+		Tmp%NumberOfParticles = InParticle%NumberOfParticles ; Tmp%Dry = InParticle%Dry
+		Tmp%Temperature = InParticle%Temperature ; Tmp%WaterActivity = InParticle%WaterActivity
+		Tmp%EmbryoRadius = InParticle%EmbryoRadius ; Tmp%SolutionDensity = InParticle%SolutionDensity
+		Tmp%SurfaceTension = InParticle%SurfaceTension ; Tmp%IonicStr = InParticle%IonicStr
+		EADRExit = 0
+		CALL EquilibrateAqueousDissociationReaction (R, Tmp, OptErrorTolerance = AqThermoEquilibriumError, ReturnType = Ret)
+		IF (ANY(Tmp%AqChems .NE. InParticle%AqChems)) THEN
+			VDMoved(R) = VDMoved(R) + 1
+			V2 = ABS(1. - EquilibriumConstantsRatio(R, Tmp))
+			IF (V2 .LE. AqThermoEquilibriumError) VDFixed(R) = VDFixed(R) + 1
+		ELSE
+			VDStuck(R) = VDStuck(R) + 1
+			IF (EADRExit .GE. 0 .AND. EADRExit .LE. 999) VDExit(EADRExit) = VDExit(EADRExit) + 1
+		END IF
+	END DO
+END SUBROUTINE ViolationDiag
+
 !Number of circuits whose unstable side is entirely present in the particle (harness check)
 INTEGER FUNCTION CountUnstableSets (InParticle)
 	USE Chemistry, ONLY : AqEquilibriaList
@@ -1730,6 +1776,8 @@ SUBROUTINE MaybeReplayFEE ()
 	INTEGER*8 :: K0
 	INTEGER :: NUnstRef, NUnstOut, NUnstIn
 	INTEGER :: NVR, NVO
+	LOGICAL :: VDiagOn
+	INTEGER :: IR2
 	REAL*8 :: VR, VO, VRSum, VOSum
 	TYPE(PARTICLE),POINTER :: P, Ref
 	REAL*8 :: T, Pr, H2O, Dum1, Dum2, Dum3, C0, C1, TSolve, D, DMax, DSum, Scale
@@ -1749,6 +1797,8 @@ SUBROUTINE MaybeReplayFEE ()
 	FEECountNewtonSing = 0 ; FEECountNewtonMaxIt = 0 ; FEECountNewtonDrop = 0 ; FEECountNewtonCycles = 0
 	FEECountPairRefuse = 0 ; NUnstRef = 0 ; NUnstOut = 0 ; NUnstIn = 0 ; FEECountResolved = 0
 	NVR = 0 ; NVO = 0 ; VRSum = 0. ; VOSum = 0.
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_VDIAG", V, L, ST)
+	VDiagOn = (ST .EQ. 0 .AND. L .GT. 0)
 	IF (LEN_TRIM(FEEReplayOut) .GT. 0) OPEN (NEWUNIT=RU, FILE=TRIM(FEEReplayOut), FORM="UNFORMATTED", &
 	                                        ACCESS="STREAM", STATUS="REPLACE")
 	NRep = 1
@@ -1788,6 +1838,7 @@ SUBROUTINE MaybeReplayFEE ()
 			VRSum = VRSum + VR ; VOSum = VOSum + VO
 			IF (VR .GT. 2.*AqThermoEquilibriumError) NVR = NVR + 1
 			IF (VO .GT. 2.*AqThermoEquilibriumError) NVO = NVO + 1
+			IF (VDiagOn) CALL ViolationDiag (P, Ref)
 		END IF
 		!difference of each amount, relative to the particle's total dissolved moles
 		Scale = SUM(ABS(Ref%AqChems(2:))) + 1.0D-300
@@ -1820,6 +1871,17 @@ SUBROUTINE MaybeReplayFEE ()
 	WRITE (OU, '(A,3I10)')    "records with an unstable solid set: input, reference, replay", NUnstIn, NUnstRef, NUnstOut
 	WRITE (OU, '(A,2ES12.4)') "mean equilibrium violation: reference, replay", VRSum/MAX(N,1), VOSum/MAX(N,1)
 	WRITE (OU, '(A,2I10)')    "records violating by > 2 x tolerance: reference, replay", NVR, NVO
+	IF (VDiagOn) THEN
+		WRITE (OU, '(A)') "violations in the replay result, per reaction: rxn, count, mean size, solver moves it, fixes it, stuck"
+		DO IR2 = 1, 200
+			IF (VDViol(IR2) .GT. 0) WRITE (OU, '(I4,I8,ES11.3,3I8)') IR2, VDViol(IR2), VDSize(IR2)/VDViol(IR2), &
+				VDMoved(IR2), VDFixed(IR2), VDStuck(IR2)
+		END DO
+		WRITE (OU, '(A)') "stuck cases by solver exit point (instrumented builds only): exit id, count"
+		DO IR2 = 0, 999
+			IF (VDExit(IR2) .GT. 0) WRITE (OU, '(2I8)') IR2, VDExit(IR2)
+		END DO
+	END IF
 	CLOSE (OU)
 	STOP "ReplayFEE done"
 END SUBROUTINE MaybeReplayFEE

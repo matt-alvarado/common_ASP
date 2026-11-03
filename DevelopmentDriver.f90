@@ -51,6 +51,8 @@
 !! 11/02  2026   Claude Opus 5.5   Patch 27: call MaybeReplayFEE after    !!
 !!                                 initialisation (harness replay; no     !!
 !!                                 effect unless ASP_FEE_REPLAY is set)   !!
+!! 11/02  2026   Claude Opus 5.5   Patch 33: ThermoTest can scan RH upward!!
+!!                                 (ASP_THERMO_SCAN=up); default unchanged!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM ASP
@@ -162,6 +164,9 @@ PROGRAM ASP
                    SO4i, HSO4i,  LEVi, FH1, EnhFH, NH3i, NH4i, NH4NO3i, &
                    NH4Cli, NO2i, ETHEi, HCHOi, Aceti, NOi, Gas_Index
 
+	CHARACTER(LEN=16) :: ThermoScan	!Patch 33
+	INTEGER :: ThermoScanLen, ThermoScanSt
+	REAL*8  :: ThermoRHStep
 	REAL*8  :: ii, T_mix, Tau_Dep, slope, b, ChemTimestep, MixTimestep, &
 		   CoagTimeStep, CondTimeStep, t, Mgas, Temp, &
                    NewRH, HNO3Conc, NH3Conc, ut, &
@@ -1188,9 +1193,17 @@ PROGRAM ASP
            !WRITE(*,*) "After Spill Beans"
                 
 
-           NewRH = 0.92
+           !Patch 33: ASP_THERMO_SCAN=up scans RH upward (0.20 -> 0.90, the deliquescence branch; start
+           !from a dry deck, initial RH 0.20); the default scans downward (0.90 -> 0.20).
+           ThermoRHStep = -0.02 ; NewRH = 0.92
+           CALL GET_ENVIRONMENT_VARIABLE ("ASP_THERMO_SCAN", ThermoScan, ThermoScanLen, ThermoScanSt)
+           IF (ThermoScanSt .EQ. 0 .AND. ThermoScanLen .GT. 0) THEN
+              IF (TRIM(ThermoScan) .EQ. "up") THEN
+                 ThermoRHStep = 0.02 ; NewRH = 0.18
+              END IF
+           END IF
            DO J = 1, 36
-              NewRH = NewRH - 0.02		
+              NewRH = NewRH + ThermoRHStep
               CALL SetRelativeHumidity (NewRH)
               
               WRITE(*,*) "Before Equilibrate"	, NewRH

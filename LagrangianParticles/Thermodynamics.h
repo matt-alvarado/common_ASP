@@ -94,6 +94,10 @@
 !!                                 (safeguarded, inside the mass-flux     !!
 !!                                 bracket); selected by AqInnerSolver,   !!
 !!                                 default Newton                         !!
+!! 11/02  2026   Claude Opus 5.5   Patch 29: deviation cache in the       !!
+!!                                 FindElectrolyteEquilibrium worst-first !!
+!!                                 loop (exact; default on); harness      !!
+!!                                 counters, repeats and output file      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -666,6 +670,10 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
                localFirstEquilibration, &
                alreadyEquilibrated
     integer :: numbInitIterations, localNumbIterations
+	REAL*8  :: Dev(HowManyAqEqReactions)		!Patch 29
+	LOGICAL :: DevOK(HowManyAqEqReactions), SnapOK
+	INTEGER*8, ALLOCATABLE :: Snap(:)
+	INTEGER :: IC, IR
 !	LOGICAL :: MajorReaction(HowManyAqEqReactions), InitiallyEquilibrated(HowManyAqEqReactions),	&
 !			   LocalFirstEquilibration, LocalNumbIterations, NumbInitIterations, AlreadyEquilibrated
 
@@ -817,6 +825,11 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 
 	!! Count iterations
 	K = 0
+	SnapOK = .FALSE.	!Patch 29
+	IF (AqDevCache) THEN
+		IF (.NOT. ALLOCATED(ECRDepIdx)) CALL InitECRDepIdx (SIZE(InParticle%AqChems))
+		ALLOCATE (Snap(SIZE(InParticle%AqChems)))
+	END IF
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! We begin by assuming that each of the     !!
@@ -832,11 +845,34 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	DO
 
 	K = K+1  !! tally the iterations
+	FEECountOuter = FEECountOuter + 1	!Patch 29
 	IF(SCAFFOLDING) WRITE(*,*) "NumIter", K
 	
 	
 	!! See if any reactions are out of equilibrium
 	!! and keep track of the reaction farthest from equilibrium
+	!Patch 29: deviation cache.  A reaction's deviation depends only on the amounts in ECRDepIdx and
+	!on water (activity coefficients, water activity and temperature are fixed in this loop), so it
+	!is re-evaluated only when one of those amounts changed bit for bit since the last pass.
+	IF (AqDevCache) THEN
+		IF (.NOT. SnapOK) THEN
+			DevOK = .FALSE.
+			Snap = TRANSFER(InParticle%AqChems, 0_8, SIZE(InParticle%AqChems))
+			SnapOK = .TRUE.
+		ELSE
+			IF (Snap(1) .NE. TRANSFER(InParticle%AqChems(1), 0_8)) THEN
+				DevOK = .FALSE.
+			ELSE
+				DO IC = 2, SIZE(InParticle%AqChems)
+					IF (Snap(IC) .EQ. TRANSFER(InParticle%AqChems(IC), 0_8)) CYCLE
+					DO IR = 1, HowManyAqEqReactions
+						IF (ANY(ECRDepIdx(:,IR) .EQ. IC)) DevOK(IR) = .FALSE.
+					END DO
+				END DO
+			END IF
+			Snap = TRANSFER(InParticle%AqChems, 0_8, SIZE(InParticle%AqChems))
+		END IF
+	END IF
 	WorstEqIndex = 0  ;  WorstEqValue = AqThermoEquilibriumError
 	DO I = 1, HowManyAqEqReactions
 
@@ -851,7 +887,15 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 		!! Get the deviation from Equilibrium
 		! CMB: use double precision
 		!II = ABS(1.-EquilibriumConstantsRatio (I, InParticle))
+		IF (AqDevCache) THEN	!Patch 29
+			IF (.NOT. DevOK(I)) THEN
+				Dev(I) = dabs(1. - EquilibriumConstantsRatio(I, InParticle))
+				DevOK(I) = .TRUE.
+			END IF
+			II = Dev(I)
+		ELSE
 		II = dabs(1. - EquilibriumConstantsRatio(I, InParticle))
+		END IF
 
 		!! If it is the worst the loop has seen, keep track of it
 		IF (II .GT. WorstEqValue) THEN
@@ -1044,6 +1088,25 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 	IF (Dump) CALL WriteFEEState (InParticle, UpdateThermo, FirstEquilibration, ReturnType, .FALSE.)
 END SUBROUTINE FindElectrolyteEquilibrium
 
+!Patch 29: the amounts EquilibriumConstantsRatio reads for each reaction (besides water), as AqChems indices
+SUBROUTINE InitECRDepIdx (NA)
+	USE Chemistry, ONLY : AqEquilibriaList, HowManyAqChems, HowManyAqCations, HowManyAqEqReactions
+	IMPLICIT NONE
+	INTEGER :: NA, R, Idx
+	ALLOCATE (ECRDepIdx(4, HowManyAqEqReactions))
+	ECRDepIdx = -1
+	DO R = 1, HowManyAqEqReactions
+		Idx = INT(AqEquilibriaList(R,1))
+		IF (Idx .GE. 1 .AND. Idx .LE. NA) ECRDepIdx(1,R) = Idx
+		Idx = HowManyAqChems + INT(AqEquilibriaList(R,2))
+		IF (Idx .GE. 1 .AND. Idx .LE. NA) ECRDepIdx(2,R) = Idx
+		Idx = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,3))
+		IF (Idx .GE. 1 .AND. Idx .LE. NA) ECRDepIdx(3,R) = Idx
+		Idx = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,22))
+		IF (AqEquilibriaList(R,22) .NE. 0. .AND. Idx .GE. 1 .AND. Idx .LE. NA) ECRDepIdx(4,R) = Idx
+	END DO
+END SUBROUTINE InitECRDepIdx
+
 SUBROUTINE ReadAqSwitches ()
 	USE ModelParameters, ONLY : AqInnerSolver
 	IMPLICIT NONE
@@ -1051,6 +1114,10 @@ SUBROUTINE ReadAqSwitches ()
 	INTEGER :: L, ST
 	AqSwitchesRead = .TRUE.
 	AqNewtonInner = (AqInnerSolver .EQ. 1)
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DEVCACHE", V, L, ST)	!Patch 29
+	IF (ST .EQ. 0 .AND. L .GT. 0) AqDevCache = (TRIM(V) .NE. "0")
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_REPLAY_OUT", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) FEEReplayOut = V
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_AQ_INNER", V, L, ST)
 	IF (ST .EQ. 0 .AND. L .GT. 0) THEN
 		IF (TRIM(V) .EQ. "newton")   AqNewtonInner = .TRUE.
@@ -1115,6 +1182,8 @@ SUBROUTINE MaybeReplayFEE ()
 	IMPLICIT NONE
 	CHARACTER(LEN=512) :: V
 	INTEGER :: L, ST, IU, Kind, Flags, RT, RTref, IOS, N, NSame, NRT, I, OU
+	INTEGER :: NRep, IRep, RU, KB, KHist(5)	!Patch 29
+	INTEGER*8 :: K0
 	TYPE(PARTICLE),POINTER :: P, Ref
 	REAL*8 :: T, Pr, H2O, Dum1, Dum2, Dum3, C0, C1, TSolve, D, DMax, DSum, Scale
 	REAL*8, ALLOCATABLE :: Out(:)
@@ -1129,6 +1198,14 @@ SUBROUTINE MaybeReplayFEE ()
 	ALLOCATE (Out(SIZE(P%AqChems)))
 	OPEN (NEWUNIT=IU, FILE=TRIM(V), FORM="UNFORMATTED", ACCESS="STREAM", STATUS="OLD")
 	N = 0 ; NSame = 0 ; NRT = 0 ; TSolve = 0. ; DMax = 0. ; DSum = 0.
+	FEECountEADR = 0 ; FEECountOuter = 0 ; FEECountECREval = 0 ; KHist = 0
+	IF (LEN_TRIM(FEEReplayOut) .GT. 0) OPEN (NEWUNIT=RU, FILE=TRIM(FEEReplayOut), FORM="UNFORMATTED", &
+	                                        ACCESS="STREAM", STATUS="REPLACE")
+	NRep = 1
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_REPLAY_REPEAT", V, L, ST)
+	IF (ST .EQ. 0 .AND. L .GT. 0) READ (V, *) NRep
+	DO IRep = 1, NRep
+	REWIND (IU)
 	DO
 		CALL ReadFEEState (IU, P, Kind, Flags, RT, T, Pr, H2O, IOS)
 		IF (IOS .NE. 0) EXIT
@@ -1137,11 +1214,16 @@ SUBROUTINE MaybeReplayFEE ()
 		IF (GetPress() .NE. Pr) CALL SetPressField (Pr / PressureScale)
 		IF (GetPress() .NE. Pr) STOP "ReplayFEE: cannot restore pressure exactly"
 		CALL ReplaceGridCellChemBurden (1, H2O)
+		K0 = FEECountOuter
 		CALL CPU_TIME (C0)
 		CALL FindElectrolyteEquilibriumCore (P, MOD(Flags,2) .EQ. 1, Flags .GE. 2, RT)
 		CALL CPU_TIME (C1)
 		TSolve = TSolve + (C1 - C0)
+		KB = 1 ; IF (FEECountOuter-K0 .GT. 10) KB = 2 ; IF (FEECountOuter-K0 .GT. 30) KB = 3
+		IF (FEECountOuter-K0 .GT. 60) KB = 4 ; IF (FEECountOuter-K0 .GT. 100) KB = 5
+		KHist(KB) = KHist(KB) + 1
 		Out = P%AqChems
+		IF (LEN_TRIM(FEEReplayOut) .GT. 0 .AND. IRep .EQ. 1) WRITE (RU) Out, RT
 		CALL ReadFEEState (IU, Ref, Kind, Flags, RTref, Dum1, Dum2, Dum3, IOS)
 		IF (IOS .NE. 0 .OR. Kind .NE. 2) STOP "ReplayFEE: missing result record"
 		N = N + 1
@@ -1152,6 +1234,8 @@ SUBROUTINE MaybeReplayFEE ()
 		D = MAXVAL(ABS(Out(2:) - Ref%AqChems(2:))) / Scale
 		DMax = MAX(DMax, D) ; DSum = DSum + D
 	END DO
+	END DO
+	IF (LEN_TRIM(FEEReplayOut) .GT. 0) CLOSE (RU)
 	CLOSE (IU)
 	OPEN (NEWUNIT=OU, FILE="FEEReplay.txt", STATUS="REPLACE")
 	WRITE (OU, '(A,I10)')     "records          ", N
@@ -1161,6 +1245,12 @@ SUBROUTINE MaybeReplayFEE ()
 	WRITE (OU, '(A,ES12.4)')  "max  |d|/total   ", DMax
 	WRITE (OU, '(A,ES12.4)')  "mean |d|/total   ", DSum / MAX(N,1)
 	WRITE (OU, '(A,L2)')      "newton inner     ", AqNewtonInner
+	WRITE (OU, '(A,L2)')      "deviation cache  ", AqDevCache
+	WRITE (OU, '(A,I10)')     "repeats          ", NRep
+	WRITE (OU, '(A,F10.2)')   "outer iter/call  ", DBLE(FEECountOuter)/MAX(N,1)
+	WRITE (OU, '(A,F10.2)')   "1-rxn solves/call", DBLE(FEECountEADR)/MAX(N,1)
+	WRITE (OU, '(A,F10.2)')   "ratio evals/call ", DBLE(FEECountECREval)/MAX(N,1)
+	WRITE (OU, '(A,5I8)')     "outer iter <=10,30,60,100,>100", KHist
 	CLOSE (OU)
 	STOP "ReplayFEE done"
 END SUBROUTINE MaybeReplayFEE
@@ -1254,6 +1344,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!Patch C1: fill the per-reaction chemical-name flags once
 	IF (.NOT. ALLOCATED(EqRxnAnionIsCO3)) CALL InitEqRxnNameFlags ()
 	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()	!Patch 28
+	FEECountEADR = FEECountEADR + 1	!Patch 29
 
         !! If this is an empty section, we have no truck with it
 	!IF (InParticle%NumberOfParticles .EQ. 0 .OR. InParticle%Dry) RETURN
@@ -2225,6 +2316,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	END IF
 
 	EquilibriumConstantsRatio = EquilibriumConstantsRatioEval (WhichEquilibriumRxn, InParticle)
+	FEECountECREval = FEECountECREval + 1	!Patch 29
 	ECRMemoKey(:,R) = Key
 	ECRMemoVal(R)   = EquilibriumConstantsRatio
 	ECRMemoOK(R)    = .TRUE.

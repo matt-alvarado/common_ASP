@@ -38,6 +38,8 @@
 !! 11/02  2026   Claude Opus 5.5   Patch 27: harness switches;            !!
 !!                                 MaybeReplayFEE public                  !!
 !! 11/02  2026   Claude Opus 5.5   Patch 28: AqNewtonInner switch         !!
+!! 11/02  2026   Claude Opus 5.5   Patch 29: AqDevCache, ECRDepIdx and    !!
+!!                                 harness counters                       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -384,6 +386,12 @@ TYPE (ParticleArray) :: BoundaryParticles
 	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE.
 	!Patch 28: Newton single-reaction solve; set from AqInnerSolver (deck), ASP_AQ_INNER=newton|jacobson overrides
 	LOGICAL, SAVE :: AqNewtonInner = .TRUE.
+	!Patch 29: deviation cache in the worst-first loop (ASP_FEE_DEVCACHE=0 turns it off), the
+	!amounts each reaction ratio reads, harness counters and replay options
+	LOGICAL, SAVE :: AqDevCache = .TRUE.
+	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
+	INTEGER*8, SAVE :: FEECountEADR = 0, FEECountOuter = 0, FEECountECREval = 0
+	CHARACTER(LEN=512), SAVE :: FEEReplayOut = ""
 	INTEGER, SAVE :: FEEDumpEvery = 100, FEEDumpUnit = -1
 	INTEGER*8, SAVE :: FEEDumpCount = 0
 	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)

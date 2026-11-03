@@ -1100,7 +1100,7 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 
 	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()
 	Dump = .FALSE.
-	IF (FEEDumpOn .AND. .NOT.UpdateThermo .AND. .NOT.FirstEquilibration) THEN
+	IF (FEEDumpOn .AND. (.NOT.UpdateThermo .OR. FEEDumpAll) .AND. .NOT.FirstEquilibration) THEN
 		FEEDumpCount = FEEDumpCount + 1
 		Dump = (MOD(FEEDumpCount, INT(FEEDumpEvery,8)) .EQ. 0)
 	END IF
@@ -1154,6 +1154,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	REAL*8  :: Save(SIZE(InParticle%AqChems)), Snap(SIZE(InParticle%AqChems)), DRHv(HowManyAqEqReactions)
 	REAL*8  :: RH, Tol, Amt
 	LOGICAL :: Solid(HowManyAqEqReactions), Movable(HowManyAqEqReactions), Excl(HowManyAqEqReactions), Ok
+	LOGICAL :: LastActive(HowManyAqEqReactions)
 
 	NR = HowManyAqEqReactions ; NA = SIZE(InParticle%AqChems)
 	Tol = AqThermoEquilibriumError
@@ -1195,11 +1196,9 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 			FEECountNewtonSing = FEECountNewtonSing + 1
 			Snap = InParticle%AqChems
 			NCand = 0
-			DO R = 1, NR
-				IF (Solid(R) .AND. Movable(R) .AND. .NOT.Excl(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
-					IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .GT. 0.) THEN
-						NCand = NCand + 1 ; Cand(NCand) = R
-					END IF
+			DO R = 1, NR		!every active solid: present, or absent and being precipitated
+				IF (Solid(R) .AND. LastActive(R) .AND. .NOT.Excl(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
+					NCand = NCand + 1 ; Cand(NCand) = R
 				END IF
 			END DO
 			DO I = 2, NCand			!sort by DRH, ascending
@@ -1235,9 +1234,16 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 		!Validation pass: the single-reaction solver handles the special cases and confirms the state
 		NChanged = 0
 		DO R = 1, NR
+			Snap = InParticle%AqChems
 			CALL EquilibrateAqueousDissociationReaction (R, InParticle, OptErrorTolerance = Tol, ReturnType = Ret)
-			IF (Ret .EQ. 1) NChanged = NChanged + 1
+			!a change counts only if some amount moved by more than 1e-28 (much less than a molecule per
+			!particle, the solver's own threshold) and by more than 1e-12 of the total dissolved amount
+			IF (Ret .EQ. 1) THEN
+				Amt = MAXVAL(ABS(InParticle%AqChems(2:) - Snap(2:)))
+				IF (Amt .GT. 1.0D-28 .AND. Amt .GT. 1.0D-12 * SUM(ABS(Snap(2:)))) NChanged = NChanged + 1
+			END IF
 		END DO
+		IF (ResolveUnstableSets(InParticle) .GT. 0) NChanged = NChanged + 1
 		IF (NChanged .EQ. 0) THEN
 			Success = .TRUE.
 			RETURN
@@ -1254,12 +1260,13 @@ CONTAINS
 	INTEGER FUNCTION NewtonSolve ()
 		INTEGER :: It, M, I, J, R, S, Hit, Act(NR)
 		REAL*8  :: Ratio, F(NR), Jac(NR,NR), Dxi(NR), Dn(NA), Alpha, Lim, WaterNu, FMax
-		LOGICAL :: Singular
+		LOGICAL :: Singular, Blocked(NR), Retry, Pend(NR), WasAbsent(NR), Appeared
+		Blocked = .FALSE.
 		DO It = 1, MaxIter
 			FEECountOuter = FEECountOuter + 1
-			M = 0 ; FMax = 0.
+			M = 0 ; FMax = 0. ; Pend = .FALSE.
 			DO R = 1, NR
-				IF (.NOT. Movable(R) .OR. Excl(R)) CYCLE
+				IF (.NOT. Movable(R) .OR. Excl(R) .OR. Blocked(R)) CYCLE
 				Ratio = EquilibriumConstantsRatio (R, InParticle)
 				IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D11)) CYCLE
 				IF (AnyZeroInQ(R)) CYCLE
@@ -1267,12 +1274,17 @@ CONTAINS
 					IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 0.) THEN
 						IF (Ratio .LE. 1.) CYCLE							!nothing to dissolve
 						IF (Solid(R)) THEN
-							IF (CompletesUnstableSet(R, InParticle)) CYCLE	!would complete an unstable solid set
+							IF (CompletesUnstableSet(R, InParticle, Pend)) CYCLE	!would complete an unstable solid set
+							Pend(R) = .TRUE.
 						END IF
 					END IF
 				END IF
 				M = M + 1 ; Act(M) = R ; F(M) = LOG(Ratio)
 				FMax = MAX(FMax, ABS(1. - Ratio))
+			END DO
+			LastActive = .FALSE.
+			DO I = 1, M
+				LastActive(Act(I)) = .TRUE.
 			END DO
 			IF (FMax .LE. Tol) THEN
 				NewtonSolve = 0 ; RETURN
@@ -1307,6 +1319,19 @@ CONTAINS
 					Dn(Idx(J,R)) = Dn(Idx(J,R)) + Nu(J,R) * Dxi(I)
 				END DO
 			END DO
+			!An absent solid that the step would dissolve is not supersaturated in the coupled
+			!system: leave it out for the rest of this solve (the validation pass re-checks it)
+			Retry = .FALSE.
+			DO I = 1, M
+				R = Act(I)
+				IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
+					J = INT(AqEquilibriaList(R,1))
+					IF (Dn(J) .LT. 0. .AND. InParticle%AqChems(J) .LE. 0.) THEN
+						Blocked(R) = .TRUE. ; Retry = .TRUE.
+					END IF
+				END IF
+			END DO
+			IF (Retry) CYCLE
 			Alpha = 1. ; Hit = 0
 			DO I = 1, M
 				R = Act(I)
@@ -1332,8 +1357,20 @@ CONTAINS
 			IF (.NOT. (Alpha .GT. 0.)) THEN
 				NewtonSolve = 3 ; RETURN
 			END IF
+			DO R = 1, NR
+				WasAbsent(R) = .FALSE.
+				IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0.) WasAbsent(R) = (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28)
+			END DO
 			InParticle%AqChems = InParticle%AqChems + Alpha * Dn
 			IF (Hit .GT. 0) InParticle%AqChems(Hit) = 0.
+			!two absent solids on the same unstable side can be activated in one step: undo that at once
+			Appeared = .FALSE.
+			DO R = 1, NR
+				IF (WasAbsent(R)) Appeared = Appeared .OR. (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .GT. 1.0D-28)
+			END DO
+			IF (Appeared) THEN
+				IF (ResolveUnstableSets(InParticle) .GT. 0) FEECountResolved = FEECountResolved + 1
+			END IF
 			IF (InParticle%AqChems(1) .LE. 0.) THEN
 				NewtonSolve = 3 ; RETURN
 			END IF
@@ -1376,12 +1413,19 @@ CONTAINS
 		REAL*8  :: A(LD,LD), B(LD), T, Row(LD)
 		LOGICAL :: Singular
 		Singular = .FALSE.
+		DO I = 1, N			!row scaling: amounts span many orders of magnitude
+			T = MAXVAL(ABS(A(I,1:N)))
+			IF (.NOT. (T .GT. 0.)) THEN
+				Singular = .TRUE. ; RETURN
+			END IF
+			A(I,1:N) = A(I,1:N) / T ; B(I) = B(I) / T
+		END DO
 		DO I = 1, N
 			P = I
 			DO J = I+1, N
 				IF (ABS(A(J,I)) .GT. ABS(A(P,I))) P = J
 			END DO
-			IF (.NOT. (ABS(A(P,I)) .GT. 1.0D-12 * MAXVAL(ABS(A(I:N,I:N))))) THEN
+			IF (.NOT. (ABS(A(P,I)) .GT. 1.0D-12)) THEN
 				Singular = .TRUE. ; RETURN
 			END IF
 			IF (P .NE. I) THEN
@@ -1512,6 +1556,21 @@ CONTAINS
 	END SUBROUTINE SolveSmall
 END SUBROUTINE InitSolidCircuits
 
+!A circuit applies only if every solid in it can exist at the current RH (RH below its DRH);
+!otherwise the deliquescence rule dissolves that solid and the metathesis argument does not hold.
+LOGICAL FUNCTION CircuitApplies (L, InParticle)
+	USE GridPointFields, ONLY : GetRelativeHumidity
+	IMPLICIT NONE
+	INTEGER :: L, I
+	TYPE(PARTICLE),POINTER :: InParticle
+	REAL*8 :: RH
+	RH = GetRelativeHumidity ()
+	CircuitApplies = .TRUE.
+	DO I = 1, CircN(L)
+		IF (RH .GE. DeliquesenceRH(CircRxn(I,L), InParticle)) CircuitApplies = .FALSE.
+	END DO
+END FUNCTION CircuitApplies
+
 !global-newton-test: if all solids on the unstable side of a circuit are present, dissolve the one with
 !the lowest DRH (most soluble) completely; repeat until no circuit has its unstable side present.
 !The normal solve that follows re-precipitates whatever is supersaturated (the stable side).
@@ -1532,6 +1591,7 @@ INTEGER FUNCTION ResolveUnstableSets (InParticle)
 				S = S + CircCoef(I,L) * LOG(EqCoeff(CircRxn(I,L), InParticle, 1))
 			END DO
 			IF (ABS(S) .LT. 1.0D-8) CYCLE
+			IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
 			AllPresent = .TRUE. ; Pick = 0 ; Best = 1.0D300
 			DO I = 1, CircN(L)
 				IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -1566,13 +1626,14 @@ END FUNCTION ResolveUnstableSets
 
 !Does precipitating solid reaction R complete the unstable side of a circuit (all other solids on that
 !side already present)?
-LOGICAL FUNCTION CompletesUnstableSet (R, InParticle)
+LOGICAL FUNCTION CompletesUnstableSet (R, InParticle, Pending)
 	USE Chemistry, ONLY : AqEquilibriaList
 	IMPLICIT NONE
 	INTEGER :: R, L, I
 	TYPE(PARTICLE),POINTER :: InParticle
+	LOGICAL, OPTIONAL :: Pending(:)	!solids being precipitated in the same step count as present
 	REAL*8  :: S
-	LOGICAL :: OnUnstable, AllPresent
+	LOGICAL :: OnUnstable, AllPresent, Pend
 	IF (.NOT. ALLOCATED(CircN)) CALL InitSolidCircuits (SIZE(InParticle%AqChems))
 	CompletesUnstableSet = .FALSE.
 	DO L = 1, NCirc
@@ -1582,13 +1643,16 @@ LOGICAL FUNCTION CompletesUnstableSet (R, InParticle)
 			S = S + CircCoef(I,L) * LOG(EqCoeff(CircRxn(I,L), InParticle, 1))
 		END DO
 		IF (ABS(S) .LT. 1.0D-8) CYCLE
+		IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
 		OnUnstable = .FALSE. ; AllPresent = .TRUE.
 		DO I = 1, CircN(L)
 			IF (CircCoef(I,L)*S .LE. 0.) CYCLE
 			IF (CircRxn(I,L) .EQ. R) THEN
 				OnUnstable = .TRUE.
 			ELSE IF (InParticle%AqChems(INT(AqEquilibriaList(CircRxn(I,L),1))) .LE. 1.0D-28) THEN
-				AllPresent = .FALSE.
+				Pend = .FALSE.
+				IF (PRESENT(Pending)) Pend = Pending(CircRxn(I,L))
+				IF (.NOT. Pend) AllPresent = .FALSE.
 			END IF
 		END DO
 		IF (OnUnstable .AND. AllPresent) THEN
@@ -1624,6 +1688,13 @@ REAL*8 FUNCTION EqViolation (InParticle)
 		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
 			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) V = MAX(0.D0, Ratio - 1.)
 		END IF
+		!an absent solid that would complete the unstable side of a solid circuit must not precipitate
+		!(with consistent activities it would be undersaturated); not a violation
+		IF (Solid .AND. V .GT. 0. .AND. Ratio .GT. 1.) THEN
+			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) THEN
+				IF (CompletesUnstableSet(R, InParticle)) V = 0.
+			END IF
+		END IF
 		EqViolation = MAX(EqViolation, V)
 	END DO
 END FUNCTION EqViolation
@@ -1653,6 +1724,13 @@ SUBROUTINE ViolationDiag (InParticle, Tmp)
 		V = ABS(1. - Ratio)
 		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
 			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) V = MAX(0.D0, Ratio - 1.)
+		END IF
+		!an absent solid that would complete the unstable side of a solid circuit must not precipitate
+		!(with consistent activities it would be undersaturated); not a violation
+		IF (Solid .AND. V .GT. 0. .AND. Ratio .GT. 1.) THEN
+			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) THEN
+				IF (CompletesUnstableSet(R, InParticle)) V = 0.
+			END IF
 		END IF
 		IF (V .LE. 2.*AqThermoEquilibriumError) CYCLE
 		VDViol(R) = VDViol(R) + 1 ; VDSize(R) = VDSize(R) + V
@@ -1690,6 +1768,7 @@ INTEGER FUNCTION CountUnstableSets (InParticle)
 			S = S + CircCoef(I,L) * LOG(EqCoeff(CircRxn(I,L), InParticle, 1))
 		END DO
 		IF (ABS(S) .LT. 1.0D-8) CYCLE
+		IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
 		AllPresent = .TRUE.
 		DO I = 1, CircN(L)
 			IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -1722,6 +1801,8 @@ SUBROUTINE ReadAqSwitches ()
 		IF (TRIM(V) .EQ. "newton")   AqNewtonInner = .TRUE.
 		IF (TRIM(V) .EQ. "jacobson") AqNewtonInner = .FALSE.
 	END IF
+	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP_ALL", V, L, ST)
+	FEEDumpAll = (ST .EQ. 0 .AND. L .GT. 0)
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP_EVERY", V, L, ST)
 	IF (ST .EQ. 0 .AND. L .GT. 0) READ (V, *) FEEDumpEvery
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DUMP", V, L, ST)
@@ -1788,7 +1869,9 @@ SUBROUTINE MaybeReplayFEE ()
 	LOGICAL :: VDiagOn
 	INTEGER :: IR2
 	REAL*8 :: VR, VO, VRSum, VOSum
-	TYPE(PARTICLE),POINTER :: P, Ref
+	TYPE(PARTICLE),POINTER :: P, Ref, Pre
+	REAL*8, ALLOCATABLE :: SolveG(:)
+	LOGICAL :: UT
 	REAL*8 :: T, Pr, H2O, Dum1, Dum2, Dum3, C0, C1, TSolve, D, DMax, DSum, Scale
 	REAL*8, ALLOCATABLE :: Out(:)
 
@@ -1800,6 +1883,9 @@ SUBROUTINE MaybeReplayFEE ()
 	ALLOCATE (Ref%AqChems(SIZE(P%AqChems)), Ref%GammaMixed(SIZE(P%GammaMixed)), &
 	          Ref%OrgChems(SIZE(P%OrgChems)), Ref%AqOrgChems(SIZE(P%AqOrgChems)))
 	ALLOCATE (Out(SIZE(P%AqChems)))
+	ALLOCATE (Pre)
+	ALLOCATE (Pre%AqChems(SIZE(P%AqChems)), Pre%GammaMixed(SIZE(P%GammaMixed)), &
+	          Pre%OrgChems(SIZE(P%OrgChems)), Pre%AqOrgChems(SIZE(P%AqOrgChems)), SolveG(SIZE(P%GammaMixed)))
 	OPEN (NEWUNIT=IU, FILE=TRIM(V), FORM="UNFORMATTED", ACCESS="STREAM", STATUS="OLD")
 	N = 0 ; NSame = 0 ; NRT = 0 ; TSolve = 0. ; DMax = 0. ; DSum = 0.
 	FEECountEADR = 0 ; FEECountOuter = 0 ; FEECountECREval = 0 ; KHist = 0 ; FEECountNewtonFail = 0
@@ -1824,6 +1910,18 @@ SUBROUTINE MaybeReplayFEE ()
 		IF (GetPress() .NE. Pr) STOP "ReplayFEE: cannot restore pressure exactly"
 		CALL ReplaceGridCellChemBurden (1, H2O)
 		IF (IRep .EQ. 1 .AND. CountUnstableSets(P) .GT. 0) NUnstIn = NUnstIn + 1
+		!Calls that update the activity coefficients solve with KusikMeissner(input) and recompute them
+		!at the end; the equilibrium checks below use the coefficients the solve used.
+		UT = (MOD(Flags,2) .EQ. 1)
+		IF (UT .AND. IRep .EQ. 1) THEN
+			Pre%AqChems = P%AqChems ; Pre%GammaMixed = P%GammaMixed ; Pre%OrgChems = P%OrgChems
+			Pre%AqOrgChems = P%AqOrgChems ; Pre%NumberOfParticles = P%NumberOfParticles ; Pre%Dry = P%Dry
+			Pre%Temperature = P%Temperature ; Pre%WaterActivity = P%WaterActivity ; Pre%IonicStr = P%IonicStr
+			Pre%EmbryoRadius = P%EmbryoRadius ; Pre%SolutionDensity = P%SolutionDensity
+			Pre%SurfaceTension = P%SurfaceTension
+			CALL KusikMeissner (Pre)
+			SolveG = Pre%GammaMixed
+		END IF
 		K0 = FEECountOuter
 		CALL CPU_TIME (C0)
 		CALL FindElectrolyteEquilibriumCore (P, MOD(Flags,2) .EQ. 1, Flags .GE. 2, RT)
@@ -1841,6 +1939,9 @@ SUBROUTINE MaybeReplayFEE ()
 		IF (RT .EQ. RTref) NRT = NRT + 1
 		IF (IRep .EQ. 1) THEN
 			Ref%Temperature = P%Temperature
+			IF (UT) THEN
+				Ref%GammaMixed = SolveG ; P%GammaMixed = SolveG
+			END IF
 			IF (CountUnstableSets(Ref) .GT. 0) NUnstRef = NUnstRef + 1
 			IF (CountUnstableSets(P) .GT. 0) NUnstOut = NUnstOut + 1
 			VR = EqViolation(Ref) ; VO = EqViolation(P)

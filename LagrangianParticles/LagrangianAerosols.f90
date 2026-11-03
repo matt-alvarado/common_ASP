@@ -383,7 +383,7 @@ TYPE (ParticleArray) :: BoundaryParticles
 	!  ASP_FEE_DUMP=<file>      write sampled FindElectrolyteEquilibrium states
 	!  ASP_FEE_DUMP_EVERY=<n>   sample every n-th call (default 100)
 	!  ASP_FEE_REPLAY=<file>    replay a dump after initialisation, report timing and differences, stop
-	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE.
+	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE., FEEDumpAll = .FALSE.	!ASP_FEE_DUMP_ALL: also calls with UpdateThermo
 	!Patch 28: Newton single-reaction solve; set from AqInnerSolver (deck), ASP_AQ_INNER=newton|jacobson overrides
 	LOGICAL, SAVE :: AqNewtonInner = .TRUE.
 	!Patch 29: deviation cache in the worst-first loop (ASP_FEE_DEVCACHE=0 turns it off), the

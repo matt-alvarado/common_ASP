@@ -391,6 +391,12 @@ TYPE (ParticleArray) :: BoundaryParticles
 	LOGICAL, SAVE :: AqDevCache = .TRUE.
 	LOGICAL, SAVE :: AqOuterNewton = .FALSE.	!experiment: ASP_FEE_OUTER=newton
 	INTEGER*8, SAVE :: FEECountNewtonFail = 0, FEECountNewtonSing = 0, FEECountNewtonMaxIt = 0
+	INTEGER*8, SAVE :: FEECountNewtonDrop = 0, FEECountNewtonCycles = 0, FEECountPairRefuse = 0, FEECountResolved = 0
+	!Solid circuits (InitSolidCircuits) and the precipitation rule switch (ASP_FEE_PAIRRULE=1)
+	INTEGER, SAVE :: NCirc = 0
+	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
+	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
+	LOGICAL, SAVE :: AqPairRule = .FALSE.
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
 	INTEGER*8, SAVE :: FEECountEADR = 0, FEECountOuter = 0, FEECountECREval = 0
 	CHARACTER(LEN=512), SAVE :: FEEReplayOut = ""

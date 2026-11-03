@@ -767,7 +767,7 @@
 					AqInnerSolver = I
 
 					!! Patch 30: OPTIONAL line after the single-reaction solver: electrolyte
-					!! equilibrium solver (1 = coupled Newton solve; 0 = worst-first loop)
+					!! equilibrium solver (1 = coupled Newton solve, the default; 0 = worst-first loop)
 					Token = GetLine(FH)
 					IF (Token .NE. EOF) THEN
 						IF (.NOT.IsInteger(Token)) &

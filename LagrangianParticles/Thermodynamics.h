@@ -105,6 +105,14 @@
 !!                                 (EqViolation, ViolationDiag, unstable- !!
 !!                                 set counts, dump of UpdateThermo calls)!!
 !!                                 and the worst-first exit-fix switch    !!
+!! 11/02  2026   Claude Opus 5.5   Patch 32: solid circuits apply only    !!
+!!                                 when their stable side can form (fixes !!
+!!                                 the coupled solve at the letovicite    !!
+!!                                 composition below RH 0.40);            !!
+!!                                 neutralisation step limited by the     !!
+!!                                 water present; Newton single-reaction  !!
+!!                                 solve restores its last valid state if !!
+!!                                 the bracket collapses                  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1563,6 +1571,26 @@ CONTAINS
 	END SUBROUTINE SolveSmall
 END SUBROUTINE InitSolidCircuits
 
+!Patch 32: the rule assumes the stable side of the circuit can form instead.  If a solid on the stable
+!side is neither present nor supersaturated (with ASP's per-electrolyte activity coefficients the
+!stable side can be undersaturated, e.g. letovicite below RH 0.40), the circuit is not applied and
+!the unstable side may form, as with the worst-first loop.  S is sum c_i ln K_i(T) of the circuit.
+LOGICAL FUNCTION StableSideAvailable (L, S, InParticle)
+	USE Chemistry, ONLY : AqEquilibriaList
+	IMPLICIT NONE
+	INTEGER :: L, I, R
+	REAL*8  :: S
+	TYPE(PARTICLE),POINTER :: InParticle
+	StableSideAvailable = .TRUE.
+	DO I = 1, CircN(L)
+		IF (CircCoef(I,L)*S .GE. 0.) CYCLE
+		R = CircRxn(I,L)
+		IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .GT. 1.0D-28) CYCLE
+		IF (EquilibriumConstantsRatio(R, InParticle) .GE. 1.) CYCLE
+		StableSideAvailable = .FALSE. ; RETURN
+	END DO
+END FUNCTION StableSideAvailable
+
 !A circuit applies only if every solid in it can exist at the current RH (RH below its DRH);
 !otherwise the deliquescence rule dissolves that solid and the metathesis argument does not hold.
 LOGICAL FUNCTION CircuitApplies (L, InParticle)
@@ -1599,6 +1627,7 @@ INTEGER FUNCTION ResolveUnstableSets (InParticle)
 			END DO
 			IF (ABS(S) .LT. 1.0D-8) CYCLE
 			IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
+			IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE	!Patch 32
 			AllPresent = .TRUE. ; Pick = 0 ; Best = 1.0D300
 			DO I = 1, CircN(L)
 				IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -1651,6 +1680,7 @@ LOGICAL FUNCTION CompletesUnstableSet (R, InParticle, Pending)
 		END DO
 		IF (ABS(S) .LT. 1.0D-8) CYCLE
 		IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
+		IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE	!Patch 32
 		OnUnstable = .FALSE. ; AllPresent = .TRUE.
 		DO I = 1, CircN(L)
 			IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -1776,6 +1806,7 @@ INTEGER FUNCTION CountUnstableSets (InParticle)
 		END DO
 		IF (ABS(S) .LT. 1.0D-8) CYCLE
 		IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
+		IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE	!Patch 32
 		AllPresent = .TRUE.
 		DO I = 1, CircN(L)
 			IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -2375,6 +2406,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 			!! Make enough H+ to neutralize the OH-
 			dX = MIN (InParticle%AqChems(HydroxyIndex) / AqEquilibriaList(WhichEquilibriumRxn,4),&
 					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))))
+			!Patch 32: never consume more water than the particle holds (a nearly dry particle)
+			IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))
 		    !print *, 'dX1 (making enough H+) = ', dX
 			call flush(6)
 			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))	&
@@ -2412,6 +2445,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 			!! Make enough H+ to neutralize the OH-
 			dX = MIN (InParticle%AqChems(ProtonIndex) / AqEquilibriaList(WhichEquilibriumRxn,5),	&
 					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))))
+			!Patch 32: never consume more water than the particle holds (a nearly dry particle)
+			IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))
 			!print *, 'dX2 (making enough H+) = ', dX
 			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))	&
 					 = InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2))) &
@@ -2821,6 +2856,16 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 			END IF
 			EXIT
 		END DO
+		IF (Bad) THEN		!Patch 32: the bracket collapsed without a valid trial state;
+			XN = X		!restore the last valid state (X) and stop here
+			InParticle%AqChems(ICatI) = B0Cat + XN*R4
+			InParticle%AqChems(IAnI)  = B0An  + XN*R5
+			IF (R22 .GT. 0) InParticle%AqChems(IAn2I) = B0An2 + XN*R23
+			IF (DABS(R24) .GT. 1.0e-40) InParticle%AqChems(IHydI) = B0Hyd + XN*R25
+			IF (R1 .GT. 0) InParticle%AqChems(IEl) = B0El - XN
+			InParticle%AqChems(1) = B0W - XN*R8
+			RETURN
+		END IF
 		X = XN
 		EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 		if (EqRatio .NE. EqRatio) then

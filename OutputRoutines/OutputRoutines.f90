@@ -25,6 +25,10 @@
 !!                                 a one-box model or subroutine.           !!
 !! 07/08  2013   Matt Alvarado     Created Subroutines GasOutput,           !!
 !!                                 GasEnhanceOutput, and AerosolOutput      !!
+!! 11/02  2026   Claude Opus 5.5   Patch 32: AerosolOutput sets the       !!
+!!                                 letovicite index (it was never set, so !!
+!!                                 letovicite was left out of TotNH4 and  !!
+!!                                 TotSO4 in the ThermoTest output)       !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1788,6 +1792,7 @@ SUBROUTINE AerosolOutput(InParticle, FH, t, First, Thermo)
            NH4Cli = FindChem("NH4Cl", 1)
            NH4HSO4i = FindChem("NH4HSO4", 1)
            NH42SO4i = FindChem("(NH4)2SO4", 1)
+           LEVi = FindChem("(NH4)3H(SO4)2", 1)	!was never set here, so letovicite was left out of TotNH4 and TotSO4
 
 	   Mgi = FindChem("Mg++", 1)
 	   MgNO32i = FindChem("Mg(NO3)2", 1)

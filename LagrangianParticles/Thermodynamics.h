@@ -120,6 +120,11 @@
 !!                                 singular Jacobian, and drops solids    !!
 !!                                 cumulatively (lowest DRH first) when no!!
 !!                                 single drop works                      !!
+!! 11/02  2026   Claude Opus 5.5   Patch 35: dry particles the coupled    !!
+!!                                 solve cannot handle are put into solids!!
+!!                                 by a pure-solid Gibbs minimisation     !!
+!!                                 (DrySolve); harness counts dry results !!
+!!                                 and wet-only violations                !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1315,10 +1320,128 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	END DO
 	FEECountNewtonCycles = FEECountNewtonCycles + 1
 900	InParticle%AqChems = Save
+	!Patch 35: a dry particle the Newton solve could not handle -> solid assemblage (DrySolve)
+	IF (Save(1) .LT. 1.0D-3 * SUM(Save(2:))) THEN
+		CALL DrySolve (Ok)
+		IF (Ok) THEN
+			FEECountDry = FEECountDry + 1 ; Success = .TRUE. ; RETURN
+		END IF
+		InParticle%AqChems = Save
+	END IF
 	FEECountNewtonFail = FEECountNewtonFail + 1
 	RETURN
 
 CONTAINS
+
+	!Patch 35: a dry particle (water below 1e-3 of the electrolyte amount, in moles) has no real solution
+	!phase: molalities run to 1e14 or more, and when the Newton solve fails on it (singular Jacobian, or
+	!the validation pass does not settle) it is solved here instead of by the worst-first loop.
+	!Its electrolyte is put into solids by minimising the Gibbs energy of the solid assemblage.  With pure
+	!solids at unit activity and the ions' standard potentials common to every assemblage, that is the
+	!linear programme: minimise sum_s n_s ln K_s(T) over the solid amounts n_s reachable by the reaction
+	!extents (mass and charge conserved), with every non-solid amount (ions, dissolved electrolytes, solids
+	!above their DRH) costing PenaltyCost per mole, so solutes go into solids wherever the composition
+	!allows.  This is the same pure-solid thermodynamics as the solid-circuit rule (patch 30).
+	SUBROUTINE DrySolve (Ok)
+		LOGICAL :: Ok
+		REAL*8, PARAMETER :: PenaltyCost = 1.0D4, Eps = 1.0D-11
+		INTEGER :: NV, NM, NC, I, J, K, R, Piv, Row(NA), Bas(NA), It
+		REAL*8  :: Cost(NA), G(NR), A0(NA), Sc, Tab(NA+1, 2*NR+NA+1), Ratio, BestR, Xi(NR), A(NA)
+		LOGICAL :: Used(NA)
+		Ok = .FALSE.
+		!cost per mole of each species
+		Cost = PenaltyCost ; Cost(1) = 0.
+		DO R = 1, NR
+			IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0. .AND. DABS(AqEquilibriaList(R,9) + 1.) .GE. 1.0D-6) THEN
+				IF (RH .LT. DRHv(R)) Cost(INT(AqEquilibriaList(R,1))) = LOG(EqCoeff(R, InParticle, 1))
+			END IF
+		END DO
+		!rows: species touched by any reaction (water excluded: its amount is held fixed)
+		Used = .FALSE.
+		DO R = 1, NR
+			DO K = 1, NIdx(R)
+				IF (Idx(K,R) .GT. 1) Used(Idx(K,R)) = .TRUE.
+			END DO
+		END DO
+		NM = 0
+		DO I = 2, NA
+			IF (Used(I)) THEN
+				NM = NM + 1 ; Row(NM) = I
+			END IF
+		END DO
+		Sc = MAXVAL(InParticle%AqChems(2:))
+		IF (.NOT. (Sc .GT. 0.)) RETURN
+		A0 = InParticle%AqChems / Sc
+		DO R = 1, NR
+			G(R) = 0.
+			DO K = 1, NIdx(R)
+				IF (Idx(K,R) .GT. 1) G(R) = G(R) + Cost(Idx(K,R)) * Nu(K,R)
+			END DO
+		END DO
+		!tableau: minimise G.(p - q) subject to -Nu.(p - q) + slack = A0 (rows), p, q, slack >= 0
+		NV = 2*NR ; NC = NV + NM
+		Tab = 0.
+		DO I = 1, NM
+			DO R = 1, NR
+				DO K = 1, NIdx(R)
+					IF (Idx(K,R) .EQ. Row(I)) THEN
+						Tab(I,R) = -Nu(K,R) ; Tab(I,NR+R) = Nu(K,R)
+					END IF
+				END DO
+			END DO
+			Tab(I,NV+I) = 1. ; Tab(I,NC+1) = MAX(A0(Row(I)), 0.D0) ; Bas(I) = NV + I
+		END DO
+		Tab(NM+1,1:NR) = G ; Tab(NM+1,NR+1:NV) = -G		!reduced costs (slack basis has zero cost)
+		DO It = 1, 2000
+			Piv = 0
+			DO J = 1, NC				!Bland's rule: first improving column
+				IF (Tab(NM+1,J) .LT. -Eps) THEN
+					Piv = J ; EXIT
+				END IF
+			END DO
+			IF (Piv .EQ. 0) EXIT			!optimal
+			K = 0 ; BestR = HUGE(1.D0)
+			DO I = 1, NM
+				IF (Tab(I,Piv) .GT. Eps) THEN
+					Ratio = Tab(I,NC+1) / Tab(I,Piv)
+					IF (Ratio .LT. BestR - 1.0D-15 .OR. (ABS(Ratio-BestR) .LE. 1.0D-15 .AND. K .GT. 0 .AND. Bas(I) .LT. Bas(MAX(K,1)))) THEN
+						BestR = Ratio ; K = I
+					END IF
+				END IF
+			END DO
+			IF (K .EQ. 0) RETURN			!unbounded: should not happen with every amount bounded below
+			Tab(K,:) = Tab(K,:) / Tab(K,Piv)
+			DO I = 1, NM+1
+				IF (I .NE. K .AND. Tab(I,Piv) .NE. 0.) Tab(I,:) = Tab(I,:) - Tab(I,Piv) * Tab(K,:)
+			END DO
+			Bas(K) = Piv
+		END DO
+		IF (It .GT. 2000) RETURN
+		Xi = 0.
+		DO I = 1, NM
+			IF (Bas(I) .LE. NR) THEN
+				Xi(Bas(I)) = Xi(Bas(I)) + Tab(I,NC+1)
+			ELSE IF (Bas(I) .LE. NV) THEN
+				Xi(Bas(I)-NR) = Xi(Bas(I)-NR) - Tab(I,NC+1)
+			END IF
+		END DO
+		A = A0
+		DO R = 1, NR
+			IF (Xi(R) .EQ. 0.) CYCLE
+			DO K = 1, NIdx(R)
+				IF (Idx(K,R) .GT. 1) A(Idx(K,R)) = A(Idx(K,R)) + Nu(K,R) * Xi(R)
+			END DO
+		END DO
+		IF (ANY(A(2:) .LT. -1.0D-9)) RETURN
+		WHERE (A(2:) .LT. 1.0D-13) A(2:) = 0.			!LP round-off (relative to the largest amount)
+		A(1) = A0(1)
+		!keep a trace (1e-9) of the incoming solution: the water routines need some ions; a convex
+		!combination of two states with the same totals conserves mass and charge exactly
+		A = (1.D0 - 1.0D-9) * A + 1.0D-9 * A0
+		InParticle%AqChems = A * Sc
+		Ok = .TRUE.
+	END SUBROUTINE DrySolve
+
 
 	!0 converged, 1 singular Jacobian, 2 no convergence, 3 bad step
 	INTEGER FUNCTION NewtonSolve ()
@@ -1956,7 +2079,7 @@ SUBROUTINE MaybeReplayFEE ()
 	INTEGER :: NRep, IRep, RU, KB, KHist(5)	!Patch 29
 	INTEGER*8 :: K0
 	INTEGER :: NUnstRef, NUnstOut, NUnstIn
-	INTEGER :: NVR, NVO
+	INTEGER :: NVR, NVO, NVRWet, NVOWet, NDryRef, NDryOut
 	LOGICAL :: VDiagOn
 	INTEGER :: IR2
 	REAL*8 :: VR, VO, VRSum, VOSum
@@ -1981,8 +2104,8 @@ SUBROUTINE MaybeReplayFEE ()
 	N = 0 ; NSame = 0 ; NRT = 0 ; TSolve = 0. ; DMax = 0. ; DSum = 0.
 	FEECountEADR = 0 ; FEECountOuter = 0 ; FEECountECREval = 0 ; KHist = 0 ; FEECountNewtonFail = 0
 	FEECountNewtonSing = 0 ; FEECountNewtonMaxIt = 0 ; FEECountNewtonDrop = 0 ; FEECountNewtonCycles = 0
-	FEECountPairRefuse = 0 ; NUnstRef = 0 ; NUnstOut = 0 ; NUnstIn = 0 ; FEECountResolved = 0
-	NVR = 0 ; NVO = 0 ; VRSum = 0. ; VOSum = 0.
+	FEECountPairRefuse = 0 ; NUnstRef = 0 ; NUnstOut = 0 ; NUnstIn = 0 ; FEECountResolved = 0 ; FEECountDry = 0
+	NVR = 0 ; NVO = 0 ; VRSum = 0. ; VOSum = 0. ; NVRWet = 0 ; NVOWet = 0 ; NDryRef = 0 ; NDryOut = 0
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_VDIAG", V, L, ST)
 	VDiagOn = (ST .EQ. 0 .AND. L .GT. 0)
 	IF (LEN_TRIM(FEEReplayOut) .GT. 0) OPEN (NEWUNIT=RU, FILE=TRIM(FEEReplayOut), FORM="UNFORMATTED", &
@@ -2039,6 +2162,17 @@ SUBROUTINE MaybeReplayFEE ()
 			VRSum = VRSum + VR ; VOSum = VOSum + VO
 			IF (VR .GT. 2.*AqThermoEquilibriumError) NVR = NVR + 1
 			IF (VO .GT. 2.*AqThermoEquilibriumError) NVO = NVO + 1
+			!Patch 35: equilibrium conditions are only meaningful with a solution phase; count wet results
+			IF (P%AqChems(1) .LT. 1.0D-3 * SUM(P%AqChems(2:))) THEN
+				NDryOut = NDryOut + 1
+			ELSE IF (VO .GT. 2.*AqThermoEquilibriumError) THEN
+				NVOWet = NVOWet + 1
+			END IF
+			IF (Ref%AqChems(1) .LT. 1.0D-3 * SUM(Ref%AqChems(2:))) THEN
+				NDryRef = NDryRef + 1
+			ELSE IF (VR .GT. 2.*AqThermoEquilibriumError) THEN
+				NVRWet = NVRWet + 1
+			END IF
 			IF (VDiagOn) CALL ViolationDiag (P, Ref)
 		END IF
 		!difference of each amount, relative to the particle's total dissolved moles
@@ -2066,12 +2200,15 @@ SUBROUTINE MaybeReplayFEE ()
 	WRITE (OU, '(A,4I10)')    "coupled: fallbacks, singular, max iter, cycles", FEECountNewtonFail, FEECountNewtonSing, &
 	                          FEECountNewtonMaxIt, FEECountNewtonCycles
 	WRITE (OU, '(A,I10)')     "coupled: DRH-ordered drops accepted", FEECountNewtonDrop
+	WRITE (OU, '(A,I10)')     "coupled: dry particles put into solids", FEECountDry
 	WRITE (OU, '(A,I10)')     "precipitations refused (pair rule)", FEECountPairRefuse
 	WRITE (OU, '(A,I10)')     "calls with an unstable set resolved", FEECountResolved
 	WRITE (OU, '(A,I6)')      "solid circuits", NCirc
 	WRITE (OU, '(A,3I10)')    "records with an unstable solid set: input, reference, replay", NUnstIn, NUnstRef, NUnstOut
 	WRITE (OU, '(A,2ES12.4)') "mean equilibrium violation: reference, replay", VRSum/MAX(N,1), VOSum/MAX(N,1)
 	WRITE (OU, '(A,2I10)')    "records violating by > 2 x tolerance: reference, replay", NVR, NVO
+	WRITE (OU, '(A,2I10)')    "dry results (water < 1e-3 of electrolyte): reference, replay", NDryRef, NDryOut
+	WRITE (OU, '(A,2I10)')    "wet results violating by > 2 x tolerance: reference, replay", NVRWet, NVOWet
 	IF (VDiagOn) THEN
 		WRITE (OU, '(A)') "violations in the replay result, per reaction: rxn, count, mean size, solver moves it, fixes it, stuck"
 		DO IR2 = 1, 200

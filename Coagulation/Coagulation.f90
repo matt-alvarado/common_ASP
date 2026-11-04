@@ -28,6 +28,11 @@
 !! 10/28  2026   Claude Sonnet 5.5 Commit 89d60a6: CoagTest H5: build        !!
 !!                                 VolumeFractions with one bracket scan per !!
 !!                                 (I,J)                                     !!
+!! 11/02  2026   Claude Opus 5.5   Patch 37: regrid before the semi-      !!
+!!                                 implicit coagulation step when the     !!
+!!                                 occupied sections are out of size order!!
+!!                                 (fixes the 'Summed Total Volume        !!
+!!                                 concentration is lost' stop)           !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -61,6 +66,8 @@ MODULE Coagulation
 					!particles stick together)
 	
 	PUBLIC :: StepSectionalCoagulationJacobson
+	PUBLIC :: CoagRegridCount
+	INTEGER*8, SAVE :: CoagRegridCount = 0	!Patch 37: regrids done before coagulation
 			  
 CONTAINS
 
@@ -190,6 +197,9 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	LOGICAL, ALLOCATABLE	:: EntLast(:)
 	INTEGER	:: NEnt, NGroupStart, N
 	REAL*8	:: SPVK
+	INTEGER :: NRegrid	!Patch 37
+	LOGICAL :: OutOfOrder
+	REAL*8  :: PrevRadius
 
 	TYPE(Particle), POINTER :: Particle1, Particle2, ParticleK, & 
                                    Runner, ReplicaPlaceholder, &
@@ -204,6 +214,28 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 
 	!! Sort the gridcell, sections in order and first
 	CALL SortAerosolAtGridPointForCoagulation ()
+
+	!! Patch 37: the semi-implicit scheme needs the sections in ascending order of their actual
+	!! single-particle volume (the volume partition brackets v_i + v_j between neighbouring sections,
+	!! and gains to section K use the already-updated smaller sections).  Condensation can move a
+	!! section's particles past its neighbour; the volume check then stops the run ("Summed Total
+	!! Volume concentration is lost during step").  If the occupied sections are out of order, regrid
+	!! first (RegridAerosol moves particles at most one section per call, so repeat up to 10 times).
+	DO NRegrid = 1, 10
+		OutOfOrder = .FALSE. ; PrevRadius = -1.0
+		Particle1 => Particles%First
+		DO WHILE (ASSOCIATED(Particle1))
+			IF (Particle1%NumberOfParticles .GT. 0.0D0) THEN
+				IF (Particle1%EffectiveRadius .LT. PrevRadius) OutOfOrder = .TRUE.
+				PrevRadius = Particle1%EffectiveRadius
+			END IF
+			Particle1 => Particle1%Next
+		END DO
+		IF (.NOT. OutOfOrder) EXIT
+		CALL RegridAerosol ()
+		CALL SortAerosolAtGridPointForCoagulation ()
+		CoagRegridCount = CoagRegridCount + 1
+	END DO
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! If there are no aerosol at the gridcell, !!

@@ -4,6 +4,8 @@ Items found while optimizing ASP that need a decision or a larger change. Nothin
 
 ## 1. Coagulation: order sectional bins by actual particle volume
 
+**Done in patch 37 by regridding first** (`RegridAerosol` before the coagulation step when the occupied sections are out of order), chosen over the sorting design below; see `ASP_LagrangianParcel_InformationFlow.md` section 7.5, row 37.
+
 **Symptom.** RemConMode1 in LagrangianParcel mode stops at t = 60 s (first coagulation call) with "Total Volume concentration is lost during step" when the coagulation step is 60 s. The measured volume ratio is 1.000121 (a small gain; tolerance 1e-4). Details and measurements: `ASP_LagrangianParcel_InformationFlow.md`, section 6, item 2.
 
 **Current workaround.** The RemConMode1 deck uses `Coagulation Time Step = 30.0` s. The run then completes (300 min, 40.6 s). The deviation is first order in the step (1.2e-4 at 60 s, 6e-5 at 30 s, 3e-5 at 15 s, 1.2e-5 at 6 s).

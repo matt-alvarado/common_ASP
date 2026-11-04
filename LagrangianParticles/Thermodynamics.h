@@ -113,6 +113,13 @@
 !!                                 water present; Newton single-reaction  !!
 !!                                 solve restores its last valid state if !!
 !!                                 the bracket collapses                  !!
+!! 11/02  2026   Claude Opus 5.5   Patch 34: coupled solve holds the water!!
+!!                                 amount fixed, treats amounts below     !!
+!!                                 1e-200 as zero, leaves the water       !!
+!!                                 equilibrium to the validation pass on a!!
+!!                                 singular Jacobian, and drops solids    !!
+!!                                 cumulatively (lowest DRH first) when no!!
+!!                                 single drop works                      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1157,7 +1164,7 @@ END SUBROUTINE InitECRDepIdx
 !failure the particle is restored and the caller falls back to the worst-first loop.
 SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	USE Chemistry,       ONLY : AqEquilibriaList, HowManyAqEqReactions, HowManyAqChems, HowManyAqCations
-	USE ModelParameters, ONLY : AqThermoEquilibriumError
+	USE ModelParameters, ONLY : AqThermoEquilibriumError, WaterEquilibriumIndex
 	USE GridPointFields, ONLY : GetRelativeHumidity
 	IMPLICIT NONE
 	TYPE(PARTICLE),POINTER :: InParticle
@@ -1185,7 +1192,9 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 			DRHv(R) = DeliquesenceRH(R, InParticle)
 			IF (RH .GE. DRHv(R)) Movable(R) = .FALSE.
 		END IF
-		CALL AddNu (R, 1, -AqEquilibriaList(R,8), 0.D0)
+		!Patch 34: the water amount is held fixed in the coupled solve (it is set by the water
+		!equilibrium, and a nearly dry particle cannot supply the water a reaction consumes)
+		!CALL AddNu (R, 1, -AqEquilibriaList(R,8), 0.D0)
 		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
 			IF (Solid(R)) THEN
 				CALL AddNu (R, INT(AqEquilibriaList(R,1)), -1.D0, 0.D0)
@@ -1210,6 +1219,17 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 			!Dependent active solids: drop one, most soluble (lowest DRH) first
 			FEECountNewtonSing = FEECountNewtonSing + 1
 			Snap = InParticle%AqChems
+			!Patch 34: with H+ or OH- vanishingly small the water equilibrium and the reactions sharing that
+			!ion are numerically dependent; leave the water equilibrium to the validation pass first
+			IF (WaterEquilibriumIndex .GT. 0) THEN
+				IF (LastActive(WaterEquilibriumIndex) .AND. .NOT. Excl(WaterEquilibriumIndex)) THEN
+					Excl(WaterEquilibriumIndex) = .TRUE.
+					IF (NewtonSolve () .EQ. 0) THEN
+						FEECountNewtonDrop = FEECountNewtonDrop + 1 ; GOTO 800
+					END IF
+					InParticle%AqChems = Snap ; Excl(WaterEquilibriumIndex) = .FALSE.
+				END IF
+			END IF
 			NCand = 0
 			DO R = 1, NR		!every active solid: present, or absent and being precipitated
 				IF (Solid(R) .AND. LastActive(R) .AND. .NOT.Excl(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
@@ -1241,11 +1261,40 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 				END IF
 				Excl(R) = .FALSE.
 			END DO
+			!Patch 34: no single drop works (several dependent sets at once): drop the candidates
+			!cumulatively, still lowest DRH first, until the solve converges with every dropped solid
+			!undersaturated.
+			IF (.NOT. Ok) THEN
+				InParticle%AqChems = Snap
+				DO I = 1, NCand
+					R = Cand(I)
+					Amt = InParticle%AqChems(INT(AqEquilibriaList(R,1)))
+					DO J = 1, NIdx(R)
+						InParticle%AqChems(Idx(J,R)) = InParticle%AqChems(Idx(J,R)) + Nu(J,R) * Amt
+					END DO
+					InParticle%AqChems(INT(AqEquilibriaList(R,1))) = 0.
+					Excl(R) = .TRUE.
+					IF (NewtonSolve () .NE. 0) CYCLE
+					Ok = .TRUE.
+					DO J = 1, I
+						IF (EquilibriumConstantsRatio(Cand(J), InParticle) .GT. 1. + Tol) Ok = .FALSE.
+					END DO
+					IF (Ok) THEN
+						FEECountNewtonDrop = FEECountNewtonDrop + 1 ; EXIT
+					END IF
+				END DO
+				IF (.NOT. Ok) THEN
+					DO I = 1, NCand
+						Excl(Cand(I)) = .FALSE.
+					END DO
+				END IF
+			END IF
 			IF (.NOT. Ok) GOTO 900
 		ELSE IF (St .NE. 0) THEN
 			IF (St .EQ. 2) FEECountNewtonMaxIt = FEECountNewtonMaxIt + 1
 			GOTO 900
 		END IF
+800	CONTINUE
 		!Validation pass: the single-reaction solver handles the special cases and confirms the state
 		NChanged = 0
 		DO R = 1, NR
@@ -1411,7 +1460,7 @@ CONTAINS
 		INTEGER :: R, K
 		AnyZeroInQ = .FALSE.
 		DO K = 1, NIdx(R)
-			IF (Qe(K,R) .NE. 0. .AND. InParticle%AqChems(Idx(K,R)) .LE. 0.) AnyZeroInQ = .TRUE.
+			IF (Qe(K,R) .NE. 0. .AND. InParticle%AqChems(Idx(K,R)) .LE. 1.0D-200) AnyZeroInQ = .TRUE.	!Patch 34: was .LE. 0
 		END DO
 	END FUNCTION AnyZeroInQ
 

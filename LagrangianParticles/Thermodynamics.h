@@ -125,6 +125,12 @@
 !!                                 by a pure-solid Gibbs minimisation     !!
 !!                                 (DrySolve); harness counts dry results !!
 !!                                 and wet-only violations                !!
+!! 11/02  2026   Claude Opus 5.5   Patch 36: far-off dissolved            !!
+!!                                 electrolytes set to equilibrium before !!
+!!                                 the coupled Newton solve and kept in   !!
+!!                                 its active set; up to 100 Newton       !!
+!!                                 iterations; subset search over the     !!
+!!                                 active solids before the fallback      !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1174,7 +1180,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	IMPLICIT NONE
 	TYPE(PARTICLE),POINTER :: InParticle
 	LOGICAL :: Success
-	INTEGER, PARAMETER :: MaxNu = 6, MaxCycles = 4, MaxIter = 40
+	INTEGER, PARAMETER :: MaxNu = 6, MaxCycles = 4, MaxIter = 100	!Patch 36: was 40
 	INTEGER :: NR, NA, R, I, J, Cyc, Ret, NChanged, St, NCand, Cand(HowManyAqEqReactions), K
 	INTEGER :: Idx(MaxNu, HowManyAqEqReactions), NIdx(HowManyAqEqReactions)
 	REAL*8  :: Nu(MaxNu, HowManyAqEqReactions), Qe(MaxNu, HowManyAqEqReactions), QSum(HowManyAqEqReactions)
@@ -1182,6 +1188,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	REAL*8  :: RH, Tol, Amt
 	LOGICAL :: Solid(HowManyAqEqReactions), Movable(HowManyAqEqReactions), Excl(HowManyAqEqReactions), Ok
 	LOGICAL :: LastActive(HowManyAqEqReactions)
+	INTEGER :: Sz, Mask	!Patch 36
 
 	NR = HowManyAqEqReactions ; NA = SIZE(InParticle%AqChems)
 	Tol = AqThermoEquilibriumError
@@ -1218,6 +1225,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 		QSum(R) = SUM(Qe(1:NIdx(R),R))
 	END DO
 
+	CALL PreAssociate ()	!Patch 36
 	DO Cyc = 1, MaxCycles
 		St = NewtonSolve ()
 		IF (St .EQ. 1) THEN
@@ -1294,6 +1302,43 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 					END DO
 				END IF
 			END IF
+			!Patch 36: last resort before the fallback: try every subset of the candidate solids as the set
+			!left out (smallest subsets first, lowest DRH first within a size) and accept the first that
+			!converges with every left-out solid undersaturated (complementarity).  Only reached when the
+			!single and cumulative drops fail; at most 2**NCand solves (NCand <= 10 here).
+			IF (.NOT. Ok .AND. NCand .LE. 10) THEN
+				DO Sz = 2, NCand
+					DO Mask = 1, 2**NCand - 1
+						IF (POPCNT(Mask) .NE. Sz) CYCLE
+						InParticle%AqChems = Snap
+						DO I = 1, NCand
+							IF (.NOT. BTEST(Mask, I-1)) CYCLE
+							R = Cand(I)
+							Amt = InParticle%AqChems(INT(AqEquilibriaList(R,1)))
+							DO J = 1, NIdx(R)
+								InParticle%AqChems(Idx(J,R)) = InParticle%AqChems(Idx(J,R)) + Nu(J,R) * Amt
+							END DO
+							InParticle%AqChems(INT(AqEquilibriaList(R,1))) = 0.
+							Excl(R) = .TRUE.
+						END DO
+						IF (NewtonSolve () .EQ. 0) THEN
+							Ok = .TRUE.
+							DO I = 1, NCand
+								IF (BTEST(Mask, I-1)) THEN
+									IF (EquilibriumConstantsRatio(Cand(I), InParticle) .GT. 1. + Tol) Ok = .FALSE.
+								END IF
+							END DO
+						END IF
+						IF (Ok) THEN
+							FEECountNewtonDrop = FEECountNewtonDrop + 1 ; EXIT
+						END IF
+						DO I = 1, NCand
+							Excl(Cand(I)) = .FALSE.
+						END DO
+					END DO
+					IF (Ok) EXIT
+				END DO
+			END IF
 			IF (.NOT. Ok) GOTO 900
 		ELSE IF (St .NE. 0) THEN
 			IF (St .EQ. 2) FEECountNewtonMaxIt = FEECountNewtonMaxIt + 1
@@ -1332,6 +1377,39 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	RETURN
 
 CONTAINS
+
+	!Patch 36: a dissolved electrolyte (e.g. HSO4-, NH3(aq)) can be many orders of magnitude below its
+	!equilibrium amount (ratio up to 1e167 seen on the ThermoTest upward scan).  Newton on ln(ratio) moves
+	!it by a factor of about 1 + ln(ratio) per step, and reactions with ratio >= 1e11 are left out of the
+	!active set altogether, so such a reaction stayed far from equilibrium.  Before the Newton solve, set
+	!each such electrolyte directly to its equilibrium amount (ratio x amount, since Q is inversely
+	!proportional to it) by the association extent, when that takes at most 1e-3 of its ions.
+	SUBROUTINE PreAssociate ()
+		INTEGER :: R, K, Pass
+		REAL*8  :: Ratio, El, DEl
+		LOGICAL :: Small
+		DO Pass = 1, 3
+			DO R = 1, NR
+				IF (.NOT. Movable(R) .OR. Solid(R) .OR. AqEquilibriaList(R,1) .LE. 0.) CYCLE
+				El = InParticle%AqChems(INT(AqEquilibriaList(R,1)))
+				IF (.NOT. (El .GT. 0.)) CYCLE
+				Ratio = EquilibriumConstantsRatio (R, InParticle)
+				IF (.NOT. (Ratio .GT. 1. + Tol .AND. Ratio .LT. 1.0D300)) CYCLE
+				DEl = El * (Ratio - 1.)
+				Small = .TRUE.
+				DO K = 1, NIdx(R)
+					IF (Idx(K,R) .EQ. INT(AqEquilibriaList(R,1)) .OR. Idx(K,R) .EQ. 1) CYCLE
+					IF (Nu(K,R) .GT. 0. .AND. Nu(K,R) * DEl .GT. 1.0D-3 * InParticle%AqChems(Idx(K,R))) Small = .FALSE.
+				END DO
+				IF (.NOT. Small) CYCLE
+				DO K = 1, NIdx(R)
+					InParticle%AqChems(Idx(K,R)) = InParticle%AqChems(Idx(K,R)) - Nu(K,R) * DEl
+				END DO
+				FEECountPreAssoc = FEECountPreAssoc + 1
+			END DO
+		END DO
+	END SUBROUTINE PreAssociate
+
 
 	!Patch 35: a dry particle (water below 1e-3 of the electrolyte amount, in moles) has no real solution
 	!phase: molalities run to 1e14 or more, and when the Newton solve fails on it (singular Jacobian, or
@@ -1455,7 +1533,7 @@ CONTAINS
 			DO R = 1, NR
 				IF (.NOT. Movable(R) .OR. Excl(R) .OR. Blocked(R)) CYCLE
 				Ratio = EquilibriumConstantsRatio (R, InParticle)
-				IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D11)) CYCLE
+				IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D300)) CYCLE	!Patch 36: was 1e11 (far-off dissolved electrolytes were left out)
 				IF (AnyZeroInQ(R)) CYCLE
 				IF (AqEquilibriaList(R,1) .GT. 0.) THEN
 					IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 0.) THEN
@@ -2104,7 +2182,7 @@ SUBROUTINE MaybeReplayFEE ()
 	N = 0 ; NSame = 0 ; NRT = 0 ; TSolve = 0. ; DMax = 0. ; DSum = 0.
 	FEECountEADR = 0 ; FEECountOuter = 0 ; FEECountECREval = 0 ; KHist = 0 ; FEECountNewtonFail = 0
 	FEECountNewtonSing = 0 ; FEECountNewtonMaxIt = 0 ; FEECountNewtonDrop = 0 ; FEECountNewtonCycles = 0
-	FEECountPairRefuse = 0 ; NUnstRef = 0 ; NUnstOut = 0 ; NUnstIn = 0 ; FEECountResolved = 0 ; FEECountDry = 0
+	FEECountPairRefuse = 0 ; NUnstRef = 0 ; NUnstOut = 0 ; NUnstIn = 0 ; FEECountResolved = 0 ; FEECountDry = 0 ; FEECountPreAssoc = 0
 	NVR = 0 ; NVO = 0 ; VRSum = 0. ; VOSum = 0. ; NVRWet = 0 ; NVOWet = 0 ; NDryRef = 0 ; NDryOut = 0
 	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_VDIAG", V, L, ST)
 	VDiagOn = (ST .EQ. 0 .AND. L .GT. 0)
@@ -2201,6 +2279,7 @@ SUBROUTINE MaybeReplayFEE ()
 	                          FEECountNewtonMaxIt, FEECountNewtonCycles
 	WRITE (OU, '(A,I10)')     "coupled: DRH-ordered drops accepted", FEECountNewtonDrop
 	WRITE (OU, '(A,I10)')     "coupled: dry particles put into solids", FEECountDry
+	WRITE (OU, '(A,I10)')     "coupled: dissolved electrolytes set to equilibrium first", FEECountPreAssoc
 	WRITE (OU, '(A,I10)')     "precipitations refused (pair rule)", FEECountPairRefuse
 	WRITE (OU, '(A,I10)')     "calls with an unstable set resolved", FEECountResolved
 	WRITE (OU, '(A,I6)')      "solid circuits", NCirc

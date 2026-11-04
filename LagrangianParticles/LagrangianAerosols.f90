@@ -44,6 +44,7 @@
 !!                                 circuit arrays for the coupled solve   !!
 !!                                 and harness                            !!
 !! 11/02  2026   Claude Opus 5.5   Patch 35: FEECountDry                  !!
+!! 11/02  2026   Claude Opus 5.5   Patch 36: FEECountPreAssoc             !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -397,6 +398,7 @@ TYPE (ParticleArray) :: BoundaryParticles
 	INTEGER*8, SAVE :: FEECountNewtonFail = 0, FEECountNewtonSing = 0, FEECountNewtonMaxIt = 0
 	INTEGER*8, SAVE :: FEECountNewtonDrop = 0, FEECountNewtonCycles = 0, FEECountPairRefuse = 0, FEECountResolved = 0
 	INTEGER*8, SAVE :: FEECountDry = 0	!Patch 35
+	INTEGER*8, SAVE :: FEECountPreAssoc = 0	!Patch 36
 	!Solid circuits (InitSolidCircuits) and the precipitation rule switch (ASP_FEE_PAIRRULE=1)
 	INTEGER, SAVE :: NCirc = 0
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)

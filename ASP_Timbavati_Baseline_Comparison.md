@@ -76,3 +76,7 @@ The fix applies to every deck that uses gas rate flag 5. Results from the pre-fi
 ## 6. Reproducing
 
 For each commit: `git archive <commit>` into `src/`; if the commit predates `09afe88` or `5b4647e`, apply those commits with `git show <fix> | patch -p1`; build with the `ASP` `build/ASPMakefile.linux.gfortran` of the same period; run the Timbavati deck with line 61 of `AerosolModes.in` set to the number of bins (40 or 160). The comparison sums each column of `OutputFiles/SizeDist290min.txt` over the bins and reads the last line of `GasOut1–3.txt`.
+
+## 7. Speed after patch 36 (5 November 2026)
+
+Timbavati at 160 bins, alternating runs: baseline 519.1 / 518.9 s CPU, `asp_v2.2.2` patch 36 (`5ae6004`) 84.8 / 85.6 s: 6.1 times faster (patch 31 was 6.2 times against a baseline that ran at 585 s on that day). Williams and Otavi at 160 bins are 4.4 and 4.7 times faster; Alaska is 6.0–6.4 times faster at 40 and 80 bins (the baseline stops at 4 min at 160 bins in coagulation). Table: `ASP_LagrangianParcel_InformationFlow.md`, section 7.6.

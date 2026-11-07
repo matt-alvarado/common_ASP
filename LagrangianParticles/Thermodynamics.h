@@ -4183,6 +4183,20 @@ SUBROUTINE GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, Re
 	RETURN
 END SUBROUTINE GibbsDuhemIntegralTabulated
 
+!! Mark every Gibbs-Duhem table as unbuilt. The table range (GDTabSHi) grows
+!! with the ionic strengths seen so far, so after a reset the results of a
+!! call depend only on that call. Used by SAM-ASP-TUV with MPI, where each
+!! cell call must not depend on the cells computed before it (StepASP4SAM:
+!! SetASPCellReset); never called in Lagrangian runs.
+SUBROUTINE ResetGibbsDuhemTables ()
+	IMPLICIT NONE
+	IF (ALLOCATED(GDTabOK)) THEN
+		GDTabOK  = .FALSE.
+		GDTabBad = .FALSE.
+		GDTabSHi = 0.0D0
+	END IF
+END SUBROUTINE ResetGibbsDuhemTables
+
 SUBROUTINE UpdateWaterActivity (InParticle) 
 
 	USE Chemistry,		ONLY : HowManyAqEqReactions,     &

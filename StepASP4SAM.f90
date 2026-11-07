@@ -68,6 +68,7 @@
 
 MODULE StepASP
 
+		USE Aerosols, ONLY : Particle, Particles, ResetGibbsDuhemTables
 		IMPLICIT NONE
 
         ! CMB: aerosol flag is private
@@ -77,7 +78,118 @@ MODULE StepASP
 		PUBLIC ::	ASPInterface, InitializeASP, setAerosolProc, getAerosolProc
 
         integer :: isAerosolProc
+
+        ! Cell-state reset (SAM-ASP-TUV with MPI). ASPInterface calls warm-start
+        ! from the particle state left by the previous call, so a grid cell's
+        ! result depends on the cells computed before it on the same process.
+        ! With the reset on, every ASPInterface call first restores the
+        ! particle state saved by SetASPCellReset(.TRUE.), so the result depends
+        ! only on the call's inputs. Off by default (ASP's own drivers,
+        ! Lagrangian parcel runs, are unaffected).
+        LOGICAL :: ASPCellReset = .FALSE.
+        TYPE(Particle), ALLOCATABLE, PRIVATE :: CellSnap(:)
+        INTEGER, PRIVATE :: NCellSnap = 0
 	CONTAINS
+
+	! Turn the cell-state reset on (saving the current particle state as the
+	! state every later ASPInterface call starts from) or off.
+	SUBROUTINE SetASPCellReset(OnOff)
+		USE InfrastructuralCode, ONLY : ERROR
+		IMPLICIT NONE
+		LOGICAL, INTENT(IN) :: OnOff
+		TYPE(Particle), POINTER :: cur
+		INTEGER :: n
+		ASPCellReset = OnOff
+		IF (.NOT. OnOff) RETURN
+		IF (ALLOCATED(CellSnap)) DEALLOCATE(CellSnap)
+		n = 0
+		cur => Particles%First
+		DO WHILE (ASSOCIATED(cur))
+			n = n + 1
+			cur => cur%Next
+		END DO
+		NCellSnap = n
+		ALLOCATE(CellSnap(n))
+		n = 0
+		cur => Particles%First
+		DO WHILE (ASSOCIATED(cur))
+			n = n + 1
+			CellSnap(n) = cur   ! all components; pointer arrays copied below
+			CALL SnapArray(cur%GammaMixed, CellSnap(n)%GammaMixed)
+			CALL SnapArray(cur%AqChems, CellSnap(n)%AqChems)
+			CALL SnapArray(cur%OrgChems, CellSnap(n)%OrgChems)
+			CALL SnapArray(cur%AqOrgChems, CellSnap(n)%AqOrgChems)
+			CALL SnapArray(cur%HydrophobicActivityCoeffs, CellSnap(n)%HydrophobicActivityCoeffs)
+			CALL SnapArray(cur%HydrophilicActivityCoeffs, CellSnap(n)%HydrophilicActivityCoeffs)
+			NULLIFY(CellSnap(n)%Next)
+			cur => cur%Next
+		END DO
+	CONTAINS
+		! Dst becomes a new copy of Src (or null)
+		SUBROUTINE SnapArray(Src, Dst)
+			REAL*8, POINTER :: Src(:), Dst(:)
+			NULLIFY(Dst)
+			IF (ASSOCIATED(Src)) THEN
+				ALLOCATE(Dst(LBOUND(Src,1):UBOUND(Src,1)))
+				Dst = Src
+			END IF
+		END SUBROUTINE SnapArray
+	END SUBROUTINE SetASPCellReset
+
+	! Restore every particle from the state saved by SetASPCellReset. The
+	! particles keep their own arrays and links; only the values change.
+	SUBROUTINE RestoreASPCellState()
+		USE InfrastructuralCode, ONLY : ERROR
+		IMPLICIT NONE
+		TYPE(Particle), POINTER :: cur, nxt
+		REAL*8, POINTER :: pG(:), pAq(:), pOrg(:), pAqOrg(:), pHb(:), pHl(:)
+		INTEGER :: n
+		n = 0
+		cur => Particles%First
+		DO WHILE (ASSOCIATED(cur))
+			n = n + 1
+			IF (n .GT. NCellSnap) CALL ERROR("RestoreASPCellState: more particles "// &
+				"than when the cell state was saved")
+			nxt => cur%Next
+			pG => cur%GammaMixed
+			pAq => cur%AqChems
+			pOrg => cur%OrgChems
+			pAqOrg => cur%AqOrgChems
+			pHb => cur%HydrophobicActivityCoeffs
+			pHl => cur%HydrophilicActivityCoeffs
+			cur = CellSnap(n)   ! all components (pointers re-set below)
+			cur%Next => nxt
+			cur%GammaMixed => RestoreArray(CellSnap(n)%GammaMixed, pG)
+			cur%AqChems => RestoreArray(CellSnap(n)%AqChems, pAq)
+			cur%OrgChems => RestoreArray(CellSnap(n)%OrgChems, pOrg)
+			cur%AqOrgChems => RestoreArray(CellSnap(n)%AqOrgChems, pAqOrg)
+			cur%HydrophobicActivityCoeffs => RestoreArray(CellSnap(n)%HydrophobicActivityCoeffs, pHb)
+			cur%HydrophilicActivityCoeffs => RestoreArray(CellSnap(n)%HydrophilicActivityCoeffs, pHl)
+			cur => nxt
+		END DO
+		IF (n .NE. NCellSnap) CALL ERROR("RestoreASPCellState: fewer particles "// &
+			"than when the cell state was saved")
+		! the tabulated Gibbs-Duhem integrals depend on earlier calls too
+		CALL ResetGibbsDuhemTables()
+	CONTAINS
+		! The particle's own array Own, holding the saved values Saved
+		FUNCTION RestoreArray(Saved, Own) RESULT(Res)
+			REAL*8, POINTER :: Saved(:), Own(:), Res(:)
+			IF (.NOT. ASSOCIATED(Saved)) THEN
+				NULLIFY(Res)
+				RETURN
+			END IF
+			IF (ASSOCIATED(Own)) THEN
+				IF (SIZE(Own) .EQ. SIZE(Saved)) THEN
+					Res => Own
+					Res = Saved
+					RETURN
+				END IF
+			END IF
+			ALLOCATE(Res(LBOUND(Saved,1):UBOUND(Saved,1)))
+			Res = Saved
+		END FUNCTION RestoreArray
+	END SUBROUTINE RestoreASPCellState
 
     ! CMB add
     integer function getAerosolProc() result(aeroProc)
@@ -810,6 +922,8 @@ MODULE StepASP
 		RH_ASP = GetRelativeHumidity ()
 	    if (present(do_aerosols)) call setAerosolProc(do_aerosols)
 	    ! end CMB add
+		! SAM-ASP-TUV with MPI: start from the saved particle state
+		IF (ASPCellReset) CALL RestoreASPCellState()
 		CALL InputConcentrations(Temp, Press, Dens, GasConc, &
 									NumConc, MassConc, &
 									PhotolysisRates,&

@@ -94,6 +94,8 @@ INTEGER, PARAMETER :: NFastTUVWvl = 7
 REAL*8, PARAMETER  :: FastTUVWavelengths(NFastTUVWvl) = &
                       (/ 297.7, 309.5, 325.5, 378.8, 447.5, 602.0, 736.3 /)
 PUBLIC :: NFastTUVWvl, FastTUVWavelengths
+!! SAM-ASP-TUV (MPI cell-state reset): forget the tabulated Gibbs-Duhem integrals
+PUBLIC :: ResetGibbsDuhemTables
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Now specify which subroutines may be accessed by the outside world	 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

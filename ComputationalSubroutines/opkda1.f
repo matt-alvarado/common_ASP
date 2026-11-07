@@ -1310,12 +1310,20 @@ C----------------------- End of Subroutine DIPREP ----------------------
       INTEGER I, IBR, IER, IPIL, IPIU, IPTT1, IPTT2, J, JFOUND, K,
      1   KNEW, KMAX, KMIN, LDIF, LENIGP, LIWK, MAXG, NP1, NZSUT
       DOUBLE PRECISION DQ, DYJ, ERWT, FAC, YJ
-C Patch 21: saved structure and ordering from the last ODRV call
-      INTEGER IHIT, CHN, CHNNZ
-      LOGICAL CHOK
-      INTEGER, ALLOCATABLE, SAVE :: CHIA(:), CHJA(:), CHP(:), CHIP(:)
-      SAVE CHN, CHNNZ, CHOK
-      DATA CHOK /.FALSE./
+C Patch 21: saved structures and orderings from earlier ODRV calls.
+C Several slots, because ASP alternates between ODE systems with
+C different structures (gas chemistry, condensation, ...), which made a
+C single saved structure miss on almost every call.
+      INTEGER NCHSL
+      PARAMETER (NCHSL = 8)
+      TYPE CHSLOT
+        INTEGER :: N = -1
+        INTEGER :: NNZ = -1
+        INTEGER, ALLOCATABLE :: IA(:), JA(:), P(:), IP(:)
+      END TYPE CHSLOT
+      TYPE(CHSLOT), SAVE :: CH(NCHSL)
+      INTEGER, SAVE :: CHNEXT = 1
+      INTEGER IHIT, ISL, KSL
 C-----------------------------------------------------------------------
 C This routine performs preprocessing related to the sparse linear
 C systems that must be solved if MITER = 1 or 2.
@@ -1485,45 +1493,55 @@ C Compute new ordering of rows/columns of Jacobian. --------------------
  170    IWK(IBR+I) = I
       NSP = LIWK + 1 - IPISP
 C Patch 21: ODRV (minimum-degree ordering, the largest cost of this
-C routine) depends only on N and the structure IA,JA, which is the same
-C on almost every call.  If the structure equals the one used for the
-C last successful ODRV call, reuse that call's permutation P (IPR) and
-C inverse (IPIC) instead of recomputing them.  Same results.
+C routine) depends only on N and the structure IA,JA. If the structure
+C equals one used for an earlier successful ODRV call (NCHSL slots,
+C replaced in turn), reuse that call's permutation P (IPR) and inverse
+C (IPIC) instead of recomputing them.  Same results.
       IHIT = 0
-      IF (CHOK .AND. CHN .EQ. N .AND. CHNNZ .EQ. NNZ) THEN
+      ISL = 0
+      DO 171 KSL = 1,NCHSL
+        IF (CH(KSL)%N .NE. N .OR. CH(KSL)%NNZ .NE. NNZ) GO TO 171
         IHIT = 1
         DO 172 I = 1,N+1
-          IF (CHIA(I) .NE. IWK(IPIAN+I-1)) IHIT = 0
+          IF (CH(KSL)%IA(I) .NE. IWK(IPIAN+I-1)) IHIT = 0
  172      CONTINUE
         IF (IHIT .EQ. 1) THEN
           DO 173 I = 1,NNZ
-            IF (CHJA(I) .NE. IWK(IPJAN+I-1)) IHIT = 0
+            IF (CH(KSL)%JA(I) .NE. IWK(IPJAN+I-1)) IHIT = 0
  173        CONTINUE
         END IF
-      END IF
+        IF (IHIT .EQ. 1) THEN
+          ISL = KSL
+          GO TO 178
+        END IF
+ 171    CONTINUE
+ 178  CONTINUE
       IF (IHIT .EQ. 1) THEN
         DO 174 I = 1,N
-          IWK(IPR+I-1) = CHP(I)
-          IWK(IPIC+I-1) = CHIP(I)
+          IWK(IPR+I-1) = CH(ISL)%P(I)
+          IWK(IPIC+I-1) = CH(ISL)%IP(I)
  174      CONTINUE
         IYS = 0
       ELSE
         CALL ODRV (N, IWK(IPIAN), IWK(IPJAN), WK, IWK(IPR), IWK(IPIC),
      1   NSP, IWK(IPISP), 1, IYS)
         IF (IYS .EQ. 0) THEN
-          IF (ALLOCATED(CHIA)) DEALLOCATE (CHIA, CHJA, CHP, CHIP)
-          ALLOCATE (CHIA(N+1), CHJA(NNZ), CHP(N), CHIP(N))
+          ISL = CHNEXT
+          CHNEXT = MOD(CHNEXT, NCHSL) + 1
+          IF (ALLOCATED(CH(ISL)%IA))
+     1      DEALLOCATE (CH(ISL)%IA, CH(ISL)%JA, CH(ISL)%P, CH(ISL)%IP)
+          ALLOCATE (CH(ISL)%IA(N+1), CH(ISL)%JA(NNZ), CH(ISL)%P(N),
+     1      CH(ISL)%IP(N))
           DO 175 I = 1,N+1
- 175        CHIA(I) = IWK(IPIAN+I-1)
+ 175        CH(ISL)%IA(I) = IWK(IPIAN+I-1)
           DO 176 I = 1,NNZ
- 176        CHJA(I) = IWK(IPJAN+I-1)
+ 176        CH(ISL)%JA(I) = IWK(IPJAN+I-1)
           DO 177 I = 1,N
-            CHP(I) = IWK(IPR+I-1)
-            CHIP(I) = IWK(IPIC+I-1)
+            CH(ISL)%P(I) = IWK(IPR+I-1)
+            CH(ISL)%IP(I) = IWK(IPIC+I-1)
  177        CONTINUE
-          CHN = N
-          CHNNZ = NNZ
-          CHOK = .TRUE.
+          CH(ISL)%N = N
+          CH(ISL)%NNZ = NNZ
         END IF
       END IF
       IF (IYS .EQ. 11*N+1) GO TO 240

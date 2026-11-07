@@ -2626,19 +2626,19 @@ SUBROUTINE ShellRefIndAndRadFASTTUV(InParticle)
 	   ALLOCATE (wvln_rounddown(numbin), STAT = I)
 	   IF (I > 0) CALL ERROR("In ShellRefIndAndRadFASTTUV(), couldn't allocate "// &
                                "wvln_rounddown at size "//TRIM(INT2STR(numbin)))
-           wvln_array(1) = 297.7  !in nm 
+           wvln_array(1) = FastTUVWavelengths(1)  !in nm 
            wvln_rounddown(1) = 1  
-           wvln_array(2) = 309.5       
+           wvln_array(2) = FastTUVWavelengths(2)       
            wvln_rounddown(2) = 2 
-           wvln_array(3) = 325.5       
+           wvln_array(3) = FastTUVWavelengths(3)       
            wvln_rounddown(3) = 2 
-           wvln_array(4) = 378.8      
+           wvln_array(4) = FastTUVWavelengths(4)      
            wvln_rounddown(4) = 3 
-           wvln_array(5) = 447.5    
+           wvln_array(5) = FastTUVWavelengths(5)    
            wvln_rounddown(5) = 4 
-           wvln_array(6) = 602.0
+           wvln_array(6) = FastTUVWavelengths(6)
            wvln_rounddown(6) = 8 
-           wvln_array(7) = 736.3 
+           wvln_array(7) = FastTUVWavelengths(7) 
            wvln_rounddown(7) = 10 
         ELSE !For photolysis between 250 and 700 nm, every 1 nm
            numbin = 451
@@ -5058,17 +5058,17 @@ SUBROUTINE AerosolOptPropFASTTUV (ExtCoeff, SingScat, Assym, BackScatCoeff, &
         !Input Variables
         INTEGER :: Flag
 	!Output Variables
-	REAL*8, DIMENSION(7) :: ExtCoeff, SingScat, Assym, BackScatCoeff
-	REAL*8, DIMENSION(7) :: SubExtCoeff, SubSingScat
+	REAL*8, DIMENSION(NFastTUVWvl) :: ExtCoeff, SingScat, Assym, BackScatCoeff
+	REAL*8, DIMENSION(NFastTUVWvl) :: SubExtCoeff, SubSingScat
         !Below are for external mixture of BC and "shell"
-!	REAL*8, DIMENSION(7) :: ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep
-!	REAL*8, DIMENSION(7) :: SubExtCoeffSep, SubSingScatSep
+!	REAL*8, DIMENSION(NFastTUVWvl) :: ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep
+!	REAL*8, DIMENSION(NFastTUVWvl) :: SubExtCoeffSep, SubSingScatSep
 
 	!Internal variables
 	INTEGER :: ib, numbin
         LOGICAL :: FASTTUV
-	REAL*8, DIMENSION(7) :: ScatCoeff, SubScatCoeff
-!	REAL*8, DIMENSION(7) :: ScatCoeffSep, SubScatCoeffSep
+	REAL*8, DIMENSION(NFastTUVWvl) :: ScatCoeff, SubScatCoeff
+!	REAL*8, DIMENSION(NFastTUVWvl) :: ScatCoeffSep, SubScatCoeffSep
 	REAL*8 :: AssymSum,xxx, hbs_frac, assym_sq, bc_vol_frac
 
         ! CMB: Gfortran doesn't like the additional definitions of the 
@@ -5077,7 +5077,7 @@ SUBROUTINE AerosolOptPropFASTTUV (ExtCoeff, SingScat, Assym, BackScatCoeff, &
 	Type(Particle),POINTER :: p_Particle
 
 
-        DO ib = 1, 7
+        DO ib = 1, NFastTUVWvl
 		ExtCoeff(ib) = 0.0
 		ScatCoeff(ib) = 0.0
 		BackScatCoeff(ib) = 0.0

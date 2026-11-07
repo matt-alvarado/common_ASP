@@ -511,7 +511,7 @@ MODULE StepASP
 
 		!! External Variables
 		REAL*8 :: Temp, Press, Dens
-		REAL*8, DIMENSION(7) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
+		REAL*8, DIMENSION(NFastTUVWvl) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
                                           ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep, &
                                           SubExtCoeffSep, SubSSASep
 		REAL*8 :: GasConc(HowManyEvolveGasChems)!molecules/cm3
@@ -803,7 +803,7 @@ MODULE StepASP
 
                 ! CB: Ifort complains unless these dimensions match
 		!REAL*8, DIMENSION(18) :: ExtCoeff, SingScat, Assym
-                REAL*8, DIMENSION(7):: ExtCoeff, SingScat, Assym
+                REAL*8, DIMENSION(NFastTUVWvl):: ExtCoeff, SingScat, Assym
 		INTEGER :: I,mm
 	    ! CMB add
 	    !want_aerosols = .false.
@@ -911,7 +911,7 @@ MODULE StepASP
       REAL*8 :: PhotolysisRates(HowManyPhotoRxns)
       ! CB: Ifort complains unless these dimensions match
       !REAL*8, DIMnENSION(18) :: ExtCoeff, SingScat, Assym
-      REAL*8, DIMENSION(7):: ExtCoeff, SingScat, Assym
+      REAL*8, DIMENSION(NFastTUVWvl):: ExtCoeff, SingScat, Assym
       ! ---------------------- end from ASP
       integer, intent(in) :: numtyp, naddp
       !logical, intent(inout) :: to_initialize_asp

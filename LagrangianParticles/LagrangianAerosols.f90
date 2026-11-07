@@ -86,6 +86,14 @@ MODULE Aerosols
 IMPLICIT NONE
 
 PRIVATE
+
+!! Wavelength-bin centres (nm) of the Fast-TUV aerosol optics
+!! (ShellRefIndAndRadFASTTUV, AerosolOptPropFASTTUV). SAM-ASP-TUV checks
+!! them against TUV's fast-TUV grid (DATAE1/GRIDS/fast_tuv.grid).
+INTEGER, PARAMETER :: NFastTUVWvl = 7
+REAL*8, PARAMETER  :: FastTUVWavelengths(NFastTUVWvl) = &
+                      (/ 297.7, 309.5, 325.5, 378.8, 447.5, 602.0, 736.3 /)
+PUBLIC :: NFastTUVWvl, FastTUVWavelengths
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Now specify which subroutines may be accessed by the outside world	 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

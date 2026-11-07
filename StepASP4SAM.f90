@@ -43,7 +43,9 @@
 !!                                  optics (ShellRefIndAndRadFASTTUV,
 !!                                  AerosolOptPropFASTTUV), M3_TO_CM3 = 1e6,
 !!                                  and optional DeckDir/OutputDir in
-!!                                  InitializeASP (SetMainDeckDirs)
+!!                                  InitializeASP (SetMainDeckDirs);
+!!                                  PhotolysisRates sized by
+!!                                  HowManyPhotoRxns (PhotoRates.in)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -258,7 +260,7 @@ MODULE StepASP
 	  REAL*8, INTENT(IN) :: AeroNumConc(HowManyBins) !(in particles/cm3)
 	  REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !(in ug/m3)
 	  REAL*8, INTENT(IN) :: Transmissivity
-	  REAL*8, INTENT(IN) :: PhotolysisRates(51)
+	  REAL*8, INTENT(IN) :: PhotolysisRates(HowManyPhotoRxns)
 
 	  !! Internal Variables
 	  INTEGER :: I, J, L, RxnIndex, NumAq, GG
@@ -432,7 +434,7 @@ MODULE StepASP
       !MJA 20190620: Reset photolysis rates to match input values for all SZA
       		DO I = 1, 96
 			!Do for each photolysis reaction
-			DO J = 1, 51
+			DO J = 1, HowManyPhotoRxns
 				PhotoRates(I,J) = PhotolysisRates(J)
 			END DO
 		END DO
@@ -791,7 +793,7 @@ MODULE StepASP
 		REAL*8 :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
 		REAL*8 :: Radius(HowManyBins)
 		REAL*8 :: TermVel(HowManyBins)
-		REAL*8 :: PhotolysisRates(51)
+		REAL*8 :: PhotolysisRates(HowManyPhotoRxns)
 		
 		! CMB add: 
 		real*8, intent(in) :: sza, Transmissivity
@@ -906,7 +908,7 @@ MODULE StepASP
       !REAL*8 :: MassConc(HowManyBins,65)
       REAL*8 :: TermVel(HowManyBins)
       REAL*8 :: Radius(HowManyBins)
-      REAL*8 :: PhotolysisRates(51)
+      REAL*8 :: PhotolysisRates(HowManyPhotoRxns)
       ! CB: Ifort complains unless these dimensions match
       !REAL*8, DIMnENSION(18) :: ExtCoeff, SingScat, Assym
       REAL*8, DIMENSION(7):: ExtCoeff, SingScat, Assym

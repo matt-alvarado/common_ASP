@@ -169,7 +169,8 @@ MODULE Chemistry
                         GetTotalPeroxy, &
                         GetTotalAcylPeroxy, &
                         getTimestepIndex, setTimestepIndex, getParcelIndex, setParcelIndex, &
-                        PhotoRates  ! SAM-ASP-TUV sets these from TUV (StepASP4SAM)
+                        PhotoRates, &  ! SAM-ASP-TUV sets these from TUV (StepASP4SAM)
+                        HowManyPhotoRxns ! number of photolysis rate columns
                         
                         
                         
@@ -191,7 +192,10 @@ MODULE Chemistry
 	REAL*8,		    ALLOCATABLE :: GasPhaseBackground(:)
 	REAL*8,		    ALLOCATABLE :: GasPhaseEmisFactor(:) !g/kg dry matter burned, MJA, 2016-09-13
 	REAL*8,		    ALLOCATABLE :: GasPhaseDepVel(:)		
-	REAL*8				:: PhotoRates(96,51)
+	! PhotoRates(96, HowManyPhotoRxns): photolysis rates by time row and
+	! rate column; the number of columns is set by PhotoRates.in
+	REAL*8, ALLOCATABLE		:: PhotoRates(:,:)
+	INTEGER				:: HowManyPhotoRxns = 0
 
         ! CB add (this will have to be made configurable in the future!)
         REAL*8, PARAMETER :: piDouble = 3.1415926535897932384626433
@@ -1016,11 +1020,12 @@ MODULE Chemistry
         !! array PhotoRates(I,J)
 	!! I = INT(UT*4 + 1), where UT is universal time in hours
 	!! J = reaction rate index
-	!! The file must contain 96 lines of data (every quarter hour)
-	!! and 51 columns, with the first being the time in UT
-        !! the second being solar zenith angle (sza)
-	!! and the next 51 being the reaction in the order given in the header 
-        !! of PhotoRates.in
+	!! The file must contain 96 lines of data (every quarter hour),
+	!! each with the time in UT, the solar zenith angle (sza) and
+	!! then one rate per photolysis reaction column, in the order given
+	!! in the header of PhotoRates.in. The number of rate columns is
+	!! taken from the first data line (HowManyPhotoRxns; 51 in the
+	!! standard decks) and must be the same on every line.
 	!! The lines must start at UT = 0.0
 		
 		USE InfrastructuralCode
@@ -1028,7 +1033,7 @@ MODULE Chemistry
 		
 		IMPLICIT NONE
 
-		INTEGER :: FH, I, J
+		INTEGER :: FH, I, J, NCols
 		CHARACTER (len=1024):: CurrLine, Time, Token, Sza
 
 
@@ -1047,6 +1052,18 @@ MODULE Chemistry
 			!! Store the sza
 			CALL GetToken(CurrLine," ", Sza)
 
+			!! Number of rate columns on this line
+			NCols = CountWords(CurrLine)
+			IF (I .EQ. 1) THEN
+				HowManyPhotoRxns = NCols
+				IF (ALLOCATED(PhotoRates)) DEALLOCATE(PhotoRates)
+				ALLOCATE(PhotoRates(96, HowManyPhotoRxns))
+			ELSE IF (NCols .NE. HowManyPhotoRxns) THEN
+				CALL ERROR("PhotoRates.in: data line "//TRIM(INT2STR(I))//" has "// &
+					TRIM(INT2STR(NCols))//" rate columns; the first line has "// &
+					TRIM(INT2STR(HowManyPhotoRxns)))
+			END IF
+
                         ! CB: Add these to the array
                         PhotoRateZenithAngles(i) = STR2REAL(Sza)
                         !print *, 'I = ', i
@@ -1058,7 +1075,7 @@ MODULE Chemistry
                         ! end CB add
 
 			!Do for each photolysis reaction
-			DO J = 1, 51
+			DO J = 1, HowManyPhotoRxns
                                 !write(*,*) I,J
 				CALL GetToken(CurrLine," ", Token)
                                 !write(*,*) Token
@@ -1069,6 +1086,25 @@ MODULE Chemistry
                                 !STOP
 			END DO
 		END DO
+
+	CONTAINS
+
+		! Number of blank-separated words in Line
+		INTEGER FUNCTION CountWords(Line)
+			CHARACTER(len=*), INTENT(IN) :: Line
+			INTEGER :: K
+			LOGICAL :: InWord
+			CountWords = 0
+			InWord = .FALSE.
+			DO K = 1, LEN_TRIM(Line)
+				IF (Line(K:K) .EQ. ' ' .OR. Line(K:K) .EQ. CHAR(9)) THEN
+					InWord = .FALSE.
+				ELSE IF (.NOT. InWord) THEN
+					InWord = .TRUE.
+					CountWords = CountWords + 1
+				END IF
+			END DO
+		END FUNCTION CountWords
 
 	END SUBROUTINE ReadPhotolysisRates
         

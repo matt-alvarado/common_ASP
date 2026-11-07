@@ -144,6 +144,7 @@ MODULE Chemistry
 			MolecularDiffusionCoefficient,  &
 			GasPhaseBackground,             &
                         GasPhaseEmisFactor,              & !g/kg dry matter burned, MJA, 2016-09-13
+                        GasPhaseCOInit,                  & !initial plume CO (ppbv), GasPhaseChems.in
 			AqOrgNumCarbon,                 &
 			GasPhaseDepVel,                 &
                         CationIonicRefraction,          &
@@ -191,6 +192,8 @@ MODULE Chemistry
 ! This holds reaction rate information
 	REAL*8,		    ALLOCATABLE :: GasPhaseBackground(:)
 	REAL*8,		    ALLOCATABLE :: GasPhaseEmisFactor(:) !g/kg dry matter burned, MJA, 2016-09-13
+	! Initial plume CO (ppbv): second entry of the first line of GasPhaseChems.in
+	REAL*8 :: GasPhaseCOInit = 0.0
 	REAL*8,		    ALLOCATABLE :: GasPhaseDepVel(:)		
 	! PhotoRates(96, HowManyPhotoRxns): photolysis rates by time row and
 	! rate column; the number of columns is set by PhotoRates.in

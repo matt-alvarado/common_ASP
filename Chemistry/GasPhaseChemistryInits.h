@@ -147,6 +147,7 @@ SUBROUTINE SetGasPhaseChemistry ()
         !MJA 2016-09-13: Second token of first uncommeted line is initial CO concentration in ppbv        
         CALL GetToken(CurrLine, ";", Token)
         CO_init = STR2REAL (Token)
+        GasPhaseCOInit = CO_init ! module copy, used by SAM-ASP-TUV
 
 	GasConcInputTypeFlag = 0 !Force ppb, mja 08/27/2010 
 

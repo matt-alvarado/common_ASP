@@ -123,6 +123,8 @@ PUBLIC	:: AerosolModeNames,			&
            AerosolOpticalDepth,                 &
            ShellRefIndAndRad,                   &
            AerosolOptProp,                      &
+           AerosolOptPropFASTTUV,               & ! SAM-ASP-TUV
+           ShellRefIndAndRadFASTTUV,            & ! SAM-ASP-TUV
            PopulateParticlesSectionsRightAway,  &
            ReadDistributionsOrganic,            &
            InputFlagRatioOrMass

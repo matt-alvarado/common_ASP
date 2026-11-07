@@ -85,15 +85,15 @@
 
 		FHT = GetFileHandle()
 		FH  = GetFileHandle()
-	        OPEN(UNIT=FH, FILE='InorganicInputDecks/ASPInputDeck.in', STATUS='OLD')
+	        OPEN(UNIT=FH, FILE=TRIM(MainDeckDir)//'ASPInputDeck.in', STATUS='OLD')
 
 		!!! -- Specify Input Deck Location
-		CALL SetInputDeckSubDir("InorganicInputDecks/")
+		CALL SetInputDeckSubDir(TRIM(MainDeckDir))
 		
 		!!! -- Specify Output Deck Location
-		CALL SetOutputDeckSubDir("OutputFiles/")
+		CALL SetOutputDeckSubDir(TRIM(MainOutputDir))
                 CALL SetTranscriptFH(FHT)
-		OPEN(UNIT=FHT, FILE=TRIM("OutputFiles/Transcript.TXT"))
+		OPEN(UNIT=FHT, FILE=TRIM(MainOutputDir)//"Transcript.TXT")
 		
 
 

@@ -168,7 +168,8 @@ MODULE Chemistry
                         GasPhasePeroxy, &
                         GetTotalPeroxy, &
                         GetTotalAcylPeroxy, &
-                        getTimestepIndex, setTimestepIndex, getParcelIndex, setParcelIndex
+                        getTimestepIndex, setTimestepIndex, getParcelIndex, setParcelIndex, &
+                        PhotoRates  ! SAM-ASP-TUV sets these from TUV (StepASP4SAM)
                         
                         
                         

@@ -68,6 +68,7 @@
 !!16. SUBROUTINE SetTranscriptFH(FH)
 !!17. SUBROUTINE SetInputDeckSubDir(iInputDeckSubDir)
 !!18. SUBROUTINE SetOutputDeckSubDir(iOutputDeckSubDir)
+!!    SUBROUTINE SetMainDeckDirs(DeckDir, OutputDir)
 !!19. SUBROUTINE SetHowManyVariousAqChems(iHowManyAqChems, iHowManyAqCations, iHowManyAqAnions)
 !!20. SUBROUTINE SetProtonIndex(iProtonIndex)
 !!21. SUBROUTINE SetHydroxyIndex(iHydroxyIndex)
@@ -219,6 +220,11 @@ MODULE ModelParameters
 	!! Locate the Output Decks !!
 	CHARACTER (len=512) :: InputDeckSubDir
 	CHARACTER (len=512) :: OutputDeckSubDir
+	! Where ReadMainInputDeck finds ASPInputDeck.in (and the other decks) and
+	! writes Transcript.TXT etc.; relative to the run directory. A host model
+	! can change them with SetMainDeckDirs before InitializeASP.
+	CHARACTER (len=512) :: MainDeckDir = 'InorganicInputDecks/'
+	CHARACTER (len=512) :: MainOutputDir = 'OutputFiles/'
 
 	!! This is set to -1 if no transcript is to be kept
 	INTEGER :: TranscriptFH
@@ -582,6 +588,15 @@ MODULE ModelParameters
 
 		OutputDeckSubDir = TRIM(iOutputDeckSubDir)
 	END SUBROUTINE SetOutputDeckSubDir
+
+	! Set the input-deck and output directories used by ReadMainInputDeck
+	! (each should end in '/'). Used by SAM-ASP-TUV (StepASP4SAM).
+	SUBROUTINE SetMainDeckDirs(DeckDir, OutputDir)
+		IMPLICIT NONE
+		CHARACTER*(*), INTENT(IN) :: DeckDir, OutputDir
+		MainDeckDir = TRIM(DeckDir)
+		MainOutputDir = TRIM(OutputDir)
+	END SUBROUTINE SetMainDeckDirs
 	
 	SUBROUTINE SetHowManyVariousAqChems(iHowManyAqChems, iHowManyAqCations, iHowManyAqAnions)
 		

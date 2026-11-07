@@ -37,6 +37,13 @@
 !!                                  mixing flag
 !! 05/18  2016   Matt Alvarado     Made changes to allow aerosols to interface 
 !!                                  with STILT-Chem
+!! 11/07  2026   (SAM-ASP-TUV)     Replaced with the interface used by
+!!                                  SAM-ASP-TUV: photolysis rates from TUV
+!!                                  (PhotolysisRates), 7-bin FastTUV aerosol
+!!                                  optics (ShellRefIndAndRadFASTTUV,
+!!                                  AerosolOptPropFASTTUV), M3_TO_CM3 = 1e6,
+!!                                  and optional DeckDir/OutputDir in
+!!                                  InitializeASP (SetMainDeckDirs)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -82,6 +89,14 @@ MODULE StepASP
     ! end CMB add
 
         
+!AD DEBUG INCLUDE BUGCHECK MODULE
+!subroutine bugCheck(X)
+!      real :: X
+!      if(isnan(X)) then
+!      write(*,*) "NaN found" ! put break point here
+!      endif
+!end subroutine bugCheck
+
 	SUBROUTINE StepASPOnce (TimeStep)
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! This subroutine recalculates the gas-phase reactions rates,  !!
@@ -145,11 +160,19 @@ MODULE StepASP
 		CALL StepCondensationAll (TimeStep, 1)
                 !Note above calls RegridAerosol automatically
                 !with recalculates radius and density
-                !WRITE(*,*) "Cond Okay"
+                WRITE(*,*) "Cond Okay"
+                !DO WHILE(associated(cur))
+                !   write(*,*) cur%numberofparticles
+                !   write(*,*) sum(cur%AqChems)
+                !   write(*,*) sum(cur%OrgChems)
+                !   write(*,*) sum(cur%AQOrgChems)
+                !   cur=>cur%next
+               !ENDDO
             END IF
     
             !Step Coagulation, if desired
-            IF (.TRUE.) THEN
+!	    IF (.FALSE.) THEN !AD DEBUG NaN and large negative  tracer
+            IF (.TRUE.) THEN 
 		!write(*,*) 'Calling spillbeans before stepsectionalcoagulationjacobson'
 		!call spillbeans()
                 print *, 'calling stepsectionalcoagulationjacobson'
@@ -163,15 +186,19 @@ MODULE StepASP
             !Step Optical Properties Particles
                     !print *, 'calling sortaerosolatgridpointforcoagulation from stepasp'
 
-	    write(*,*) 'calling SortAerosolAtGridPointForCoagulation...'
+            !write(*,*) 'Before SortAeroloslAtGridPointForCoagulation calling spillbeans'
+            !call spillbeans()
+	    !write(*,*) 'calling SortAerosolAtGridPointForCoagulation...'
 
             CALL SortAerosolAtGridPointForCoagulation () 
 
-
-            cur => particles%first
-            I = 1
+          !write(*,*) 'done calling SortAerosolAtGridPointForCoagulation' !AD DEBUG
+             cur => particles%first
+            !write(*,*) 'L172 StepASP.f90 StepASPOnce call' !AD DEBUG
+!            I = 1
 
             DO WHILE(associated(cur))
+            !write(*,*) 'L172 StepASP.f90 StepASPOnce call DO WHILE cur' !AD DEBUG
                     
                 !Force particle temperature to be env. Temperature
                 !WARNING: This is a kludge, since the program is 
@@ -179,20 +206,21 @@ MODULE StepASP
                             !particles, and I'm not sure why
                             !WRITE (*,*) 'applying a temperature kludge'
                 cur%Temperature = TEMP
-                 ! WRITE(*,*)    'cur%Temperature = ',TEMP   
+                !write(*,*) 'L184 StepASP.f90 StepASPOnce call DO WHILE cur'
+                !WRITE(*,*)    'cur%Temperature = ',TEMP   
                 !Recalculate optical parameters
+		!write(*,*) 'Before ShellRefIndAndRad calling spillbeans'
+		!call spillbeans()
                 !WRITE(*,*) "Call Optical, Particle #", I
-                ! CMB (AER, Inc): This call significantly slows down
-                !                 aerosol processing.  Comment out until
-                !                 we figure everything out.
-                !CALL ShellRefIndAndRad(cur)
+                CALL ShellRefIndAndRadFASTTUV(cur)
                 !WRITE(*,*) "Optical Okay"
                     
-                I = I + 1
+!                I = I + 1
             
-                cur => cur%next
+                cur => cur%next !AD DEBUG this was commented out
                     
-            END DO !END STEP OPTICAL PROPERTIES
+            END DO !END Temp reset
+        write(*,*) 'End StepASPOnce' !AD DEBUG
         !endif !doAerosols
         
 		RETURN
@@ -200,7 +228,7 @@ MODULE StepASP
 
 	SUBROUTINE InputConcentrations(Temp, Press, Dens, GasConc, &
 				AeroNumConc, AeroMassConc, &
-				!PhotoRates, &
+				PhotolysisRates, &
 				sza, Transmissivity)
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! This subroutine takes in Temperature, pressure,		!!
@@ -230,7 +258,7 @@ MODULE StepASP
 	  REAL*8, INTENT(IN) :: AeroNumConc(HowManyBins) !(in particles/cm3)
 	  REAL*8 :: AeroMassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems) !(in ug/m3)
 	  REAL*8, INTENT(IN) :: Transmissivity
-	  !REAL*8, INTENT(IN) :: PhotoRates(12)
+	  REAL*8, INTENT(IN) :: PhotolysisRates(51)
 
 	  !! Internal Variables
 	  INTEGER :: I, J, L, RxnIndex, NumAq, GG
@@ -400,6 +428,14 @@ MODULE StepASP
       !print *, 'CMB: Calculating reaction rates: (ifgas, ifaq) = ', ifgas, ifaq
       call RecalculateReactionRates(IFGAS,IFAQ)
 
+
+      !MJA 20190620: Reset photolysis rates to match input values for all SZA
+      		DO I = 1, 96
+			!Do for each photolysis reaction
+			DO J = 1, 51
+				PhotoRates(I,J) = PhotolysisRates(J)
+			END DO
+		END DO
       ! CMB: Recalc photo rates (new)
       call RecalculatePhotoRatesSZA(sza, Transmissivity, .false.)
       
@@ -427,46 +463,6 @@ MODULE StepASP
 !      stop
       ! end CMB
       		
-	  !WRITE(*,*) "Before Photorates"
-	  !Reset Photolysis Rates
-!	  DO L = 1, GasPhaseReactionRateArraySize(1)
-!						
-!	    !! Only do photolysis reactions
-!	    IF (INT(GasPhaseReactionRates(L,1)) .EQ. 1 .AND. &
-!                INT(GasPhaseReactionRates(L,3)) .EQ. 0.) THEN	
-!								
-!		!Find reaction index number
-!		RxnIndex = INT(GasPhaseReactionRates(L,4))
-!
-!		SELECT CASE (RxnIndex)
-!		  CASE(4) !NO2 => NO + O
-!		    GasPhaseChemicalRates(L) = PhotoRates(1)
-!		  CASE(5) !NO3 => NO + O2
-!		    GasPhaseChemicalRates(L) = PhotoRates(2)
-!		  CASE(6) !NO3 => NO2 + O
-!		    GasPhaseChemicalRates(L) = PhotoRates(3)		
-!		  CASE(3) !O3 => O + O2
-!	            GasPhaseChemicalRates(L) = PhotoRates(4)
-!		  CASE(2) !O3 => O1D + O2
-!		    GasPhaseChemicalRates(L) = PhotoRates(5)
-!		  CASE(12) !HONO => Products
-!		    GasPhaseChemicalRates(L) = PhotoRates(6)
-!		  CASE(11) !H2O2 => 2OH
-!		    GasPhaseChemicalRates(L) = PhotoRates(7)
-!		  CASE(15) !HCHO => 2HO2 + CO
-!		    GasPhaseChemicalRates(L) = PhotoRates(8)
-!		  CASE(16) !HCHO => H2 + CO
-!		    GasPhaseChemicalRates(L) = PhotoRates(9)
-!                  CASE(17) !ALD2 => Products
-!		    GasPhaseChemicalRates(L) = PhotoRates(10)
-!		  CASE(23) !KETL => Products
-!		    GasPhaseChemicalRates(L) = PhotoRates(11)
-!	          CASE(22) !MGLY => Products
-!		    GasPhaseChemicalRates(L) = PhotoRates(12)
-!		END SELECT
-!	     END IF
-!          END DO
-	  !WRITE(*,*) "After Photorates"
 
       !if (doAerosols .gt. 0) then
           !Get particle number conc. and radii for hetero. rate calculation
@@ -513,7 +509,7 @@ MODULE StepASP
 
 		!! External Variables
 		REAL*8 :: Temp, Press, Dens
-		REAL*8, DIMENSION(451) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
+		REAL*8, DIMENSION(7) :: ExtCoeff, SingScat, Assym,BackScatCoeff,SubExtCoeff, SubSSA, &
                                           ExtCoeffSep, SingScatSep, AssymSep, BackScatCoeffSep, &
                                           SubExtCoeffSep, SubSSASep
 		REAL*8 :: GasConc(HowManyEvolveGasChems)!molecules/cm3
@@ -531,6 +527,7 @@ MODULE StepASP
 		! CMB add
         integer :: doAerosols != getAerosolProc()
 		real*8 :: filler_value, ro2_t, rco3_t
+        !write(*,*) "Inside and beginning OutputConcentrations" !AD DEBUG
         doAerosols = getAerosolProc()
 		filler_value = 1.0E-34
 		! end CMB add
@@ -631,14 +628,14 @@ MODULE StepASP
             !Output Average Aerosol optical properties, 0 flag assumes core in shell mixing
             !print *, 'calling aerosoloptprop within outputconcentrations()'
             call flush(6)
-            !CALL AerosolOptProp (ExtCoeff, SingScat, Assym, BackScatCoeff, SubExtCoeff, SubSSA, 0)
+            CALL AerosolOptPropFASTTUV (ExtCoeff, SingScat, Assym, BackScatCoeff, SubExtCoeff, SubSSA, 0)
             !WRITE(*,*) ExtCoeff(1), SingScat(1), Assym(1)
             !PAUSE
        ! endif ! do aerosols
         
 	END SUBROUTINE OutputConcentrations
 
-	SUBROUTINE InitializeASP(doAerosols, Transmissivity, sza)
+	SUBROUTINE InitializeASP(doAerosols, Transmissivity, sza, DeckDir, OutputDir)
 
 	!! Include modules
 	!USE IFPORT,				 ONLY : RTC, ETIME
@@ -658,6 +655,9 @@ MODULE StepASP
     real*8, intent(in), optional :: sza, Transmissivity
     !logical, intent(in), optional :: doAerosols
     integer, intent(in), optional :: doAerosols
+    ! Input-deck and output directories (end in '/'); default
+    ! InorganicInputDecks/ and OutputFiles/ in the run directory
+    character(len=*), intent(in), optional :: DeckDir, OutputDir
     !logical :: todoAerosols
     integer :: todoAerosols
     ! end CMB add
@@ -681,9 +681,12 @@ MODULE StepASP
     
     ! Get the current time (for pgi compiler)
     seedarray(1) = time(4) * (360000*time(5) + 6000*time(6) + 100*time(7) + time(8))
-    
+!    write(*,*) seedarray(1) !AD DEBUG
+!    write(*,*) "real seedarray", REAL(seedarray(1)) !AD DEBUG
+!    write(*,*) "sqrt", SQRT(REAL(seedarray(1))) !AD DEBUG
     !seedarray(1) = rtc() !for ifort compiler
-    seedarray(2) = FLOOR(SQRT(REAL(seedarray(1))))
+!    seedarray(2) = FLOOR(SQRT(REAL(seedarray(1)))) !AD DEBUG
+     seedarray(2) = FLOOR(SQRT(ABS(REAL(seedarray(1)))))
 
     ! CMB (AER): Modify this to play well with gfortran
 	!CALL Random_Seed(put=seedarray)
@@ -696,6 +699,7 @@ MODULE StepASP
 	
 	!! Call subroutines to set module data
 	CALL SetFileHandleCounter(12)
+	IF (PRESENT(DeckDir) .AND. PRESENT(OutputDir)) CALL SetMainDeckDirs(DeckDir, OutputDir)
 	CALL ReadMainInputDeck()
 	
 	!! Send a Welcome Message
@@ -757,7 +761,7 @@ MODULE StepASP
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	SUBROUTINE ASPInterface(Timestep, Temp, Press, Dens, GasConc, &
 				NumConc, MassConc, &
-				!PhotoRates, &
+				PhotolysisRates, &
 				ExtCoeff, SingScat, Assym, Radius, TermVel, sza, Transmissivity, do_aerosols)
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! This subroutine connects ASP to an external 3D Eulerian model!! 
@@ -787,7 +791,7 @@ MODULE StepASP
 		REAL*8 :: MassConc(HowManyBins, HowManyAqChems+HowManyAqCations+HowManyAqAnions+HowManyOrgChems+HowManyAqOrgChems)
 		REAL*8 :: Radius(HowManyBins)
 		REAL*8 :: TermVel(HowManyBins)
-		!REAL*8 :: PhotoRates(12)
+		REAL*8 :: PhotolysisRates(51)
 		
 		! CMB add: 
 		real*8, intent(in) :: sza, Transmissivity
@@ -797,7 +801,7 @@ MODULE StepASP
 
                 ! CB: Ifort complains unless these dimensions match
 		!REAL*8, DIMENSION(18) :: ExtCoeff, SingScat, Assym
-                REAL*8, DIMENSION(451):: ExtCoeff, SingScat, Assym
+                REAL*8, DIMENSION(7):: ExtCoeff, SingScat, Assym
 		INTEGER :: I,mm
 	    ! CMB add
 	    !want_aerosols = .false.
@@ -806,11 +810,14 @@ MODULE StepASP
 	    ! end CMB add
 		CALL InputConcentrations(Temp, Press, Dens, GasConc, &
 									NumConc, MassConc, &
-									!PhotoRates, 
+									PhotolysisRates,&
 									sza, Transmissivity)
 
         call flush(6)									
+		!write(*,*) "In ASP Interface before StepASPOnce" !AD DEBUG
+		!write(*,*) "TimeStep for StepASPOnce", TimeStep
 		CALL StepASPOnce (TimeStep)
+                !write(*,*) "In ASP Interface after StepASPOnce" !AD DEBUG
 		CALL OutputConcentrations(Temp, Press, Dens, GasConc, &
 									NumConc, MassConc, &
 									ExtCoeff, SingScat, Assym, Radius, TermVel)
@@ -829,7 +836,7 @@ MODULE StepASP
       real*8 :: factor
       integer :: direction, i ! 1: ppb->molec/cm3, -1: reverse, others: no action
       real, parameter :: R__J_K_mol = 8.3144598  ! J mol-1 K-1 or other units
-      integer, parameter :: M3_TO_CM3 = 100000
+      integer, parameter :: M3_TO_CM3 = 1e6
       real*8, parameter :: avogadrosnum = 6.022140857E23
 
       factor = (ppar*avogadrosnum/R__J_K_mol/tpar)/ &
@@ -866,7 +873,7 @@ MODULE StepASP
                                  tempK, ppar, &   
                                  density, timestep, &
                                  casum_ppb, &
-                                 MassConc, NumConc, TermVel, Transmissivity,iden,zden)
+                                 MassConc, NumConc, TermVel, Transmissivity,iden,zden, PhotolysisRates, ExtCoeff, SingScat, Assym)
       !use GridPointFields
       !use domain, ONLY: ntracers
       use Chemistry    ! already imported above
@@ -899,10 +906,10 @@ MODULE StepASP
       !REAL*8 :: MassConc(HowManyBins,65)
       REAL*8 :: TermVel(HowManyBins)
       REAL*8 :: Radius(HowManyBins)
-      !REAL*8 :: PhotoRates(12)
+      REAL*8 :: PhotolysisRates(51)
       ! CB: Ifort complains unless these dimensions match
       !REAL*8, DIMnENSION(18) :: ExtCoeff, SingScat, Assym
-      REAL*8, DIMENSION(451):: ExtCoeff, SingScat, Assym
+      REAL*8, DIMENSION(7):: ExtCoeff, SingScat, Assym
       ! ---------------------- end from ASP
       integer, intent(in) :: numtyp, naddp
       !logical, intent(inout) :: to_initialize_asp
@@ -910,7 +917,7 @@ MODULE StepASP
       real*8 :: factor
       integer :: direction, i ! 1: ppm->molec/cm3, -1: reverse, others: no action
       real, parameter :: R__J_K_mol = 8.3144598  ! or other units
-      integer, parameter :: M3_TO_CM3 = 100000
+      integer, parameter :: M3_TO_CM3 = 1e6
       real*8, parameter :: avogadrosnum = 6.022140857E23
       real*8, intent(INOUT) :: cbsum_ppb(:)    ! before (ignore ppm, actually in ppb)
       real*8, intent(INOUT) :: casum_ppb(:)    ! after 
@@ -923,15 +930,28 @@ MODULE StepASP
 	  real*8, intent(in) :: Transmissivity !Estimated cloud cover 
 	  
       ! bug fix: pressures already in mb
+      !write(*,*) "L893 SAM Wrapper Start" !AD DEBUG
+      !AD DEBUG
+!      call flush(6)
       press_mbar = ppar/100.0   ! convert to mbar from Pa
 
 !
 ! Convert the input concentrations 
 !
 !     GAS (ppb to molec/cm3)
+      !write(*,*) "In SAM_wrapper before convert_gas" !AD DEBUG
+      if (IsNaN(sum(cbsum_ppb)))then !AD DEBUG
+            write(*,*) "NaN found" !AD DEBUG
+      endif !AD DEBUG
+!      call flush(6)
       call convert_gas_concs_units(tempK, ppar, cbsum_ppb, numtyp, &
                                    cbsum_molec_cm3, 1)
-
+      !write(*,*) "In SAM_wrapper after convert_gas"
+      if (IsNaN(sum(cbsum_molec_cm3)))then !AD DEBUG
+            write(*,*) "NaN found" !AD DEBUG
+      endif !AD DEBUG
+!      call flush(6)
+ 
 !     AEROSOL in ( to ug/m3)
 
       ! Reset photolysis parameters based on solar zenith angle
@@ -941,26 +961,81 @@ MODULE StepASP
           !do ntr=1,HowManyEvolveGasChems
 		!write(*,*) GasPhaseChemicalNames(ntr),cbsum_ppb(ntr)
 	  !enddo
-       if (iden.eq.11.and.zden.eq.32) then
-	write(*,*) 'In SAM Wrapper Before ASPInterface  '
-        do mm=1,HowManyOrgChems
-           write(*,*) OrgPhaseChemicalNames(mm),MassConc(:,mm+HowManyAqChems+HowManyAqCations+HowManyAqAnions)
-        enddo
-       endif
+       !if (iden.eq.11.and.zden.eq.32) then
+	!write(*,*) 'In SAM Wrapper Before ASPInterface  '
+        !do mm=1,HowManyOrgChems
+        !   write(*,*) OrgPhaseChemicalNames(mm),MassConc(:,mm+HowManyAqChems+HowManyAqCations+HowManyAqAnions)
+        !enddo
+       !endif
+
+      !write(*,*) "sum (MassConc) SAM_Wrapper before ASPInt", sum(MassConc) 
+      if (IsNaN(sum(MassConc)))then !AD DEBUG
+            write(*,*) "NaN found" !AD DEBUG
+      endif !AD DEBUG
+      write(*,*) "sum(NumConc) SAM_Wrapper before ASPInt", sum(NumConc)
+      if (IsNaN(sum(NumConc)))then
+            write(*,*) "NaN found"
+      endif
+
+
+      !write(*,*) "In SAM_wrapper before ASPInterface" !AD DEBUG
+!      call flush(6)
+
+      !write(*,*) "sum (timestep) SAM_Wrapper before ASPInt", timestep
+      !write(*,*) "sum (tempK) SAM_Wrapper before ASPInt", tempK
+      !write(*,*) "sum (press_mbar) SAM_Wrapper before ASPInt", press_mbar
+      !write(*,*) "sum (density) SAM_Wrapper before ASPInt", density
+      !write(*,*) "sum (cbsum_molec_cm3) SAM_Wrapper before ASPInt", sum(cbsum_molec_cm3)
+      !write(*,*) "sum (NumConc) SAM_Wrapper before ASPInt", sum(NumConc)
+      !write(*,*) "sum (MassConc) SAM_Wrapper before ASPInt", sum(MassConc)
+      !write(*,*) "sum (PhotolysisRates) SAM_Wrapper before ASPInt", sum(PhotolysisRates)
+      !write(*,*) "sum (ExtCoeff) SAM_Wrapper before ASPInt", sum(ExtCoeff)
+      !write(*,*) "sum (SingScat) SAM_Wrapper before ASPInt", sum(SingScat)
+      !write(*,*) "sum (Assym) SAM_Wrapper before ASPInt", sum(Assym)
+      !write(*,*) "sum (Radius) SAM_Wrapper before ASPInt", sum(Radius)
+      !write(*,*) "sum (TermVel) SAM_Wrapper before ASPInt", sum(TermVel)
+      !write(*,*) "sum (solarzenithangle) SAM_Wrapper before ASPInt", solarzenithangle
+      !write(*,*) "sum (Transmissivity) SAM_Wrapper before ASPInt", Transmissivity
 
 	  call ASPInterface(timestep, tempK, press_mbar, density, cbsum_molec_cm3, &
                         NumConc, MassConc, &
-                        !PhotoRates, &
+                        PhotolysisRates, &
                         ExtCoeff, SingScat, Assym, Radius, TermVel, &
                         solarzenithangle, Transmissivity,1) 
+      !write(*,*) "In SAM_wrapper after ASPInterface" !AD DEBUG
+!      call flush(6)
 
-       if (iden.eq.11.and.zden.eq.32) then
-	write(*,*) 'In SAM Wrapper After ASPInterface  '
-        do mm=1,HowManyOrgChems
-           write(*,*) OrgPhaseChemicalNames(mm), MassConc(:,mm+HowManyAqChems+HowManyAqCations+HowManyAqAnions)
-        enddo
-       endif
+      !write(*,*) "sum (timestep) SAM_Wrapper after ASPInt", timestep
+      !write(*,*) "sum (tempK) SAM_Wrapper after ASPInt", tempK
+      !write(*,*) "sum (press_mbar) SAM_Wrapper after ASPInt", press_mbar
+      !write(*,*) "sum (density) SAM_Wrapper after ASPInt", density
+      !write(*,*) "sum (cbsum_molec_cm3) SAM_Wrapper after ASPInt", sum(cbsum_molec_cm3)
+      !write(*,*) "sum (NumConc) SAM_Wrapper after ASPInt", sum(NumConc)
+      !write(*,*) "sum (MassConc) SAM_Wrapper after ASPInt", sum(MassConc)
+      !write(*,*) "sum (PhotolysisRates) SAM_Wrapper after ASPInt", sum(PhotolysisRates)
+      !write(*,*) "sum (ExtCoeff) SAM_Wrapper after ASPInt", sum(ExtCoeff)
+      !write(*,*) "sum (SingScat) SAM_Wrapper after ASPInt", sum(SingScat)
+      !write(*,*) "sum (Assym) SAM_Wrapper after ASPInt", sum(Assym)
+      !write(*,*) "sum (Radius) SAM_Wrapper after ASPInt", sum(Radius)
+      !write(*,*) "sum (TermVel) SAM_Wrapper after ASPInt", sum(TermVel)
+      !write(*,*) "sum (solarzenithangle) SAM_Wrapper after ASPInt", solarzenithangle
+      !write(*,*) "sum (Transmissivity) SAM_Wrapper after ASPInt", Transmissivity
+
+       !if (iden.eq.11.and.zden.eq.32) then
+	!write(*,*) 'In SAM Wrapper After ASPInterface  '
+        !do mm=1,HowManyOrgChems
+        !   write(*,*) OrgPhaseChemicalNames(mm), MassConc(:,mm+HowManyAqChems+HowManyAqCations+HowManyAqAnions)
+        !enddo
+       !endif
+	!write(*,*) "MassConc", sum(MassConc)
+      if (IsNaN(sum(MassConc)))then !AD DEBUG
+            write(*,*) "NaN found" !AD DEBUG
+      endif !AD DEBUG
       casum_molec_cm3(1:HowManyEvolveGasChems) = cbsum_molec_cm3(1:HowManyEvolveGasChems)
+	!write(*,*) "casum_molec_cm3", sum(casum_molec_cm3)
+      if (IsNaN(sum(casum_molec_cm3)))then !AD DEBUG
+            write(*,*) "casum_molec_cm3 NaN found" !AD DEBUG
+      endif !AD DEBUG
 	!write(*,*) 'In SAM Wrapper After ASPInterface printing waterconc ',casum_molec_cm3(1), cbsum_molec_cm3(1), cbsum_ppb(1) 
       
       ! Convert the returned concentrations back into ppb and deallocate
@@ -970,6 +1045,11 @@ MODULE StepASP
       call convert_gas_concs_units(tempK, ppar, casum_ppb, numtyp, &
                                    casum_molec_cm3, -1)
 
+	!write(*,*) "casum_ppb", sum(casum_ppb)
+      if (IsNaN(sum(casum_ppb)))then !AD DEBUG
+            write(*,*) "casum_ppb NaN found" !AD DEBUG
+      endif !AD DEBUG
       return
       end subroutine
+
 END MODULE StepASP

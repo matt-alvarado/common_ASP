@@ -68,6 +68,15 @@ PUBLIC ::         SpillBeans,                           &
                   GasEnhanceOutput,                     &
                   AerosolOutput 
 
+
+!! dTotPNs/dCO and dTotANs/dCO in EnhanceRatios.txt (GasEnhanceOutput): the
+!! gas-phase species summed, from the optional deck file NitrateGroups.in
+!! (ReadNitrateGroups). Without that file the original positional sums are
+!! used (33 species from PAN, 77 from CH3NO3: the baseline mechanism's order).
+LOGICAL, SAVE :: NitGroupsRead = .FALSE., NitGroupsFromFile = .FALSE.
+INTEGER, SAVE :: NumPN = 0, NumAN = 0
+INTEGER, ALLOCATABLE, SAVE :: PNIndex(:), ANIndex(:)
+REAL, PARAMETER :: EnhMissing = -9999.0
 CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1581,7 +1590,7 @@ SUBROUTINE GasEnhanceOutput(FH, t, First)
                 NO2i = FindChem("NO2", 0)
                 HNO3i = FindChem("HNO3", 0)
                 PANi =  FindChem("PAN", 0)              
-                ANi =  FindChem("CH3NO3", 0)
+                ANi =  FindChem("CH3NO3", 0, .TRUE.)   ! only for the positional sum
                 NO3i = FindChem("NO3", 0)
                 N2O5i = FindChem("N2O5", 0)
                 HONOi = FindChem("HONO", 0)
@@ -1647,21 +1656,41 @@ SUBROUTINE GasEnhanceOutput(FH, t, First)
                 !Print *, 'del_PAN/del_CO_ratio = ', (GridGasChem(PANi)-GasPhaseBackground(PANi))/del_CO
 
 
-                del_PAN = 0.0
-                DO q = 0,32
-                     del_PAN = del_PAN+GridGasChem(PANi+q)-GasPhaseBackground(PANi+q)
-                END DO 
-                WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') del_PAN/del_CO
-                !Print *, 'del_PN = ', del_PAN*1e9/Mgas
-                !Print *, 'dal_PN/del_CO_converted', (del_PAN*1e9/Mgas)/(del_CO*1e9/Mgas)
-                !Print *, 'del_PN/del_CO = ',del_PAN/del_CO
-
-
-                del_AN = 0.0
-                DO q = 0,76
-                     del_AN = del_AN+GridGasChem(ANi+q)-GasPhaseBackground(ANi+q)
-                END DO 
-                WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') del_AN/del_CO
+                IF (.NOT. NitGroupsRead) CALL ReadNitrateGroups()
+                IF (NitGroupsFromFile) THEN
+                     !! species lists from NitrateGroups.in
+                     del_PAN = 0.0
+                     DO q = 1, NumPN
+                          del_PAN = del_PAN+GridGasChem(PNIndex(q))-GasPhaseBackground(PNIndex(q))
+                     END DO
+                     WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') del_PAN/del_CO
+                     del_AN = 0.0
+                     DO q = 1, NumAN
+                          del_AN = del_AN+GridGasChem(ANIndex(q))-GasPhaseBackground(ANIndex(q))
+                     END DO
+                     WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') del_AN/del_CO
+                ELSE
+                     !! original positional sums (baseline-mechanism species order);
+                     !! a missing value if they would run past the species list
+                     IF (PANi .GE. 1 .AND. PANi+32 .LE. HowManyGasChems) THEN
+                          del_PAN = 0.0
+                          DO q = 0,32
+                               del_PAN = del_PAN+GridGasChem(PANi+q)-GasPhaseBackground(PANi+q)
+                          END DO
+                          WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') del_PAN/del_CO
+                     ELSE
+                          WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') EnhMissing
+                     END IF
+                     IF (ANi .GE. 1 .AND. ANi+76 .LE. HowManyGasChems) THEN
+                          del_AN = 0.0
+                          DO q = 0,76
+                               del_AN = del_AN+GridGasChem(ANi+q)-GasPhaseBackground(ANi+q)
+                          END DO
+                          WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') del_AN/del_CO
+                     ELSE
+                          WRITE(FH,FMT='(7ES13.5E2)', ADVANCE='NO') EnhMissing
+                     END IF
+                END IF
                 !Print *, 'del_AN = ',del_AN*1e9/Mgas
                 !Print *, 'del_AN/del_CO_converted = ',(del_AN*1e9/Mgas)/(del_CO*1e9/Mgas)
                 !Print *, 'del_AN/del_CO_ratio = ',del_AN/del_CO
@@ -1690,7 +1719,93 @@ SUBROUTINE GasEnhanceOutput(FH, t, First)
                 !Print *, 'del_HONOi/del_CO_ratio = ',(GridGasChem(HONOi)-GasPhaseBackground(HONOi))/del_CO
 		WRITE(FH, FMT='(A1)') ""
          ENDIF
-END SUBROUTINE GasEnhanceOutput    
+END SUBROUTINE GasEnhanceOutput
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Read NitrateGroups.in from the input deck directory (optional): the gas  !!
+!! species summed for dTotPNs/dCO (group PN: peroxy nitrates, RO2NO2 and    !!
+!! RC(O)O2NO2) and dTotANs/dCO (group AN: alkyl and other organic nitrates, !!
+!! RONO2) in EnhanceRatios.txt. One species per line, "PN ; name" or       !!
+!! "AN ; name"; "!" starts a comment. Names not in GasPhaseChems.in are     !!
+!! skipped with a warning. Without the file the original positional sums   !!
+!! are used (see GasEnhanceOutput).                                         !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE ReadNitrateGroups()
+	USE ModelParameters,     ONLY : InputDeckSubDir
+	USE Chemistry,           ONLY : HowManyGasChems, FindChem
+	USE InfrastructuralCode, ONLY : GetFileHandle, ReturnFileHandle, WARN, ERROR, &
+	                                TRANSCRIPT, INT2STR
+	IMPLICIT NONE
+	CHARACTER (len=1024) :: Line, Grp, Nm
+	CHARACTER (len=600)  :: FName
+	CHARACTER (len=1024) :: Msg   ! Warn rewrites its argument: pass a variable
+	LOGICAL :: Exists
+	LOGICAL, ALLOCATABLE :: InPN(:), InAN(:)
+	INTEGER :: FH, ios, p, k, idx
+
+	NitGroupsRead = .TRUE.
+	FName = TRIM(InputDeckSubDir)//"NitrateGroups.in"
+	INQUIRE (FILE=TRIM(FName), EXIST=Exists)
+	IF (.NOT. Exists) THEN
+		NitGroupsFromFile = .FALSE.
+		Msg = "No NitrateGroups.in in the input deck: dTotPNs/dCO and dTotANs/dCO in "// &
+		          "EnhanceRatios.txt use the original positional sums (33 species from PAN, "// &
+		          "77 from CH3NO3), which assume the baseline mechanism's species order."
+		CALL WARN(Msg)
+		RETURN
+	END IF
+
+	ALLOCATE (InPN(HowManyGasChems), InAN(HowManyGasChems))
+	InPN = .FALSE. ; InAN = .FALSE.
+	FH = GetFileHandle()
+	OPEN (UNIT=FH, FILE=TRIM(FName), STATUS='OLD', ACTION='READ')
+	DO
+		READ (FH, '(A)', IOSTAT=ios) Line
+		IF (ios .NE. 0) EXIT
+		p = INDEX(Line, '!')
+		IF (p .GT. 0) Line = Line(1:p-1)
+		Line = ADJUSTL(Line)
+		IF (LEN_TRIM(Line) .EQ. 0) CYCLE
+		p = INDEX(Line, ';')
+		IF (p .EQ. 0) CALL ERROR("NitrateGroups.in: expected 'PN ; species' or 'AN ; species', got: "// &
+		                         TRIM(Line))
+		Grp = ADJUSTL(Line(1:p-1))
+		Nm  = ADJUSTL(Line(p+1:))
+		idx = FindChem(TRIM(Nm), 0, .TRUE.)
+		IF (idx .LE. 0) THEN
+			Msg = "NitrateGroups.in: "//TRIM(Nm)//" is not a gas-phase species of this deck; skipped."
+			CALL WARN(Msg)
+			CYCLE
+		END IF
+		SELECT CASE (TRIM(Grp))
+		CASE ('PN', 'pn')
+			InPN(idx) = .TRUE.
+		CASE ('AN', 'an')
+			InAN(idx) = .TRUE.
+		CASE DEFAULT
+			CALL ERROR("NitrateGroups.in: group must be PN or AN, got: "//TRIM(Grp))
+		END SELECT
+	END DO
+	CLOSE (FH)
+	CALL ReturnFileHandle(FH)
+
+	!! summed in species order, each species once
+	NumPN = COUNT(InPN) ; NumAN = COUNT(InAN)
+	ALLOCATE (PNIndex(NumPN), ANIndex(NumAN))
+	NumPN = 0 ; NumAN = 0
+	DO k = 1, HowManyGasChems
+		IF (InPN(k)) THEN
+			NumPN = NumPN + 1 ; PNIndex(NumPN) = k
+		END IF
+		IF (InAN(k)) THEN
+			NumAN = NumAN + 1 ; ANIndex(NumAN) = k
+		END IF
+	END DO
+	NitGroupsFromFile = .TRUE.
+	CALL TRANSCRIPT("NitrateGroups.in: "//TRIM(INT2STR(NumPN))//" peroxy nitrates (PN) and "// &
+	                TRIM(INT2STR(NumAN))//" alkyl nitrates (AN) for EnhanceRatios.txt")
+	DEALLOCATE (InPN, InAN)
+END SUBROUTINE ReadNitrateGroups    
 
 
 SUBROUTINE AerosolOutput(InParticle, FH, t, First, Thermo)

@@ -454,5 +454,8 @@ SUBROUTINE SetGasPhaseODEandJacobian ()
 	IF (ChemSetupLevel .EQ. 0) CALL PrintJacobian (GasPhaseJacobian,HowManyEvolveGasChems,GasPhase,"GasPhaseJacobian.txt")
 	IF (Transcribe .AND. ChemSetupLevel .EQ. 0) CALL Transcript ("Printing Gas Phase Jacobian to (GasPhaseJacobian.txt)")
 
+	!! Patch 38: the flat copy used by the evaluators is rebuilt from these lists
+	GasFlatBuilt = .FALSE.
+
 	RETURN
 END SUBROUTINE SetGasPhaseODEandJacobian

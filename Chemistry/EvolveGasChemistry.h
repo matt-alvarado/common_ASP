@@ -459,7 +459,7 @@ SUBROUTINE GasODEEvaluator (neq, t, y, ydot)
 
 	!! Internal Variables
 	REAL*8	:: Term, T_mix, m, b
-	INTEGER :: I,GP(3)
+	INTEGER :: I,GP(3),K,L
 
 	TYPE (DiffEqTerm), POINTER :: Current
 	TYPE (ChemTerm),   POINTER :: CurrentChem
@@ -493,6 +493,24 @@ SUBROUTINE GasODEEvaluator (neq, t, y, ydot)
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! First evaluate Gas Phase Chemical Contributions, if desired !!
 	IF (IFGAS) THEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	   IF (.NOT. GasFlatBuilt) CALL BuildGasFlat()
+	   IF (GasFlatUse .AND. neq .EQ. GasFlatN) THEN
+	      !! Patch 38: the same terms, reactants and operations, in the same
+	      !! order as the list walk in the ELSE branch, read from flat arrays
+	      DO I = 1, neq
+	         DO K = GFOdeStart(I), GFOdeStart(I+1)-1
+	            Term = GFTermLF(K) * GasPhaseChemicalRates(GFTermRxn(K))
+	            DO L = GFTermChem(K), GFTermChem(K+1)-1
+	               IF (GFChemSto(L) .NE. 1) THEN
+	                  Term = Term * (Y(GFChemIdx(L))**GFChemSto(L))
+	               ELSE
+	                  Term = Term * Y(GFChemIdx(L))
+	               ENDIF
+	            END DO
+	            ydot(I) = ydot(I) + Term
+	         END DO
+	      END DO
+	   ELSE
            !print *, 'Evaluating Gas Phase Chemical Contributions'
 
 	   !! Evaluate contributions to each term of Y
@@ -530,6 +548,7 @@ SUBROUTINE GasODEEvaluator (neq, t, y, ydot)
 			ENDIF
 		END IF
 	   END DO
+	   END IF
 	END IF
 
 	!! SCSCSCSC
@@ -563,7 +582,7 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 
 	!! Internal Variables
 	REAL*8	:: GP(3), Term, RunningTotal, T_mix, m, b
-	INTEGER :: J
+	INTEGER :: J,E,K,L
 
 	TYPE (DiffEqTerm), POINTER :: Current
 	TYPE (ChemTerm),   POINTER :: CurrentChem
@@ -589,6 +608,26 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! If Gas Phase Chemistry Occurs !!
 	IF (IFGAS) THEN !!!!!!!!!!!!!!!!!!!
+	   IF (.NOT. GasFlatBuilt) CALL BuildGasFlat()
+	   IF (GasFlatUse .AND. neq .EQ. GasFlatN) THEN
+	      !! Patch 38: only the rows of column I that have terms (the list walk
+	      !! in the ELSE branch skips the others too); same operations and order
+	      DO E = GFJacColStart(I), GFJacColStart(I+1)-1
+	         RunningTotal = 0
+	         DO K = GFJacTerm(E), GFJacTerm(E+1)-1
+	            Term = GFTermLF(K) * GasPhaseChemicalRates(GFTermRxn(K))
+	            DO L = GFTermChem(K), GFTermChem(K+1)-1
+	               IF (GFChemSto(L) .NE. 1) THEN
+	                  Term = Term * (Y(GFChemIdx(L))**GFChemSto(L))
+	               ELSE
+	                  Term = Term * Y(GFChemIdx(L))
+	               ENDIF
+	            END DO
+	            RunningTotal = RunningTotal + Term
+	         END DO
+	         pdj(GFJacRow(E)) = RunningTotal
+	      END DO
+	   ELSE
             !print *, 'ifgas is true inside of GasJacobianEvaluator'
 	   DO J = 1, neq
 
@@ -628,6 +667,7 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 
 		END IF
 	   END DO
+	   END IF
 	END IF
 
 ! CMB: The IFSOLID branch causes an error.
@@ -645,3 +685,94 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 
 RETURN
 END SUBROUTINE GasJacobianEvaluator
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Patch 38: copy GasPhaseODESet and GasPhaseJacobian into flat arrays.     !!
+!! For each term: LeadingFactor, ReactionNumber and the range of its        !!
+!! reactants (index and stoichiometry) in GFChemIdx/GFChemSto, all in the   !!
+!! order of the linked lists. GFOdeStart(I) gives the terms of dY(I)/dt;    !!
+!! GFJacColStart(I) the non-empty rows of Jacobian column I (ascending),    !!
+!! with GFJacRow the row and GFJacTerm the range of its terms.              !!
+!! ASP_GAS_LINKED=1 makes the evaluators use the linked lists instead.      !!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+SUBROUTINE BuildGasFlat ()
+	IMPLICIT NONE
+	INTEGER :: N, I, J, nT, nC, nE, pass, iT, iC, iE, ln, st
+	CHARACTER (len=16) :: ev
+	TYPE (DiffEqTerm), POINTER :: Current
+	TYPE (ChemTerm),   POINTER :: CurrentChem
+
+	GasFlatUse = .TRUE.
+	CALL GET_ENVIRONMENT_VARIABLE('ASP_GAS_LINKED', ev, ln, st)
+	IF (st .EQ. 0 .AND. ln .GT. 0) THEN
+	   IF (TRIM(ev) .EQ. '1') GasFlatUse = .FALSE.
+	END IF
+
+	N = 0
+	IF (ALLOCATED(GasPhaseODESet)) N = SIZE(GasPhaseODESet)
+	GasFlatN = N
+	IF (ALLOCATED(GFOdeStart)) DEALLOCATE (GFOdeStart, GFTermRxn, GFTermChem, GFChemIdx, &
+	                                       GFJacColStart, GFJacRow, GFJacTerm, GFTermLF, GFChemSto)
+
+	!! pass 1 counts, pass 2 fills
+	nT = 0 ; nC = 0 ; nE = 0
+	DO pass = 1, 2
+	   iT = 0 ; iC = 0 ; iE = 0
+	   IF (pass .EQ. 2) GFOdeStart(1) = 1
+	   DO I = 1, N
+	      Current => GasPhaseODESet(I)%FirstTerm
+	      CALL AddTerms ()
+	      IF (pass .EQ. 2) GFOdeStart(I+1) = iT + 1
+	   END DO
+	   IF (pass .EQ. 2) GFJacColStart(1) = 1
+	   IF (ALLOCATED(GasPhaseJacobian)) THEN
+	      DO I = 1, N
+	         DO J = 1, N
+	            Current => GasPhaseJacobian(J,I)%FirstTerm
+	            IF (.NOT. ASSOCIATED(Current)) CYCLE
+	            iE = iE + 1
+	            IF (pass .EQ. 2) THEN
+	               GFJacRow(iE)  = J
+	               GFJacTerm(iE) = iT + 1
+	            END IF
+	            CALL AddTerms ()
+	         END DO
+	         IF (pass .EQ. 2) GFJacColStart(I+1) = iE + 1
+	      END DO
+	   ELSE
+	      IF (pass .EQ. 2) GFJacColStart(2:N+1) = 1
+	   END IF
+	   IF (pass .EQ. 1) THEN
+	      nT = iT ; nC = iC ; nE = iE
+	      ALLOCATE (GFOdeStart(N+1), GFTermRxn(max(nT,1)), GFTermChem(nT+1), GFChemIdx(max(nC,1)), &
+	                GFJacColStart(N+1), GFJacRow(max(nE,1)), GFJacTerm(nE+1), &
+	                GFTermLF(max(nT,1)), GFChemSto(max(nC,1)))
+	   ELSE
+	      GFTermChem(nT+1) = iC + 1
+	      GFJacTerm(nE+1)  = iT + 1
+	   END IF
+	END DO
+	GasFlatBuilt = .TRUE.
+
+CONTAINS
+	!! Append the terms of the list starting at Current, in list order
+	SUBROUTINE AddTerms ()
+	   DO WHILE (ASSOCIATED(Current))
+	      iT = iT + 1
+	      IF (pass .EQ. 2) THEN
+	         GFTermLF(iT)   = Current%LeadingFactor
+	         GFTermRxn(iT)  = Current%ReactionNumber
+	         GFTermChem(iT) = iC + 1
+	      END IF
+	      CurrentChem => Current%DerefChem
+	      DO WHILE (ASSOCIATED(CurrentChem))
+	         iC = iC + 1
+	         IF (pass .EQ. 2) THEN
+	            GFChemIdx(iC) = CurrentChem%WhichChem
+	            GFChemSto(iC) = CurrentChem%Stoich
+	         END IF
+	         CurrentChem => CurrentChem%Next
+	      END DO
+	      Current => Current%Next
+	   END DO
+	END SUBROUTINE AddTerms
+END SUBROUTINE BuildGasFlat

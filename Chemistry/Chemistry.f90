@@ -371,6 +371,16 @@ MODULE Chemistry
 	!! The actual ODE Set and Jacobian 
         !! are set as arrays of these linked lists
 	TYPE (DiffEqList), ALLOCATABLE :: GasPhaseODESet(:),AqPhaseODESet(:)
+	!! Patch 38: flat (array) copy of GasPhaseODESet and GasPhaseJacobian, built
+	!! once from the linked lists (BuildGasFlat) and used by GasODEEvaluator and
+	!! GasJacobianEvaluator. Terms and reactants are stored in list order, so the
+	!! evaluators do the same operations in the same order as the list walk.
+	!! ASP_GAS_LINKED=1 selects the original linked-list evaluation.
+	LOGICAL, PRIVATE :: GasFlatBuilt = .FALSE., GasFlatUse = .TRUE.
+	INTEGER, PRIVATE :: GasFlatN = 0
+	INTEGER, ALLOCATABLE, PRIVATE :: GFOdeStart(:), GFTermRxn(:), GFTermChem(:), GFChemIdx(:)
+	INTEGER, ALLOCATABLE, PRIVATE :: GFJacColStart(:), GFJacRow(:), GFJacTerm(:)
+	REAL*8,  ALLOCATABLE, PRIVATE :: GFTermLF(:), GFChemSto(:)
 	TYPE (DiffEqList), ALLOCATABLE :: GasPhaseJacobian(:,:), &
                                            AqPhaseJacobian(:,:)
 	TYPE (DiffEqList), ALLOCATABLE :: GasPhaseSensitivityMatrix(:,:),  &

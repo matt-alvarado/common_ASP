@@ -69,6 +69,7 @@
 MODULE StepASP
 
 		USE Aerosols, ONLY : Particle, Particles, ResetGibbsDuhemTables
+		USE ModelParameters, ONLY : StepPrints
 		IMPLICIT NONE
 
         ! CMB: aerosol flag is private
@@ -254,7 +255,7 @@ MODULE StepASP
 		!write(*,*) 'Before StepGasChemistry calling spillbeans'
 		!call spillbeans()
 		!Step Gas Chemistry
-                print *, 'Stepping gas chemistry'
+                IF (StepPrints) print *, 'Stepping gas chemistry'
 
 		CALL StepGasChemistry(TimeStep,1)
 		
@@ -269,12 +270,12 @@ MODULE StepASP
 
 		!write(*,*) 'Calling spillbeans'
 		!call spillbeans()
-                print *, 'calling stepcondensationall from StepASP()'
+                IF (StepPrints) print *, 'calling stepcondensationall from StepASP()'
 
 		CALL StepCondensationAll (TimeStep, 1)
                 !Note above calls RegridAerosol automatically
                 !with recalculates radius and density
-                WRITE(*,*) "Cond Okay"
+                IF (StepPrints) WRITE(*,*) "Cond Okay"
                 !DO WHILE(associated(cur))
                 !   write(*,*) cur%numberofparticles
                 !   write(*,*) sum(cur%AqChems)
@@ -289,7 +290,7 @@ MODULE StepASP
             IF (.TRUE.) THEN 
 		!write(*,*) 'Calling spillbeans before stepsectionalcoagulationjacobson'
 		!call spillbeans()
-                print *, 'calling stepsectionalcoagulationjacobson'
+                IF (StepPrints) print *, 'calling stepsectionalcoagulationjacobson'
                 CALL StepSectionalCoagulationJacobson(TimeStep)
 
                 !Note that above already calls RegridAerosol
@@ -334,7 +335,7 @@ MODULE StepASP
                 cur => cur%next !AD DEBUG this was commented out
                     
             END DO !END Temp reset
-        write(*,*) 'End StepASPOnce' !AD DEBUG
+        IF (StepPrints) write(*,*) 'End StepASPOnce' !AD DEBUG
         !endif !doAerosols
         
 		RETURN
@@ -411,7 +412,7 @@ MODULE StepASP
 	
 	  !if (doAerosols .gt. 0) then	
           !Update aerosol concentrations
-              print *, 'calling sort aerosol at grid point for coag'
+              IF (StepPrints) print *, 'calling sort aerosol at grid point for coag'
 
 	    !write(*,*) 'Before SortAerosolAtGridPointForCoagulation() in InputConcentrations calling spillbeans...'
 	    !call spillbeans()
@@ -1088,7 +1089,7 @@ MODULE StepASP
       if (IsNaN(sum(MassConc)))then !AD DEBUG
             write(*,*) "NaN found" !AD DEBUG
       endif !AD DEBUG
-      write(*,*) "sum(NumConc) SAM_Wrapper before ASPInt", sum(NumConc)
+      IF (StepPrints) write(*,*) "sum(NumConc) SAM_Wrapper before ASPInt", sum(NumConc)
       if (IsNaN(sum(NumConc)))then
             write(*,*) "NaN found"
       endif

@@ -145,7 +145,8 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
                                           DoCondensationFlag,           &
                                           DoDissolutionFlag,            &
                                           DoHydrophobicOrgDissolutionFlag, &
-                                          DoHydrophilicOrgDissolutionFlag
+                                          DoHydrophilicOrgDissolutionFlag, &
+                                          StepPrints
 
 	USE Aerosols,             ONLY :  Particles, Particle,	&
 			                  ParticleArray,		&
@@ -308,7 +309,7 @@ SUBROUTINE StepCondensationAll (TimestepSize, NumTimeSteps)
 		    !call flush(6)			
 					!print *, 'GridGasChem(599) at CondensationIntegrator.h line 281 = ', &
 					!						GridGasChem(599)
-					print *, '---> Calling StepOrgCondensation if doing flux'
+					IF (StepPrints) print *, '---> Calling StepOrgCondensation if doing flux'
 					call flush(6)
 				!if (getTimestepIndex() .eq. 23 .and. getParcelIndex() .eq. 20) then
 				!write(288,*) 

@@ -117,13 +117,16 @@ C
  
       INTEGER I, J, J1, J2  ! loop counters
 	LOGICAL SCAF
+      LOGICAL ERROPN
 C
 C
 C    Subroutine writes to error file, need to open
       SCAF = .FALSE.
       if (scaf) write(*,*) "UNIFAC Check 1"
 c	IF (SCAF .EQ. .TRUE.) WRITE(*,*) "UNIFAC Check 1"
-	  OPEN(7,FILE='unifac.err')
+C     Open the error file once (this routine is called very often)
+      INQUIRE(UNIT=7, OPENED=ERROPN)
+      IF (.NOT. ERROPN) OPEN(7,FILE='unifac.err')
 C
       ZHALF = 0.5 * Z
 C

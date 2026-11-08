@@ -261,6 +261,10 @@ MODULE ModelParameters
 	!! If WaterContentPrecision number is too large, then equilibrium water content may oscillate grandly, 
 	!! preventing AqThermoEquilibriumError from being satisfied 
 
+	!! Progress messages printed on every model step (StepASPOnce, SAM_wrapper,
+	!! condensation). On by default; SAM-ASP-TUV turns them off unless its
+	!! namelist option samasp_verbose is set.
+	LOGICAL :: StepPrints = .TRUE.
 	REAL*8 :: WaterContentPrecision = 0.0001   !! The Relative Humidity and Water Activity must be within this amount, or LSODES 
 											   !! uses this as the error tolerance...
 	LOGICAL, PARAMETER :: OpenSystemForCondensation = .FALSE.

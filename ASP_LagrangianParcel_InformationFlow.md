@@ -106,7 +106,7 @@ With "Include aerosols?" = 0 (lines 400–566), the same loop runs only the rate
 
 | File | Used for |
 |---|---|
-| `ASPInputDeck.in` | run mode flags, T, P, RH, run length, the four time steps, inversion height, `b_mix`, photolysis settings |
+| `ASPInputDeck.in` | run mode flags, T, P, RH, run length, the four time steps, inversion height, `b_mix`, photolysis settings; optional solver settings at the end (`Name = value`, see `README.md`) |
 | `AerosolModes.in` | modes (Nt, geometric mean diameter, sigma, composition), number of sections and cutoffs |
 | `EnvAerosolModes.in` | background aerosol the parcel mixes with |
 | `GasPhaseChems.in`, `GasChemicalMechanism.in`, `PhotoRates.in` | gas species (with initial and background values), reactions, photolysis |

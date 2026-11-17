@@ -133,6 +133,8 @@
 !!                                 active solids before the fallback      !!
 !! 11/17  2026   Claude Opus 5.5   Dump/replay test harness moved to      !!
 !!                                 Tests/FEEHarness.f90 (FEEStateHook)    !!
+!! 11/17  2026   Claude Opus 5.5   Solver switches read from the deck     !!
+!!                                 (ModelParameters), not the environment !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -677,7 +679,8 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 					AerosolWaterEquilibriumRHThreshold,&
 					WaterEquilibriumIndex,		&
 					SmallestAerosolPossible,        &
-					MinimumWater
+					MinimumWater,			&
+					AqOuterSolver, AqExitFix, AqDevCache
 
 	USE Time,		ONLY : BeginningTime,			&
 				       CurrentTime 
@@ -806,7 +809,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	END IF
 
 	DemoteAfterThisIteration = 10 !CEILING (LocalNumbIterations / 8.)
-	IF (AqPairRule .AND. .NOT. LocalFirstEquilibration) THEN	!Patch 30: dissolve unstable solid sets first
+	IF (AqPairRuleOn() .AND. .NOT. LocalFirstEquilibration) THEN	!dissolve unstable solid sets first
 		IF (ResolveUnstableSets(InParticle) .GT. 0) FEECountResolved = FEECountResolved + 1
 	END IF
 
@@ -844,7 +847,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	!END IF
 
 	IF (AlreadyEquilibrated) RETURN
-	IF (AqOuterNewton .AND. .NOT. LocalFirstEquilibration) THEN	!Patch 30: coupled solve (AqOuterSolver = 1)
+	IF (AqOuterSolver .EQ. 1 .AND. .NOT. LocalFirstEquilibration) THEN	!coupled Newton solve
 		CALL CoupledElectrolyteNewton (InParticle, NewtonOK)
 		IF (NewtonOK) THEN
 			IF (UpdateThermo) THEN
@@ -875,7 +878,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	!! Count iterations
 	K = 0
 	SnapOK = .FALSE.	!Patch 29
-	IF (AqDevCache) THEN
+	IF (AqDevCache .EQ. 1) THEN
 		IF (.NOT. ALLOCATED(ECRDepIdx)) CALL InitECRDepIdx (SIZE(InParticle%AqChems))
 		ALLOCATE (Snap(SIZE(InParticle%AqChems)))
 	END IF
@@ -903,7 +906,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 	!Patch 29: deviation cache.  A reaction's deviation depends only on the amounts in ECRDepIdx and
 	!on water (activity coefficients, water activity and temperature are fixed in this loop), so it
 	!is re-evaluated only when one of those amounts changed bit for bit since the last pass.
-	IF (AqDevCache) THEN
+	IF (AqDevCache .EQ. 1) THEN
 		IF (.NOT. SnapOK) THEN
 			DevOK = .FALSE.
 			Snap = TRANSFER(InParticle%AqChems, 0_8, SIZE(InParticle%AqChems))
@@ -936,7 +939,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 		!! Get the deviation from Equilibrium
 		! CMB: use double precision
 		!II = ABS(1.-EquilibriumConstantsRatio (I, InParticle))
-		IF (AqDevCache) THEN	!Patch 29
+		IF (AqDevCache .EQ. 1) THEN
 			IF (.NOT. DevOK(I)) THEN
 				Dev(I) = dabs(1. - EquilibriumConstantsRatio(I, InParticle))
 				DevOK(I) = .TRUE.
@@ -958,7 +961,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 
 	!If Worst equilibrium is below error tolerance, we're done
 	!II is the deviation of the last major reaction evaluated above, not the largest.  With
-	!ASP_FEE_EXITFIX >= 1 this early exit is skipped, so the loop ends only when no major reaction is
+	!AqExitFix >= 1 this early exit is skipped, so the loop ends only when no major reaction is
 	!out of tolerance (WorstEqIndex = 0 below) or at the iteration cap.
 	IF (AqExitFix .EQ. 0 .AND. II .LT. AqThermoEquilibriumError .AND. K .GT. 5*DemoteAfterThisIteration) THEN
 		EXIT
@@ -1005,7 +1008,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 				GOTO 25 !Go to top of main loop and try again
 		END IF
 		END DO
-		!ASP_FEE_EXITFIX = 2: the minor reactions too must meet the equilibrium conditions
+		!AqExitFix = 2: the minor reactions too must meet the equilibrium conditions
 		IF (AqExitFix .GE. 2 .AND. K .LE. LocalNumbIterations) THEN
 			IF (EqViolation(InParticle) .GT. AqThermoEquilibriumError) GOTO 25
 		END IF
@@ -1133,7 +1136,6 @@ SUBROUTINE FindElectrolyteEquilibrium (InParticle, UpdateThermo, &
 	LOGICAL :: UpdateThermo, FirstEquilibration
 	INTEGER :: ReturnType
 
-	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()
 	IF (ASSOCIATED(FEEStateHook)) CALL FEEStateHook (InParticle, UpdateThermo, FirstEquilibration, ReturnType, .TRUE.)
 	CALL FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, FirstEquilibration, ReturnType)
 	IF (ASSOCIATED(FEEStateHook)) CALL FEEStateHook (InParticle, UpdateThermo, FirstEquilibration, ReturnType, .FALSE.)
@@ -1158,7 +1160,7 @@ SUBROUTINE InitECRDepIdx (NA)
 	END DO
 END SUBROUTINE InitECRDepIdx
 
-!Patch 30: coupled Newton solve of all movable equilibria at once (AqOuterSolver = 1, or ASP_FEE_OUTER=newton).
+!Coupled Newton solve of all movable equilibria at once (deck setting AqOuterSolver = 1).
 !Unknowns are the extents of the active reactions; amounts are updated as n = n + nu*dXi, so mass and
 !charge are conserved exactly.  Equations: ln(ratio_r) = 0 with activity coefficients, water activity
 !and temperature fixed (as in the worst-first loop).  Solids follow complementarity: a solid is active
@@ -1983,32 +1985,13 @@ REAL*8 FUNCTION EqViolation (InParticle)
 	END DO
 END FUNCTION EqViolation
 
-SUBROUTINE ReadAqSwitches ()
-	USE ModelParameters, ONLY : AqInnerSolver, AqOuterSolver
+!Solid-circuit precipitation rule: deck setting AqPairRule (1 on, 0 off); by default (-1) it
+!goes with the coupled Newton solve (AqOuterSolver = 1)
+LOGICAL FUNCTION AqPairRuleOn ()
+	USE ModelParameters, ONLY : AqPairRule, AqOuterSolver
 	IMPLICIT NONE
-	CHARACTER(LEN=512) :: V
-	INTEGER :: L, ST
-	AqSwitchesRead = .TRUE.
-	AqNewtonInner = (AqInnerSolver .EQ. 1)
-	AqOuterNewton = (AqOuterSolver .EQ. 1)		!Patch 30: deck option, overridden by ASP_FEE_OUTER=newton|worst
-	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_OUTER", V, L, ST)
-	IF (ST .EQ. 0 .AND. L .GT. 0) THEN
-		IF (TRIM(V) .EQ. "newton") AqOuterNewton = .TRUE.
-		IF (TRIM(V) .EQ. "worst")  AqOuterNewton = .FALSE.
-	END IF
-	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_EXITFIX", V, L, ST)
-	IF (ST .EQ. 0 .AND. L .GT. 0) READ (V, *) AqExitFix
-	AqPairRule = AqOuterNewton	!the solid-circuit rule goes with the coupled solve unless set explicitly
-	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_PAIRRULE", V, L, ST)
-	IF (ST .EQ. 0 .AND. L .GT. 0) AqPairRule = (TRIM(V) .EQ. "1")
-	CALL GET_ENVIRONMENT_VARIABLE ("ASP_FEE_DEVCACHE", V, L, ST)	!Patch 29
-	IF (ST .EQ. 0 .AND. L .GT. 0) AqDevCache = (TRIM(V) .NE. "0")
-	CALL GET_ENVIRONMENT_VARIABLE ("ASP_AQ_INNER", V, L, ST)
-	IF (ST .EQ. 0 .AND. L .GT. 0) THEN
-		IF (TRIM(V) .EQ. "newton")   AqNewtonInner = .TRUE.
-		IF (TRIM(V) .EQ. "jacobson") AqNewtonInner = .FALSE.
-	END IF
-END SUBROUTINE ReadAqSwitches
+	AqPairRuleOn = (AqPairRule .EQ. 1) .OR. (AqPairRule .LT. 0 .AND. AqOuterSolver .EQ. 1)
+END FUNCTION AqPairRuleOn
 
 
 
@@ -2064,7 +2047,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 				AqThermoNumbAllowedIterations,	        &
 				ProtonIndex,				&
 				HydroxyIndex,				&
-				WaterEquilibriumIndex
+				WaterEquilibriumIndex,			&
+				AqInnerSolver
 
 	USE GridPointFields, ONLY : GetRelativeHumidity
 
@@ -2099,7 +2083,6 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!Patch C1: fill the per-reaction chemical-name flags once
 	IF (.NOT. ALLOCATED(EqRxnAnionIsCO3)) CALL InitEqRxnNameFlags ()
-	IF (.NOT. AqSwitchesRead) CALL ReadAqSwitches ()	!Patch 28
 	FEECountEADR = FEECountEADR + 1	!Patch 29
 
         !! If this is an empty section, we have no truck with it
@@ -2307,9 +2290,9 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!! Set the error tolerance according to the 
 	!! subroutine's optional input
 	!IF (PRESENT(OptErrorTolerance)) THEN
-	!Patch 30: do not precipitate a solid that would complete the unstable side of a solid
-	!circuit (AqPairRule: on with the coupled solve, or ASP_FEE_PAIRRULE=1); see InitSolidCircuits
-	IF (AqPairRule .AND. EqRatio .GT. 1.0) THEN
+	!Do not precipitate a solid that would complete the unstable side of a solid circuit
+	!(AqPairRuleOn); see InitSolidCircuits
+	IF (AqPairRuleOn() .AND. EqRatio .GT. 1.0) THEN
 		IF (DABS(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .LT. 0.00001 .AND. &
 		    AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0.) THEN
 			IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LE. 1.0D-28) THEN
@@ -2540,7 +2523,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	HalfIter = AqThermoNumbAllowedIterations/2.
 	!Patch 24: if neutralisation did not change the particle, the entry EqRatio is also the first iteration's ratio
 	HaveEqRatio = (.NOT. StateChanged) .AND. (NotInfDiss)
-	IF (.NOT. (AqNewtonInner .AND. NotInfDiss)) THEN
+	IF (.NOT. (AqInnerSolver .EQ. 1 .AND. NotInfDiss)) THEN
 	DO
 		IF (HaveEqRatio) THEN
 			Converged = (ErrorTolerance .GE. ABS(EqRatio - 1.))

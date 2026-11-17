@@ -26,7 +26,7 @@ MODULE FEEHarness
 	                     EquilibrateAqueousDissociationReaction, EquilibriumConstantsRatio,	&
 	                     DeliquesenceRH, EqCoeff, EqViolation, InitSolidCircuits, NCirc, CircN, CircRxn,	&
 	                     CircCoef, CircuitApplies, StableSideAvailable, CompletesUnstableSet,	&
-	                     KusikMeissner, ReadAqSwitches, AqNewtonInner, AqDevCache,		&
+	                     KusikMeissner,							&
 	                     FEECountOuter, FEECountEADR, FEECountECREval, FEECountNewtonFail,	&
 	                     FEECountNewtonSing, FEECountNewtonMaxIt, FEECountNewtonDrop,		&
 	                     FEECountNewtonCycles, FEECountPairRefuse, FEECountResolved,		&
@@ -225,7 +225,7 @@ END FUNCTION CountUnstableSets
 !(chemistry, particles) first: Particles%First is used as the work particle.
 SUBROUTINE ReplayFEE (DumpFile, ResultFile, VDiag, NRep)
 	USE GridPointFields, ONLY : GetPress, SetTempField, SetPressField, ReplaceGridCellChemBurden
-	USE ModelParameters, ONLY : PressureScale, AqThermoEquilibriumError
+	USE ModelParameters, ONLY : PressureScale, AqThermoEquilibriumError, AqInnerSolver, AqDevCache
 	IMPLICIT NONE
 	CHARACTER(LEN=*) :: DumpFile, ResultFile
 	LOGICAL :: VDiag
@@ -243,7 +243,6 @@ SUBROUTINE ReplayFEE (DumpFile, ResultFile, VDiag, NRep)
 	REAL*8 :: T, Pr, H2O, Dum1, Dum2, Dum3, C0, C1, TSolve, D, DMax, DSum, Scale
 	REAL*8, ALLOCATABLE :: Out(:)
 
-	CALL ReadAqSwitches ()
 	P => Particles%First
 	ALLOCATE (Ref)
 	ALLOCATE (Ref%AqChems(SIZE(P%AqChems)), Ref%GammaMixed(SIZE(P%GammaMixed)), &
@@ -337,8 +336,8 @@ SUBROUTINE ReplayFEE (DumpFile, ResultFile, VDiag, NRep)
 	WRITE (OU, '(A,ES12.4)')  "solver CPU s     ", TSolve
 	WRITE (OU, '(A,ES12.4)')  "max  |d|/total   ", DMax
 	WRITE (OU, '(A,ES12.4)')  "mean |d|/total   ", DSum / MAX(N,1)
-	WRITE (OU, '(A,L2)')      "newton inner     ", AqNewtonInner
-	WRITE (OU, '(A,L2)')      "deviation cache  ", AqDevCache
+	WRITE (OU, '(A,L2)')      "newton inner     ", AqInnerSolver .EQ. 1
+	WRITE (OU, '(A,L2)')      "deviation cache  ", AqDevCache .EQ. 1
 	WRITE (OU, '(A,I10)')     "repeats          ", NRep
 	WRITE (OU, '(A,F10.2)')   "outer iter/call  ", DBLE(FEECountOuter)/MAX(N,1)
 	WRITE (OU, '(A,F10.2)')   "1-rxn solves/call", DBLE(FEECountEADR)/MAX(N,1)

@@ -26,6 +26,9 @@
 !!                                 after GDTableCells sets AqInnerSolver  !!
 !! 11/02  2026   Claude Opus 5.5   Patch 30: optional ASPInputDeck.in line!!
 !!                                 after AqInnerSolver sets AqOuterSolver !!
+!! 11/17  2026   Claude Opus 5.5   Optional "Name = value" settings at the!!
+!!                                 end of the deck (ReadOptionalDeckSet-  !!
+!!                                 tings); settings echoed to transcript  !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -66,7 +69,7 @@
 						STR2REAL,		&
 						StripToken,		&
 						EOF,			&
-						ERROR,WARN,		&
+						ERROR,WARN,INT2STR,	&
 						Transcript
 
 		USE GridPointFields,     ONLY : InitializeGridPointFields, &
@@ -729,59 +732,126 @@
 
                 CALL LightSwitchParams(lightswitch_flag, lights_on_time, lights_off_time)
 
-		!! Patch N11 switches.  These two lines are OPTIONAL (end of deck): if absent, the
-		!! tabulated Gibbs-Duhem integral is used with 256 cells.
-		Token = GetLine(FH)
-		IF (Token .NE. EOF) THEN
-			IF (.NOT.IsInteger(Token)) &
-				CALL ERROR ("Must Supply either a 0 or 1 in ASPInputDeck.in to indicate if the "//&
-					"Gibbs-Duhem integral is tabulated (1) or fully integrated (0). Received "//StripToken(Token))
-			I = STR2INT(Token)
-			IF (I < 0 .OR. I > 1) &
-				CALL ERROR ("Must Supply either a 0 or 1 in ASPInputDeck.in to indicate if the "//&
-					"Gibbs-Duhem integral is tabulated (1) or fully integrated (0). Received "//StripToken(Token))
-			GDTableMode = I
+		!! Optional solver and evaluation settings at the end of the deck
+		CALL ReadOptionalDeckSettings ()
+		CALL EchoDeckSettings ()
 
-			Token = GetLine(FH)
-			IF (Token .NE. EOF) THEN
-				IF (.NOT.IsInteger(Token)) &
-					CALL ERROR ("Must Supply an integer number of Gibbs-Duhem table cells (16 to 65536) in "//&
-						"ASPInputDeck.in. Received "//StripToken(Token))
-				I = STR2INT(Token)
-				IF (I < 16 .OR. I > 65536) &
-					CALL ERROR ("Gibbs-Duhem table cells in ASPInputDeck.in must be between 16 and 65536. Received "//&
-						StripToken(Token))
-				GDTableCells = I
-
-				!! Patch 28: OPTIONAL line after the table cells: single-reaction solver in
-				!! FindElectrolyteEquilibrium (1 = Newton, the default; 0 = Jacobson bisection)
-				Token = GetLine(FH)
-				IF (Token .NE. EOF) THEN
-					IF (.NOT.IsInteger(Token)) &
-						CALL ERROR ("Must Supply either a 0 (Jacobson mass-flux bisection) or 1 (Newton) in "//&
-							"ASPInputDeck.in for the aqueous single-reaction solver. Received "//StripToken(Token))
-					I = STR2INT(Token)
-					IF (I < 0 .OR. I > 1) &
-						CALL ERROR ("Must Supply either a 0 (Jacobson mass-flux bisection) or 1 (Newton) in "//&
-							"ASPInputDeck.in for the aqueous single-reaction solver. Received "//StripToken(Token))
-					AqInnerSolver = I
-
-					!! Patch 30: OPTIONAL line after the single-reaction solver: electrolyte
-					!! equilibrium solver (1 = coupled Newton solve, the default; 0 = worst-first loop)
-					Token = GetLine(FH)
-					IF (Token .NE. EOF) THEN
-						IF (.NOT.IsInteger(Token)) &
-							CALL ERROR ("Must Supply either a 0 (worst-first loop) or 1 (coupled Newton solve) in "//&
-								"ASPInputDeck.in for the electrolyte equilibrium solver. Received "//StripToken(Token))
-						I = STR2INT(Token)
-						IF (I < 0 .OR. I > 1) &
-							CALL ERROR ("Must Supply either a 0 (worst-first loop) or 1 (coupled Newton solve) in "//&
-								"ASPInputDeck.in for the electrolyte equilibrium solver. Received "//StripToken(Token))
-						AqOuterSolver = I
-					END IF
-				END IF
-			END IF
-		END IF
-	
                 !print *, 'CMB: END MAIN INPUT DECK'
+
+	CONTAINS
+
+	!! Optional settings after the last required line of ASPInputDeck.in, read until the end
+	!! of the file.  Each is a line
+	!!     Name = value        (any order; names are not case sensitive)
+	!! Older decks may instead give the first four as positional lines, in this order:
+	!!     GDTableMode, GDTableCells, AqInnerSolver, AqOuterSolver
+	!! Positional lines must come before any "Name = value" line.  Settings not given keep
+	!! their defaults (ModelParameters.f90):
+	!!   GDTableMode   1    1 = tabulated Gibbs-Duhem integral, 0 = full DGAUS8 integral
+	!!   GDTableCells  256  table cells per reaction (16 to 65536)
+	!!   AqInnerSolver 1    single-reaction solver: 1 = Newton, 0 = Jacobson bisection
+	!!   AqOuterSolver 1    electrolyte equilibrium: 1 = coupled Newton solve, 0 = worst-first loop
+	!!   AqPairRule    -1   solid-circuit precipitation rule: 1 = on, 0 = off,
+	!!                      -1 = on with the coupled solve (AqOuterSolver = 1) only
+	!!   AqExitFix     0    worst-first loop: 0 = early exit on the last reaction's deviation,
+	!!                      1 = no early exit, 2 = also check every reaction at the end
+	!!   AqDevCache    1    worst-first loop deviation cache: 1 = on, 0 = off (same results)
+	!!   GasEvalLinked 0    gas ODE/Jacobian evaluation: 0 = flat arrays, 1 = linked lists (same results)
+	!!   ThermoScanUp  0    ThermoTest RH scan: 0 = down 0.90 -> 0.20, 1 = up 0.20 -> 0.90
+	SUBROUTINE ReadOptionalDeckSettings ()
+		IMPLICIT NONE
+		INTEGER :: NPositional, EqPos
+		LOGICAL :: Named
+		CHARACTER(len=32), PARAMETER :: PositionalName(4) = (/ "GDTableMode  ", "GDTableCells ", &
+		                                                       "AqInnerSolver", "AqOuterSolver" /)
+
+		NPositional = 0
+		Named = .FALSE.
+		DO
+			CurrLine = GetLine(FH)
+			IF (CurrLine .EQ. EOF) EXIT
+			EqPos = INDEX(CurrLine, "=")
+			IF (EqPos .GT. 0) THEN
+				Named = .TRUE.
+				CALL SetDeckSetting (CurrLine(1:EqPos-1), CurrLine(EqPos+1:))
+			ELSE
+				IF (Named) CALL ERROR ("In ASPInputDeck.in, positional setting "//TRIM(CurrLine)// &
+					" after a 'Name = value' line; use 'Name = value' for all settings after the first one")
+				NPositional = NPositional + 1
+				IF (NPositional .GT. 4) CALL ERROR ("In ASPInputDeck.in, more than four positional settings "// &
+					"at the end of the deck (GDTableMode, GDTableCells, AqInnerSolver, AqOuterSolver); "// &
+					"use 'Name = value' lines for the others.  Received "//TRIM(CurrLine))
+				CALL SetDeckSetting (PositionalName(NPositional), CurrLine)
+			END IF
+		END DO
+	END SUBROUTINE ReadOptionalDeckSettings
+
+	!! Check and store one optional setting
+	SUBROUTINE SetDeckSetting (InName, InValue)
+		IMPLICIT NONE
+		CHARACTER*(*) :: InName, InValue
+		CHARACTER(len=64)  :: Name, UName
+		CHARACTER(len=512) :: Value
+		INTEGER :: K, V, VMin, VMax
+
+		Name  = StripToken(InName)
+		Value = InValue
+		DO K = 1, LEN(Value)		!a deck with DOS line ends leaves a carriage return
+			IF (Value(K:K) .EQ. CHAR(13)) Value(K:K) = " "
+		END DO
+		Value = StripToken(Value)
+		UName = Name
+		DO K = 1, LEN_TRIM(UName)
+			IF (UName(K:K) .GE. "a" .AND. UName(K:K) .LE. "z") UName(K:K) = ACHAR(IACHAR(UName(K:K)) - 32)
+		END DO
+
+		SELECT CASE (TRIM(UName))
+		CASE ("GDTABLEMODE")   ; VMin = 0  ; VMax = 1
+		CASE ("GDTABLECELLS")  ; VMin = 16 ; VMax = 65536
+		CASE ("AQINNERSOLVER") ; VMin = 0  ; VMax = 1
+		CASE ("AQOUTERSOLVER") ; VMin = 0  ; VMax = 1
+		CASE ("AQPAIRRULE")    ; VMin = -1 ; VMax = 1
+		CASE ("AQEXITFIX")     ; VMin = 0  ; VMax = 2
+		CASE ("AQDEVCACHE")    ; VMin = 0  ; VMax = 1
+		CASE ("GASEVALLINKED") ; VMin = 0  ; VMax = 1
+		CASE ("THERMOSCANUP")  ; VMin = 0  ; VMax = 1
+		CASE DEFAULT
+			CALL ERROR ("In ASPInputDeck.in, unknown setting "//TRIM(Name)//".  Known settings: GDTableMode, "// &
+				"GDTableCells, AqInnerSolver, AqOuterSolver, AqPairRule, AqExitFix, AqDevCache, "// &
+				"GasEvalLinked, ThermoScanUp")
+		END SELECT
+		IF (.NOT. IsInteger(Value)) CALL ERROR ("In ASPInputDeck.in, "//TRIM(Name)// &
+			" must be an integer. Received "//TRIM(Value))
+		V = STR2INT(Value)
+		IF (V .LT. VMin .OR. V .GT. VMax) CALL ERROR ("In ASPInputDeck.in, "//TRIM(Name)//" must be between "// &
+			TRIM(INT2STR(VMin))//" and "//TRIM(INT2STR(VMax))//". Received "//TRIM(Value))
+
+		SELECT CASE (TRIM(UName))
+		CASE ("GDTABLEMODE")   ; GDTableMode   = V
+		CASE ("GDTABLECELLS")  ; GDTableCells  = V
+		CASE ("AQINNERSOLVER") ; AqInnerSolver = V
+		CASE ("AQOUTERSOLVER") ; AqOuterSolver = V
+		CASE ("AQPAIRRULE")    ; AqPairRule    = V
+		CASE ("AQEXITFIX")     ; AqExitFix     = V
+		CASE ("AQDEVCACHE")    ; AqDevCache    = V
+		CASE ("GASEVALLINKED") ; GasEvalLinked = V
+		CASE ("THERMOSCANUP")  ; ThermoScanUp  = V
+		END SELECT
+	END SUBROUTINE SetDeckSetting
+
+	!! Write the solver and evaluation settings in use to the transcript and standard output
+	SUBROUTINE EchoDeckSettings ()
+		IMPLICIT NONE
+		CALL Transcript ("Solver and evaluation settings (ASPInputDeck.in; defaults where not given):")
+		CALL Transcript ("  GDTableMode   = "//TRIM(INT2STR(GDTableMode))//"   (1 = tabulated Gibbs-Duhem integral, 0 = DGAUS8)")
+		CALL Transcript ("  GDTableCells  = "//TRIM(INT2STR(GDTableCells)))
+		CALL Transcript ("  AqInnerSolver = "//TRIM(INT2STR(AqInnerSolver))//"   (1 = Newton, 0 = Jacobson bisection)")
+		CALL Transcript ("  AqOuterSolver = "//TRIM(INT2STR(AqOuterSolver))//"   (1 = coupled Newton solve, 0 = worst-first loop)")
+		CALL Transcript ("  AqPairRule    = "//TRIM(INT2STR(AqPairRule))//"  (1 = on, 0 = off, -1 = on with the coupled solve only)")
+		CALL Transcript ("  AqExitFix     = "//TRIM(INT2STR(AqExitFix))//"   (worst-first loop exit)")
+		CALL Transcript ("  AqDevCache    = "//TRIM(INT2STR(AqDevCache))//"   (worst-first loop deviation cache)")
+		CALL Transcript ("  GasEvalLinked = "//TRIM(INT2STR(GasEvalLinked))//"   (0 = flat arrays, 1 = linked lists)")
+		CALL Transcript ("  ThermoScanUp  = "//TRIM(INT2STR(ThermoScanUp))//"   (ThermoTest RH scan: 0 = down, 1 = up)")
+	END SUBROUTINE EchoDeckSettings
+
 	END SUBROUTINE ReadMainInputDeck

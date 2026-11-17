@@ -235,13 +235,18 @@ MODULE ModelParameters
 	REAL*8, PARAMETER  :: MaxIonicStrKM = 50.0   !Matt put in new value 8/25/05
 					             !! The maximum ionic strength allowed by the Kusik-Meissner routine 
 						     !! (larger will just be done using this)
-	!! Patch N11 controls (optional last lines of ASPInputDeck.in; defaults used if absent)
-	INTEGER            :: GDTableMode  = 1     !! 1 = tabulated Gibbs-Duhem integral (N11), 0 = full adaptive DGAUS8 integral on every call
+	!! Solver and evaluation settings: optional "Name = value" lines at the end of ASPInputDeck.in
+	!! (the first four also as positional lines; see ReadOptionalDeckSettings).  Defaults apply if absent.
+	INTEGER            :: GDTableMode  = 1     !! 1 = tabulated Gibbs-Duhem integral, 0 = full adaptive DGAUS8 integral on every call
 	INTEGER            :: GDTableCells = 256   !! Number of table cells per reaction (only used if GDTableMode = 1)
-	!! Patch 28 control (optional line after GDTableCells; default used if absent)
-	INTEGER            :: AqInnerSolver = 1    !! 1 = Newton single-reaction solve (patch 28), 0 = Jacobson mass-flux bisection
-	!! Patch 30 control (optional line after AqInnerSolver; default used if absent)
-	INTEGER            :: AqOuterSolver = 1    !! 1 = coupled Newton solve of the electrolyte equilibrium (patch 30, default since patch 31), 0 = worst-first loop
+	INTEGER            :: AqInnerSolver = 1    !! 1 = Newton single-reaction solve, 0 = Jacobson mass-flux bisection
+	INTEGER            :: AqOuterSolver = 1    !! 1 = coupled Newton solve of the electrolyte equilibrium, 0 = worst-first loop
+	INTEGER            :: AqPairRule = -1      !! Solid-circuit precipitation rule: 1 = on, 0 = off, -1 = on with the coupled solve only
+	INTEGER            :: AqExitFix = 0        !! Worst-first loop: 0 = early exit on the last reaction's deviation,
+	                                           !! 1 = no early exit, 2 = also every reaction must be in equilibrium at the end
+	INTEGER            :: AqDevCache = 1       !! Worst-first loop: 1 = cache reaction deviations, 0 = recompute (same results)
+	INTEGER            :: GasEvalLinked = 0    !! Gas ODE and Jacobian evaluation: 0 = flat arrays, 1 = linked lists (same results)
+	INTEGER            :: ThermoScanUp = 0     !! ThermoTest RH scan: 0 = down (0.90 -> 0.20), 1 = up (0.20 -> 0.90)
 	REAL*8, PARAMETER  :: ThermoTref  = 298.15	        !! The reference temperature for the Kusik-Meissner Calculations
 	REAL*8, PARAMETER  :: EqCoeffTref = 298			!! The reference temperature for the Equilibrium 
 								!! Coefficient Calculations

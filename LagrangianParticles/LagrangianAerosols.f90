@@ -101,8 +101,7 @@ PUBLIC :: ResetGibbsDuhemTables
 !! Electrolyte-solver internals used by the FEE replay test (Tests/FEEReplay.f90)
 PUBLIC :: FEEStateHook, FindElectrolyteEquilibriumCore, EquilibrateAqueousDissociationReaction, &
           EquilibriumConstantsRatio, DeliquesenceRH, EqCoeff, EqViolation, InitSolidCircuits, NCirc, CircN, CircRxn, &
-          CircCoef, CircuitApplies, StableSideAvailable, CompletesUnstableSet, ReadAqSwitches, &
-          AqNewtonInner, AqDevCache, &
+          CircCoef, CircuitApplies, StableSideAvailable, CompletesUnstableSet, &
           FEECountOuter, FEECountEADR, FEECountECREval, FEECountNewtonFail, FEECountNewtonSing, &
           FEECountNewtonMaxIt, FEECountNewtonDrop, FEECountNewtonCycles, FEECountPairRefuse, &
           FEECountResolved, FEECountDry, FEECountPreAssoc
@@ -405,17 +404,10 @@ TYPE (ParticleArray) :: BoundaryParticles
 	INTEGER*8, ALLOCATABLE, SAVE :: ECRMemoKey(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: ECRMemoVal(:)
 	LOGICAL, ALLOCATABLE, SAVE :: ECRMemoOK(:)
-	!Electrolyte-solver switches, read once from the deck and the environment by ReadAqSwitches
-	LOGICAL, SAVE :: AqSwitchesRead = .FALSE.
-	LOGICAL, SAVE :: AqNewtonInner = .TRUE.	!Newton single-reaction solve (AqInnerSolver = 1); else Jacobson bisection
-	LOGICAL, SAVE :: AqDevCache = .TRUE.	!deviation cache in the worst-first loop (bit-identical either way)
-	LOGICAL, SAVE :: AqOuterNewton = .FALSE.	!coupled Newton solve (AqOuterSolver = 1); else worst-first loop
-	!Solid circuits (InitSolidCircuits) and the precipitation rule for their unstable sides
+	!Solid circuits (InitSolidCircuits); the precipitation rule for their unstable sides is AqPairRuleOn
 	INTEGER, SAVE :: NCirc = 0
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
-	LOGICAL, SAVE :: AqPairRule = .FALSE.
-	INTEGER, SAVE :: AqExitFix = 0	!1 = no early exit on II in the worst-first loop, 2 = also re-check every reaction at the end
 	!Amounts each reaction ratio reads (InitECRDepIdx)
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
 	!Electrolyte-solver statistics.  The model does not use them; the FEE replay test

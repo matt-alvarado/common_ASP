@@ -692,20 +692,16 @@ END SUBROUTINE GasJacobianEvaluator
 !! order of the linked lists. GFOdeStart(I) gives the terms of dY(I)/dt;    !!
 !! GFJacColStart(I) the non-empty rows of Jacobian column I (ascending),    !!
 !! with GFJacRow the row and GFJacTerm the range of its terms.              !!
-!! ASP_GAS_LINKED=1 makes the evaluators use the linked lists instead.      !!
+!! Deck setting GasEvalLinked = 1: the evaluators use the linked lists.    !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE BuildGasFlat ()
+	USE ModelParameters, ONLY : GasEvalLinked
 	IMPLICIT NONE
-	INTEGER :: N, I, J, nT, nC, nE, pass, iT, iC, iE, ln, st
-	CHARACTER (len=16) :: ev
+	INTEGER :: N, I, J, nT, nC, nE, pass, iT, iC, iE
 	TYPE (DiffEqTerm), POINTER :: Current
 	TYPE (ChemTerm),   POINTER :: CurrentChem
 
-	GasFlatUse = .TRUE.
-	CALL GET_ENVIRONMENT_VARIABLE('ASP_GAS_LINKED', ev, ln, st)
-	IF (st .EQ. 0 .AND. ln .GT. 0) THEN
-	   IF (TRIM(ev) .EQ. '1') GasFlatUse = .FALSE.
-	END IF
+	GasFlatUse = (GasEvalLinked .NE. 1)
 
 	N = 0
 	IF (ALLOCATED(GasPhaseODESet)) N = SIZE(GasPhaseODESet)

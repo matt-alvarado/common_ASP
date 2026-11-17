@@ -45,6 +45,8 @@
 !!                                 and harness                            !!
 !! 11/02  2026   Claude Opus 5.5   Patch 35: FEECountDry                  !!
 !! 11/02  2026   Claude Opus 5.5   Patch 36: FEECountPreAssoc             !!
+!! 11/17  2026   Claude Opus 5.5   Test hook FEEStateHook; dump and replay!!
+!!                                 state moved to Tests/FEEHarness.f90    !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -96,6 +98,14 @@ REAL*8, PARAMETER  :: FastTUVWavelengths(NFastTUVWvl) = &
 PUBLIC :: NFastTUVWvl, FastTUVWavelengths
 !! SAM-ASP-TUV (MPI cell-state reset): forget the tabulated Gibbs-Duhem integrals
 PUBLIC :: ResetGibbsDuhemTables
+!! Electrolyte-solver internals used by the FEE replay test (Tests/FEEReplay.f90)
+PUBLIC :: FEEStateHook, FindElectrolyteEquilibriumCore, EquilibrateAqueousDissociationReaction, &
+          EquilibriumConstantsRatio, DeliquesenceRH, EqCoeff, EqViolation, InitSolidCircuits, NCirc, CircN, CircRxn, &
+          CircCoef, CircuitApplies, StableSideAvailable, CompletesUnstableSet, ReadAqSwitches, &
+          AqNewtonInner, AqDevCache, &
+          FEECountOuter, FEECountEADR, FEECountECREval, FEECountNewtonFail, FEECountNewtonSing, &
+          FEECountNewtonMaxIt, FEECountNewtonDrop, FEECountNewtonCycles, FEECountPairRefuse, &
+          FEECountResolved, FEECountDry, FEECountPreAssoc
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Now specify which subroutines may be accessed by the outside world	 !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -107,7 +117,6 @@ PUBLIC	:: AerosolModeNames,			&
            OrgCurvatureCorrection,		&
            DumpParticleContentsAtError,         &
            FindElectrolyteEquilibrium,	        &
-           MaybeReplayFEE,				&
            FindAqElectrolyteEquilibriumForGridPoint, &
            HypotheticalElectrolyteConcentrations, &
            InitializeParticlesSectional,        &
@@ -396,35 +405,37 @@ TYPE (ParticleArray) :: BoundaryParticles
 	INTEGER*8, ALLOCATABLE, SAVE :: ECRMemoKey(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: ECRMemoVal(:)
 	LOGICAL, ALLOCATABLE, SAVE :: ECRMemoOK(:)
-	!Patch 27: harness switches, read once from the environment (default off: unchanged behaviour).
-	!  ASP_FEE_DUMP=<file>      write sampled FindElectrolyteEquilibrium states
-	!  ASP_FEE_DUMP_EVERY=<n>   sample every n-th call (default 100)
-	!  ASP_FEE_REPLAY=<file>    replay a dump after initialisation, report timing and differences, stop
-	LOGICAL, SAVE :: AqSwitchesRead = .FALSE., FEEDumpOn = .FALSE., FEEDumpAll = .FALSE.	!ASP_FEE_DUMP_ALL: also calls with UpdateThermo
-	!Patch 28: Newton single-reaction solve; set from AqInnerSolver (deck), ASP_AQ_INNER=newton|jacobson overrides
-	LOGICAL, SAVE :: AqNewtonInner = .TRUE.
-	!Patch 29: deviation cache in the worst-first loop (ASP_FEE_DEVCACHE=0 turns it off), the
-	!amounts each reaction ratio reads, harness counters and replay options
-	LOGICAL, SAVE :: AqDevCache = .TRUE.
-	LOGICAL, SAVE :: AqOuterNewton = .FALSE.	!Patch 30: coupled solve; set from AqOuterSolver, ASP_FEE_OUTER overrides
-	INTEGER*8, SAVE :: FEECountNewtonFail = 0, FEECountNewtonSing = 0, FEECountNewtonMaxIt = 0
-	INTEGER*8, SAVE :: FEECountNewtonDrop = 0, FEECountNewtonCycles = 0, FEECountPairRefuse = 0, FEECountResolved = 0
-	INTEGER*8, SAVE :: FEECountDry = 0	!Patch 35
-	INTEGER*8, SAVE :: FEECountPreAssoc = 0	!Patch 36
-	!Solid circuits (InitSolidCircuits) and the precipitation rule switch (ASP_FEE_PAIRRULE=1)
+	!Electrolyte-solver switches, read once from the deck and the environment by ReadAqSwitches
+	LOGICAL, SAVE :: AqSwitchesRead = .FALSE.
+	LOGICAL, SAVE :: AqNewtonInner = .TRUE.	!Newton single-reaction solve (AqInnerSolver = 1); else Jacobson bisection
+	LOGICAL, SAVE :: AqDevCache = .TRUE.	!deviation cache in the worst-first loop (bit-identical either way)
+	LOGICAL, SAVE :: AqOuterNewton = .FALSE.	!coupled Newton solve (AqOuterSolver = 1); else worst-first loop
+	!Solid circuits (InitSolidCircuits) and the precipitation rule for their unstable sides
 	INTEGER, SAVE :: NCirc = 0
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
 	LOGICAL, SAVE :: AqPairRule = .FALSE.
-	INTEGER, SAVE :: AqExitFix = 0	!ASP_FEE_EXITFIX: 1 = no early exit on II, 2 = also re-check every reaction at the end
-	!ViolationDiag tallies (harness); EADRExit is set only by instrumented builds
-	INTEGER, SAVE :: EADRExit = 0, VDViol(200) = 0, VDMoved(200) = 0, VDFixed(200) = 0, VDStuck(200) = 0, VDExit(0:999) = 0
-	REAL*8, SAVE :: VDSize(200) = 0.
+	INTEGER, SAVE :: AqExitFix = 0	!1 = no early exit on II in the worst-first loop, 2 = also re-check every reaction at the end
+	!Amounts each reaction ratio reads (InitECRDepIdx)
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
-	INTEGER*8, SAVE :: FEECountEADR = 0, FEECountOuter = 0, FEECountECREval = 0
-	CHARACTER(LEN=512), SAVE :: FEEReplayOut = ""
-	INTEGER, SAVE :: FEEDumpEvery = 100, FEEDumpUnit = -1
-	INTEGER*8, SAVE :: FEEDumpCount = 0
+	!Electrolyte-solver statistics.  The model does not use them; the FEE replay test
+	!(Tests/FEEReplay.f90) resets them and reports them per replayed call.
+	INTEGER*8, SAVE :: FEECountOuter = 0, FEECountEADR = 0, FEECountECREval = 0
+	INTEGER*8, SAVE :: FEECountNewtonFail = 0, FEECountNewtonSing = 0, FEECountNewtonMaxIt = 0
+	INTEGER*8, SAVE :: FEECountNewtonDrop = 0, FEECountNewtonCycles = 0, FEECountPairRefuse = 0
+	INTEGER*8, SAVE :: FEECountResolved = 0, FEECountDry = 0, FEECountPreAssoc = 0
+	!Test hook, called with the particle state before and after each FindElectrolyteEquilibrium
+	!solve.  The model never sets it; the FEE dump build (Tests/Makefile) points it at the
+	!routine that writes solver states for the replay test.
+	ABSTRACT INTERFACE
+		SUBROUTINE FEEStateHookInterface (P, UpdateThermo, FirstEquilibration, ReturnType, Before)
+			IMPORT :: Particle
+			TYPE(PARTICLE), POINTER :: P
+			LOGICAL :: UpdateThermo, FirstEquilibration, Before
+			INTEGER :: ReturnType
+		END SUBROUTINE FEEStateHookInterface
+	END INTERFACE
+	PROCEDURE(FEEStateHookInterface), POINTER, SAVE :: FEEStateHook => NULL()
 	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)
 	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
 	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)

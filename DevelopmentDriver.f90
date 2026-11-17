@@ -53,6 +53,7 @@
 !!                                 effect unless ASP_FEE_REPLAY is set)   !!
 !! 11/02  2026   Claude Opus 5.5   Patch 33: ThermoTest can scan RH upward!!
 !!                                 (ASP_THERMO_SCAN=up); default unchanged!!
+!! 11/17  2026   Claude Opus 5.5   Solver replay moved to Tests/FEEReplay !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM ASP
@@ -116,7 +117,7 @@ PROGRAM ASP
                                          RecalculateHeteroRates,        &
                                          StepGasChemistry
 
-	USE Aerosols,             ONLY : Particles, MaybeReplayFEE,     &
+	USE Aerosols,             ONLY : Particles,                     &
                                          Particle,                      &
                                          AerosolModes,                  &
                                          BoundaryParticles,             &
@@ -673,8 +674,6 @@ PROGRAM ASP
 		CALL EquilibrateInternallyAtGridPoint(EquilibrateWater = .TRUE., WaterOpenSystem = .TRUE.)
 		CALL RegridAerosol ()
 		!CALL SpillBeans()
-		!Patch 27: harness replay (only with ASP_FEE_REPLAY set; stops the run)
-		CALL MaybeReplayFEE ()
                 	
 		TEMP = GetTemp()
 		Mgas = GetM   ()
@@ -1905,8 +1904,6 @@ PROGRAM ASP
 		CALL EquilibrateInternallyAtGridPoint(EquilibrateWater = .TRUE., WaterOpenSystem = .TRUE.)
 		CALL RegridAerosol ()
 		!CALL SpillBeans()
-		!Patch 27: harness replay (only with ASP_FEE_REPLAY set; stops the run)
-		CALL MaybeReplayFEE ()
                 	
 		TEMP = GetTemp()
 		Mgas = GetM   ()

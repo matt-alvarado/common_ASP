@@ -633,7 +633,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 		!!! --   (i,17): Index into AqEquilibriaList for Sulfuric Acid 
 		!!!
 		!!! --   (i,19): A flag: if this is a positive number then this reaction will be assigned the mixed coefficient of 
-		!!!              another reaction (for bisulfate mixing and Levitocite)
+		!!!              another reaction (for bisulfate mixing and Letovicite)
 		!!! --   (i,20): DRH at 298 K
 		!!! --   (i,21): Temperature dependence of DRH
 		!!! --   (i,22): Third dissociated species index (for levitocite)
@@ -971,7 +971,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 			END IF
 			
 			IF (AqEquilibriaList(I,22) .NE. 0 .AND. AqEquilibriaList(I,24) .EQ. 0) THEN
-				!!(Levitocite)
+				!!(Letovicite)
 				JJ = AqEquilibriaList(I,4) * AqCationMass(INT(AqEquilibriaList(I,2))) + AqEquilibriaList(I,5) * &
 					AqAnionMass(INT(AqEquilibriaList(I,3))) + AqEquilibriaList(I,23) * AqAnionMass(INT(AqEquilibriaList(I,22)))
 			ELSE IF (AqEquilibriaList(I,22) .EQ. 0 .AND. AqEquilibriaList(I,24) .NE. 0) THEN
@@ -1005,7 +1005,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 
 			!! Calculate the net charge of the reaction
 			IF (AqEquilibriaList(I,22) .NE. 0) THEN
-				!!Note that this formula assumes that only 1 cation and 2 anions are allowed! (Levitocite)
+				!!Note that this formula assumes that only 1 cation and 2 anions are allowed! (Letovicite)
 				II = AqEquilibriaList(I,4) * AqCationCharge(INT(AqEquilibriaList(I,2))) + AqEquilibriaList(I,5) * &
 					 AqAnionCharge(INT(AqEquilibriaList(I,3))) + AqEquilibriaList(I,23) * AqAnionCharge(INT(AqEquilibriaList(I,22)))
 			ELSE
@@ -1453,7 +1453,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 			!! If this one is well identified, then go on
 99			IF (AqEquilibriaList(I,16) .NE. -1) CYCLE
 
-			!! Check for Levitocite
+			!! Check for Letovicite
 			IF (AqEquilibriaList(I,22) .NE. 0) THEN
 				IF (AqPhaseChemicalNames(INT(AqEquilibriaList(I,1))) .EQ. "(NH4)3H(SO4)2") THEN
 					DO J = 1, HowManyAqEqReactions
@@ -1559,7 +1559,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 									(KMRef(K,2)			   .EQ. KMRef(L,2)) .AND. &  !Cations match
 									(2*KMRef(K,4)			   .EQ. KMRef(L,4)) .AND.  & !Cation Stioch twice original
 									(KMRef(J,5)			   .EQ. KMRef(L,5)) .AND. &
-									(AqEquilibriaList(I,22) .EQ. 0)) THEN   !Not Levitocite
+									(AqEquilibriaList(I,22) .EQ. 0)) THEN   !Not Letovicite
 									
 									CALL TRANSCRIPT ("")
 
@@ -1611,7 +1611,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 									(KMRef(K,2)			   .EQ. KMRef(L,2)) .AND. &  !Cations match
 									(KMRef(K,4)			   .EQ. KMRef(L,4)) .AND.  & !Cation Stioch 
 									(2*KMRef(J,5)			   .EQ. KMRef(L,5)) .AND. & !Anion Stoich Twice Original
-									(AqEquilibriaList(I,22) .EQ. 0)) THEN !Not Levitocite
+									(AqEquilibriaList(I,22) .EQ. 0)) THEN !Not Letovicite
 									
 									CALL TRANSCRIPT ("")
 
@@ -1662,7 +1662,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 									(KMRef(K,2)			   .EQ. KMRef(L,2)) .AND. &  !Cations match
 									(KMRef(K,4)			   .EQ. 2*KMRef(L,4)) .AND.  & !Cation Stioch 
 									(KMRef(J,5)			   .EQ. 2*KMRef(L,5)) .AND. & !Anion Stoich Half Original
-									(AqEquilibriaList(I,22) .EQ. 0) .AND. &    !Not Levitocite
+									(AqEquilibriaList(I,22) .EQ. 0) .AND. &    !Not Letovicite
 										(AqEquilibriaList(I,24) .EQ. 0) .AND. & !Not CaSO4*2H2O 
 										(AqCationNames(INT(AqEquilibriaList(I,2))) .NE. "Mg++")) THEN !Not a Mg salt
 									
@@ -1717,7 +1717,7 @@ SUBROUTINE SetAqPhaseChemistry ()
 									(KMRef(K,2)			   .EQ. KMRef(L,2)) .AND. &  !Cations match
 									(KMRef(K,4)			   .EQ. KMRef(L,4)) .AND.  & !Cation Stioch 
 									(KMRef(J,5)			   .EQ. 2*KMRef(L,5)) .AND. & !Anion Stoich Half Original
-									(AqEquilibriaList(I,22) .EQ. 0) .AND. &    !Not Levitocite
+									(AqEquilibriaList(I,22) .EQ. 0) .AND. &    !Not Letovicite
 										(AqEquilibriaList(I,24) .EQ. 0) .AND. & !Not CaSO4*2H2O 
 										(AqCationNames(INT(AqEquilibriaList(I,2))) .NE. "Mg++")) THEN !Not a Mg salt
 									

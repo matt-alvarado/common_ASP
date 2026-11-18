@@ -299,7 +299,7 @@ MODULE Chemistry
 !!!
 !!! --   (i,19): A flag: if this is a positive number then this reaction 
 !!! --           will be assigned the mixed coefficient of 
-!!!              another reaction (for bisulfate mixing and Levitocite)
+!!!              another reaction (for bisulfate mixing and Letovicite)
 !!! --   (i,20): DRH at 298 K
 !!! --   (i,21): Temperature dependence of DRH
 !!! --   (i,22): Third dissociated species index (for levitocite)

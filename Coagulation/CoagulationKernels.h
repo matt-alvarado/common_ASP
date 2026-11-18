@@ -17,9 +17,7 @@
 !!				    CoagKernBrownianDiff                     !!
 !! 02/17  2012   Matt Alvarado     Removed Eulerian grids, making ASP        !!
 !!                                 a one-box model or subroutine.            !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 24670d0: CoagTest H1: precompute   !!
-!!                                 single-particle kernel quantities once    !!
-!!                                 per section                               !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -255,8 +253,8 @@ END FUNCTION CoagKernGravCollection
 !! depend on one particle only (plus the gridpoint environment), so    !!
 !! StepSectionalCoagulationJacobson calls this once per section per    !!
 !! step instead of recomputing them for every one of the N*N pairs.    !!
-!! The expressions are copied verbatim from CoagKernBrownianDiff and   !!
-!! CoagKernGravCollection so the results are bit-identical.            !!
+!! The expressions are the same as in CoagKernBrownianDiff and         !!
+!! CoagKernGravCollection, so the results are bit-identical.           !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE CoagPrecomputeParticle (Particle1, DynVisc, Temp, D1, Mass1, Del1, ReNumb1, Vt1)
 

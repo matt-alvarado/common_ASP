@@ -42,20 +42,7 @@
 !!                                  time step in first 10 minutes of run     !!
 !! 07/08  2013   Matt Alvarado     Moved a lot of output code to             !!
 !!                                  OutputRputines.f90                       !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
-!!                                 set/Jacobian setup by run mode            !!
-!!                                 (SetChemSetupLevel)                       !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 2f83092: Patch 22: dropped the   !!
-!!                                 redundant first RecalculateRadius in    !!
-!!                                 the LagrangianParcel particle loop      !!
-!! 11/02  2026   Claude Opus 5.5   Patch 27: call MaybeReplayFEE after    !!
-!!                                 initialisation (harness replay; no     !!
-!!                                 effect unless ASP_FEE_REPLAY is set)   !!
-!! 11/02  2026   Claude Opus 5.5   Patch 33: ThermoTest can scan RH upward!!
-!!                                 (ASP_THERMO_SCAN=up); default unchanged!!
-!! 11/17  2026   Claude Opus 5.5   Solver replay moved to Tests/FEEReplay !!
-!! 11/17  2026   Claude Opus 5.5   ThermoTest scan direction from the deck!!
-!!                                 (ThermoScanUp)                         !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM ASP
@@ -243,7 +230,7 @@ PROGRAM ASP
              GADS = .FALSE. !Flag for GADS comparison
 
              ! INITIALIZE the CHEMISTRY 
-	     CALL SetChemSetupLevel(2)	!(N13: no gas/aq chemistry integration in this mode)
+	     CALL SetChemSetupLevel(2)	!(no gas/aq chemistry integration in this mode)
 	     CALL SetChemistryParams
 
 	     !! INITIALIZE the DISSOLUTION routine
@@ -956,10 +943,8 @@ PROGRAM ASP
                          !WRITE(*,*) Env%Edges(1), Current%Edges(1)
                          !CALL ERROR("Env. Aerosol not lined up!")					
                       END IF
-                      !Patch 22: the radius/density/surface-tension recalculation that used to be here repeated
-                      !the one made at the end of the previous step (or by the initialisation, condensation or
-                      !coagulation that ran since) on unchanged particles, and never changed any field (checked
-                      !bitwise on Williams, Timbavati and RemConMode1: 35,600 calls each, 0 differences).
+                      !No RecalculateRadius here: radius, density and surface tension are current from the end
+                      !of the previous step (or from the initialisation, condensation or coagulation since).
 
                       !Get Particle Terminal Velocity
                       IF (ThermoBulkMode) THEN 
@@ -1112,7 +1097,7 @@ PROGRAM ASP
            CALL TRANSCRIPT("Bulk Thermodynamics Model Selected.")		
 	
            ! INITIALIZE the CHEMISTRY 
-           CALL SetChemSetupLevel(1)	!(N13: ODE-set tables only)
+           CALL SetChemSetupLevel(1)	!(ODE-set tables only)
            CALL SetChemistryParams
            CALL RecalculateReactionRates(IFGAS,IFAQ)
            
@@ -1234,7 +1219,7 @@ PROGRAM ASP
            CALL TRANSCRIPT("Coagulation Test Selected.")
 	
            ! INITIALIZE the CHEMISTRY 
-           CALL SetChemSetupLevel(2)	!(N13: no chemistry integration in this mode)
+           CALL SetChemSetupLevel(2)	!(no chemistry integration in this mode)
            CALL SetChemistryParams
 		
            !! INITIALIZE the PARTICLES
@@ -1420,7 +1405,7 @@ PROGRAM ASP
            CALL TRANSCRIPT("Condensation Test Selected.")
                 
            ! INITIALIZE the CHEMISTRY 
-           CALL SetChemSetupLevel(1)	!(N13: ODE-set tables only)
+           CALL SetChemSetupLevel(1)	!(ODE-set tables only)
            CALL SetChemistryParams
            CALL ReadPhotolysisRates
 		

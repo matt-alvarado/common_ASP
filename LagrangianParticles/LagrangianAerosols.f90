@@ -20,33 +20,7 @@
 !! 03/01  2012   Matt Alvarado     Added SetInitialDens to                   !!
 !!                                  SUBROUTINE InitializeParticlesSectional  !!
 !! 07/19  2013   Matt Alvarado     Moved IsNaN to InfrastructuralCode        !!  
-!! 10/28  2026   Claude Sonnet 5.5 Commit 8cb0991: Phase 1.1: hoist OPAC     !!
-!!                                 tables to module PARAMETERs               !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit a56950d: N6-N11: integrand caches, !!
-!!                                 EqCoeff cache, tabulated Gibbs-Duhem      !!
-!!                                 integral (N11 changes results ~2e-4)      !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 46b4665: Patch 18 (CondTest       !!
-!!                                 C1): per-reaction chemical-name flags    !!
-!!                                 replace string compares in the           !!
-!!                                 dissociation solver                      !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 86d3a78: Patch 19 (CondTest       !!
-!!                                 C2): memoise repeated x**y (PowMemo)     !!
-!!                                 in MeanActivity and                      !!
-!!                                 EquilibriumConstantsRatio                !!
-!! 11/02  2026   Claude Opus 5.5   Patch 26: memo arrays for              !!
-!!                                 EquilibriumConstantsRatio              !!
-!! 11/02  2026   Claude Opus 5.5   Patch 27: harness switches;            !!
-!!                                 MaybeReplayFEE public                  !!
-!! 11/02  2026   Claude Opus 5.5   Patch 28: AqNewtonInner switch         !!
-!! 11/02  2026   Claude Opus 5.5   Patch 29: AqDevCache, ECRDepIdx and    !!
-!!                                 harness counters                       !!
-!! 11/02  2026   Claude Opus 5.5   Patch 30: switches, counters and solid-!!
-!!                                 circuit arrays for the coupled solve   !!
-!!                                 and harness                            !!
-!! 11/02  2026   Claude Opus 5.5   Patch 35: FEECountDry                  !!
-!! 11/02  2026   Claude Opus 5.5   Patch 36: FEECountPreAssoc             !!
-!! 11/17  2026   Claude Opus 5.5   Test hook FEEStateHook; dump and replay!!
-!!                                 state moved to Tests/FEEHarness.f90    !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -194,10 +168,8 @@ TYPE (ParticleArray) :: BoundaryParticles
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Wavelength-dependent complex refractive indices used by ShellRefIndAndRad !!
 !! (optical-properties workflow). These are simulation-invariant constants   !!
-!! from OPAC v3.1a and are declared once here (PARAMETER, so compile-time    !!
-!! constant and implicitly thread-safe) instead of being rebuilt via array   !!
-!! constructor on every call to ShellRefIndAndRad (i.e. once per particle).  !!
-!! Patch 1.1 of the OpticalPropertiesModel optimization plan.                !!
+!! from OPAC v3.1a, declared once here as PARAMETERs (compile-time          !!
+!! constants, thread-safe).                                                  !!
 !! Source: M. Hess, P. Koepke, and I. Schult (1998), Optical Properties of   !!
 !! Aerosols and Clouds: The software package OPAC, Bull. Am. Met. Soc.,      !!
 !! 79, 831-844. All values at 0% RH.                                        !!
@@ -460,7 +432,7 @@ TYPE (ParticleArray) :: BoundaryParticles
 		END SUBROUTINE FEEStateHookInterface
 	END INTERFACE
 	PROCEDURE(FEEStateHookInterface), POINTER, SAVE :: FEEStateHook => NULL()
-	!! Patch N11: number of table cells and on/off switch are now GDTableCells and GDTableMode in ModelParameters (input deck)
+	!! Gibbs-Duhem integral tables (GibbsDuhemIntegralTabulated); deck settings GDTableMode and GDTableCells
 	REAL*8, ALLOCATABLE, SAVE :: GDTabF(:,:), GDTabG(:,:), GDTabKey(:,:), GDTabSHi(:)
 	LOGICAL, ALLOCATABLE, SAVE :: GDTabOK(:), GDTabBad(:)
 
@@ -570,7 +542,7 @@ REAL*8 FUNCTION Molality (ChemIndex, InParticle)
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
-	TYPE(Particle), INTENT(IN) :: InParticle	!Patch N10
+	TYPE(Particle), INTENT(IN) :: InParticle
 
     ! CMB: mods for floating-point equality and function initialization
     Molality = 0.0
@@ -589,7 +561,7 @@ REAL*8 FUNCTION CationMolality (ChemIndex, InParticle)
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
-	TYPE(Particle), INTENT(IN) :: InParticle	!Patch N10
+	TYPE(Particle), INTENT(IN) :: InParticle
 
     ! CMB: mods for floating-point equality and function initialization
     CationMolality = 0.0
@@ -608,7 +580,7 @@ REAL*8 FUNCTION AnionMolality (ChemIndex, InParticle)
 	IMPLICIT NONE
 
 	INTEGER		   :: ChemIndex
-	TYPE(Particle), INTENT(IN) :: InParticle	!Patch N10
+	TYPE(Particle), INTENT(IN) :: InParticle
 
     ! CMB: mods for floating-point equality and function initialization
     AnionMolality = 0.0

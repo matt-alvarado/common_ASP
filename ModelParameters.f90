@@ -28,19 +28,7 @@
 !!                                    SetPhotoEndTime                        !!
 !! 07/03  2013   Matt Alvarado     Updated SetEulerianBox to include Fire CO !!
 !!                                   emission rate.                          !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 09afe88: Build fix: guard re-      !!
-!!                                 ALLOCATE of BinEdges (gfortran)           !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 189da4e: N11 input-deck switch: !!
-!!                                 GDTableMode (1 = table, 0 = full      !!
-!!                                 DGAUS8 integral) and GDTableCells,    !!
-!!                                 optional last lines of ASPInputDeck.in!!
-!! 11/02  2026   Claude Opus 5.5   Patch 28: AqInnerSolver (1 = Newton,   !!
-!!                                 default; 0 = Jacobson mass-flux        !!
-!!                                 bisection)                             !!
-!! 11/02  2026   Claude Opus 5.5   Patch 30: AqOuterSolver (1 = coupled   !!
-!!                                 Newton solve, 0 = worst-first loop)    !!
-!! 11/02  2026   Claude Opus 5.5   Patch 31: AqOuterSolver defaults to 1  !!
-!!                                 (coupled Newton solve)                 !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

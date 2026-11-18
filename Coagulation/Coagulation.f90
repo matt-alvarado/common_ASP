@@ -16,23 +16,7 @@
 !!                                  monodisperse coag	                     !!
 !! 02/17  2012   Matt Alvarado     Removed Eulerian grids, making ASP        !!
 !!                                 a one-box model or subroutine.            !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 24670d0: CoagTest H1: precompute   !!
-!!                                 single-particle kernel quantities once    !!
-!!                                 per section                               !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit c20e470: CoagTest H4: collect      !!
-!!                                 species-independent coagulation terms     !!
-!!                                 once per step                             !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit cf81a74: CoagTest H6: skip the     !!
-!!                                 duplicate RecalculateRadius pass when     !!
-!!                                 Coag calls RegridAerosol                  !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 89d60a6: CoagTest H5: build        !!
-!!                                 VolumeFractions with one bracket scan per !!
-!!                                 (I,J)                                     !!
-!! 11/02  2026   Claude Opus 5.5   Patch 37: regrid before the semi-      !!
-!!                                 implicit coagulation step when the     !!
-!!                                 occupied sections are out of size order!!
-!!                                 (fixes the 'Summed Total Volume        !!
-!!                                 concentration is lost' stop)           !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -67,7 +51,7 @@ MODULE Coagulation
 	
 	PUBLIC :: StepSectionalCoagulationJacobson
 	PUBLIC :: CoagRegridCount
-	INTEGER*8, SAVE :: CoagRegridCount = 0	!Patch 37: regrids done before coagulation
+	INTEGER*8, SAVE :: CoagRegridCount = 0	!regrids done before coagulation
 			  
 CONTAINS
 
@@ -197,7 +181,7 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	LOGICAL, ALLOCATABLE	:: EntLast(:)
 	INTEGER	:: NEnt, NGroupStart, N
 	REAL*8	:: SPVK
-	INTEGER :: NRegrid	!Patch 37
+	INTEGER :: NRegrid
 	LOGICAL :: OutOfOrder
 	REAL*8  :: PrevRadius
 
@@ -215,7 +199,7 @@ SUBROUTINE StepSectionalCoagulationJacobson (TimeStep)  !!!!!!!!!!!!!!!!!!!!!!!!
 	!! Sort the gridcell, sections in order and first
 	CALL SortAerosolAtGridPointForCoagulation ()
 
-	!! Patch 37: the semi-implicit scheme needs the sections in ascending order of their actual
+	!! The semi-implicit scheme needs the sections in ascending order of their actual
 	!! single-particle volume (the volume partition brackets v_i + v_j between neighbouring sections,
 	!! and gains to section K use the already-updated smaller sections).  Condensation can move a
 	!! section's particles past its neighbour; the volume check then stops the run ("Summed Total

@@ -48,93 +48,7 @@
 !!                                  it up                                    !!
 !! 01/29  2013    Matt Alvarado     Removed EquilibriumWaterContent, replaced!!
 !!                                     with EquilibriumWaterContentAmount    !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit bc80201: N1-N5: remove redundant   !!
-!!                                 setup and equilibrium work (StripToken,   !!
-!!                                 MakeJacobian, MeanActivity, solver loop)  !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit a56950d: N6-N11: integrand caches, !!
-!!                                 EqCoeff cache, tabulated Gibbs-Duhem      !!
-!!                                 integral (N11 changes results ~2e-4)      !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 8766c40: Patch 17: guard          !!
-!!                                 tabulated Gibbs-Duhem integral           !!
-!!                                 against NaN or negative ionic            !!
-!!                                 strength (DGAUS8 fallback)               !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 46b4665: Patch 18 (CondTest       !!
-!!                                 C1): per-reaction chemical-name flags    !!
-!!                                 replace string compares in the           !!
-!!                                 dissociation solver                      !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 86d3a78: Patch 19 (CondTest       !!
-!!                                 C2): memoise repeated x**y (PowMemo)     !!
-!!                                 in MeanActivity and                      !!
-!!                                 EquilibriumConstantsRatio                !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 189da4e: N11 input-deck switch: !!
-!!                                 GDTableMode (1 = table, 0 = full      !!
-!!                                 DGAUS8 integral) and GDTableCells,    !!
-!!                                 optional last lines of ASPInputDeck.in!!
-!! 10/28  2026   Claude Sonnet 5.5 Commit f08134b: Patch 24: reuse the      !!
-!!                                 EquilibriumConstantsRatio value at     !!
-!!                                 the entry of EquilibrateAqueous        !!
-!!                                 DissociationReaction                   !!
-!! 10/29  2026   Claude Sonnet 5.5 Commit 9e33a67: Patch 25: hoist the   !!
-!!                                 per-reaction AqEquilibriaList reads    !!
-!!                                 and index arithmetic out of the        !!
-!!                                 EquilibrateAqueousDissociationReaction !!
-!!                                 iteration loop                         !!
-!! 11/02  2026   Claude Opus 5.5   Patch 26: by-value memo of             !!
-!!                                 EquilibriumConstantsRatio (bit-for-bit !!
-!!                                 key; byte-identical output)            !!
-!! 11/02  2026   Claude Opus 5.5   Patch 27: FindElectrolyteEquilibrium   !!
-!!                                 test harness: ASP_FEE_DUMP writes      !!
-!!                                 sampled solver states, ASP_FEE_REPLAY  !!
-!!                                 re-solves them; the solver is now      !!
-!!                                 FindElectrolyteEquilibriumCore behind a!!
-!!                                 wrapper                                !!
-!! 11/02  2026   Claude Opus 5.5   Patch 28: Newton single-reaction solve !!
-!!                                 in                                     !!
-!!                                 EquilibrateAqueousDissociationReaction !!
-!!                                 (safeguarded, inside the mass-flux     !!
-!!                                 bracket); selected by AqInnerSolver,   !!
-!!                                 default Newton                         !!
-!! 11/02  2026   Claude Opus 5.5   Patch 29: deviation cache in the       !!
-!!                                 FindElectrolyteEquilibrium worst-first !!
-!!                                 loop (exact; default on); harness      !!
-!!                                 counters, repeats and output file      !!
-!! 11/02  2026   Claude Opus 5.5   Patch 30: coupled Newton solve of the  !!
-!!                                 electrolyte equilibrium with the solid-!!
-!!                                 circuit rule (AqOuterSolver; off in    !!
-!!                                 this patch); harness checks            !!
-!!                                 (EqViolation, ViolationDiag, unstable- !!
-!!                                 set counts, dump of UpdateThermo calls)!!
-!!                                 and the worst-first exit-fix switch    !!
-!! 11/02  2026   Claude Opus 5.5   Patch 32: solid circuits apply only    !!
-!!                                 when their stable side can form (fixes !!
-!!                                 the coupled solve at the letovicite    !!
-!!                                 composition below RH 0.40);            !!
-!!                                 neutralisation step limited by the     !!
-!!                                 water present; Newton single-reaction  !!
-!!                                 solve restores its last valid state if !!
-!!                                 the bracket collapses                  !!
-!! 11/02  2026   Claude Opus 5.5   Patch 34: coupled solve holds the water!!
-!!                                 amount fixed, treats amounts below     !!
-!!                                 1e-200 as zero, leaves the water       !!
-!!                                 equilibrium to the validation pass on a!!
-!!                                 singular Jacobian, and drops solids    !!
-!!                                 cumulatively (lowest DRH first) when no!!
-!!                                 single drop works                      !!
-!! 11/02  2026   Claude Opus 5.5   Patch 35: dry particles the coupled    !!
-!!                                 solve cannot handle are put into solids!!
-!!                                 by a pure-solid Gibbs minimisation     !!
-!!                                 (DrySolve); harness counts dry results !!
-!!                                 and wet-only violations                !!
-!! 11/02  2026   Claude Opus 5.5   Patch 36: far-off dissolved            !!
-!!                                 electrolytes set to equilibrium before !!
-!!                                 the coupled Newton solve and kept in   !!
-!!                                 its active set; up to 100 Newton       !!
-!!                                 iterations; subset search over the     !!
-!!                                 active solids before the fallback      !!
-!! 11/17  2026   Claude Opus 5.5   Dump/replay test harness moved to      !!
-!!                                 Tests/FEEHarness.f90 (FEEStateHook)    !!
-!! 11/17  2026   Claude Opus 5.5   Solver switches read from the deck     !!
-!!                                 (ModelParameters), not the environment !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1196,7 +1110,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	IMPLICIT NONE
 	TYPE(PARTICLE),POINTER :: InParticle
 	LOGICAL :: Success
-	INTEGER, PARAMETER :: MaxNu = 6, MaxCycles = 4, MaxIter = 100	!Patch 36: was 40
+	INTEGER, PARAMETER :: MaxNu = 6, MaxCycles = 4, MaxIter = 100
 	INTEGER :: NR, NA, R, I, J, Cyc, Ret, NChanged, St
 	INTEGER :: Idx(MaxNu, HowManyAqEqReactions), NIdx(HowManyAqEqReactions)
 	REAL*8  :: Nu(MaxNu, HowManyAqEqReactions), Qe(MaxNu, HowManyAqEqReactions), QSum(HowManyAqEqReactions)
@@ -1219,9 +1133,8 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 			DRHv(R) = DeliquesenceRH(R, InParticle)
 			IF (RH .GE. DRHv(R)) Movable(R) = .FALSE.
 		END IF
-		!Patch 34: the water amount is held fixed in the coupled solve (it is set by the water
+		!No water term: the water amount is held fixed in the coupled solve (it is set by the water
 		!equilibrium, and a nearly dry particle cannot supply the water a reaction consumes)
-		!CALL AddNu (R, 1, -AqEquilibriaList(R,8), 0.D0)
 		IF (AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
 			IF (Solid(R)) THEN
 				CALL AddNu (R, INT(AqEquilibriaList(R,EQ_ELECTROLYTE)), -1.D0, 0.D0)
@@ -1240,7 +1153,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 		QSum(R) = SUM(Qe(1:NIdx(R),R))
 	END DO
 
-	CALL PreAssociate ()	!Patch 36
+	CALL PreAssociate ()
 	DO Cyc = 1, MaxCycles
 		St = NewtonSolve ()
 		IF (St .EQ. 1) THEN
@@ -1271,7 +1184,7 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	END DO
 	FEECountNewtonCycles = FEECountNewtonCycles + 1
 900	InParticle%AqChems = Save
-	!Patch 35: a dry particle the Newton solve could not handle -> solid assemblage (DrySolve)
+	!A dry particle the Newton solve could not handle: solid assemblage (DrySolve)
 	IF (Save(1) .LT. 1.0D-3 * SUM(Save(2:))) THEN
 		CALL DrySolve (Ok)
 		IF (Ok) THEN
@@ -1296,7 +1209,7 @@ CONTAINS
 		Ok = .FALSE.
 		!Dependent active solids: drop one, most soluble (lowest DRH) first
 		Snap = InParticle%AqChems
-		!Patch 34: with H+ or OH- vanishingly small the water equilibrium and the reactions sharing that
+		!With H+ or OH- vanishingly small the water equilibrium and the reactions sharing that
 		!ion are numerically dependent; leave the water equilibrium to the validation pass first
 		IF (WaterEquilibriumIndex .GT. 0) THEN
 			IF (LastActive(WaterEquilibriumIndex) .AND. .NOT. Excl(WaterEquilibriumIndex)) THEN
@@ -1337,7 +1250,7 @@ CONTAINS
 			END IF
 			Excl(R) = .FALSE.
 		END DO
-		!Patch 34: no single drop works (several dependent sets at once): drop the candidates
+		!No single drop works (several dependent sets at once): drop the candidates
 		!cumulatively, still lowest DRH first, until the solve converges with every dropped solid
 		!undersaturated.
 		IF (.NOT. Ok) THEN
@@ -1361,7 +1274,7 @@ CONTAINS
 				END DO
 			END IF
 		END IF
-		!Patch 36: last resort before the fallback: try every subset of the candidate solids as the set
+		!Last resort before the fallback: try every subset of the candidate solids as the set
 		!left out (smallest subsets first, lowest DRH first within a size) and accept the first that
 		!converges with every left-out solid undersaturated (complementarity).  Only reached when the
 		!single and cumulative drops fail; at most 2**NCand solves (NCand <= 10 here).
@@ -1408,12 +1321,11 @@ CONTAINS
 		Excl(R) = .TRUE.
 	END SUBROUTINE DissolveAndExclude
 
-	!Patch 36: a dissolved electrolyte (e.g. HSO4-, NH3(aq)) can be many orders of magnitude below its
-	!equilibrium amount (ratio up to 1e167 seen on the ThermoTest upward scan).  Newton on ln(ratio) moves
-	!it by a factor of about 1 + ln(ratio) per step, and reactions with ratio >= 1e11 are left out of the
-	!active set altogether, so such a reaction stayed far from equilibrium.  Before the Newton solve, set
-	!each such electrolyte directly to its equilibrium amount (ratio x amount, since Q is inversely
-	!proportional to it) by the association extent, when that takes at most 1e-3 of its ions.
+	!A dissolved electrolyte (e.g. HSO4-, NH3(aq)) can be many orders of magnitude below its equilibrium
+	!amount (ratios up to 1e167 occur on the ThermoTest upward scan).  Newton on ln(ratio) moves it by a
+	!factor of only about 1 + ln(ratio) per step.  So before the Newton solve, each such electrolyte is
+	!set directly to its equilibrium amount (ratio x amount, since Q is inversely proportional to it) by
+	!the association extent, when that takes at most 1e-3 of its ions.
 	SUBROUTINE PreAssociate ()
 		INTEGER :: R, K, Pass
 		REAL*8  :: Ratio, El, DEl
@@ -1441,7 +1353,7 @@ CONTAINS
 	END SUBROUTINE PreAssociate
 
 
-	!Patch 35: a dry particle (water below 1e-3 of the electrolyte amount, in moles) has no real solution
+	!A dry particle (water below 1e-3 of the electrolyte amount, in moles) has no real solution
 	!phase: molalities run to 1e14 or more, and when the Newton solve fails on it (singular Jacobian, or
 	!the validation pass does not settle) it is solved here instead of by the worst-first loop.
 	!Its electrolyte is put into solids by minimising the Gibbs energy of the solid assemblage.  With pure
@@ -1449,7 +1361,7 @@ CONTAINS
 	!linear programme: minimise sum_s n_s ln K_s(T) over the solid amounts n_s reachable by the reaction
 	!extents (mass and charge conserved), with every non-solid amount (ions, dissolved electrolytes, solids
 	!above their DRH) costing PenaltyCost per mole, so solutes go into solids wherever the composition
-	!allows.  This is the same pure-solid thermodynamics as the solid-circuit rule (patch 30).
+	!allows.  This is the same pure-solid thermodynamics as the solid-circuit rule (InitSolidCircuits).
 	SUBROUTINE DrySolve (Ok)
 		LOGICAL :: Ok
 		REAL*8, PARAMETER :: PenaltyCost = 1.0D4, Eps = 1.0D-11
@@ -1564,7 +1476,7 @@ CONTAINS
 			DO R = 1, NR
 				IF (.NOT. Movable(R) .OR. Excl(R) .OR. Blocked(R)) CYCLE
 				Ratio = EquilibriumConstantsRatio (R, InParticle)
-				IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D300)) CYCLE	!Patch 36: was 1e11 (far-off dissolved electrolytes were left out)
+				IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D300)) CYCLE	!far-off dissolved electrolytes stay in the active set
 				IF (AnyZeroInQ(R)) CYCLE
 				IF (AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
 					IF (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .LE. 0.) THEN
@@ -1698,7 +1610,7 @@ CONTAINS
 		INTEGER :: R, K
 		AnyZeroInQ = .FALSE.
 		DO K = 1, NIdx(R)
-			IF (Qe(K,R) .NE. 0. .AND. InParticle%AqChems(Idx(K,R)) .LE. 1.0D-200) AnyZeroInQ = .TRUE.	!Patch 34: was .LE. 0
+			IF (Qe(K,R) .NE. 0. .AND. InParticle%AqChems(Idx(K,R)) .LE. 1.0D-200) AnyZeroInQ = .TRUE.	!amounts below 1e-200 count as zero
 		END DO
 	END FUNCTION AnyZeroInQ
 
@@ -1753,7 +1665,7 @@ CONTAINS
 
 END SUBROUTINE CoupledElectrolyteNewton
 
-!Patch 30: solid-phase consistency rule.  Solid reactions whose ion stoichiometries are
+!Solid-phase consistency rule.  Solid reactions whose ion stoichiometries are
 !linearly dependent ("circuits", e.g. the reciprocal salt pair KNO3, (NH4)2SO4, NH4NO3, K2SO4) cannot all
 !be present: pure solids have unit activity, so the metathesis among them has equilibrium constant
 !exp(S), S = sum_i c_i ln K_i(T), with c the null vector of the circuit.  The solids with c_i*S > 0 form
@@ -1861,7 +1773,7 @@ CONTAINS
 	END SUBROUTINE SolveSmall
 END SUBROUTINE InitSolidCircuits
 
-!Patch 32: the rule assumes the stable side of the circuit can form instead.  If a solid on the stable
+!The rule assumes the stable side of the circuit can form instead.  If a solid on the stable
 !side is neither present nor supersaturated (with ASP's per-electrolyte activity coefficients the
 !stable side can be undersaturated, e.g. letovicite below RH 0.40), the circuit is not applied and
 !the unstable side may form, as with the worst-first loop.  S is sum c_i ln K_i(T) of the circuit.
@@ -1897,7 +1809,7 @@ LOGICAL FUNCTION CircuitApplies (L, InParticle)
 	END DO
 END FUNCTION CircuitApplies
 
-!Patch 30: if all solids on the unstable side of a circuit are present, dissolve the one with
+!If all solids on the unstable side of a circuit are present, dissolve the one with
 !the lowest DRH (most soluble) completely; repeat until no circuit has its unstable side present.
 !The normal solve that follows re-precipitates whatever is supersaturated (the stable side).
 INTEGER FUNCTION ResolveUnstableSets (InParticle)
@@ -1918,7 +1830,7 @@ INTEGER FUNCTION ResolveUnstableSets (InParticle)
 			END DO
 			IF (ABS(S) .LT. 1.0D-8) CYCLE
 			IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
-			IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE	!Patch 32
+			IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE
 			AllPresent = .TRUE. ; Pick = 0 ; Best = 1.0D300
 			DO I = 1, CircN(L)
 				IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -1971,7 +1883,7 @@ LOGICAL FUNCTION CompletesUnstableSet (R, InParticle, Pending)
 		END DO
 		IF (ABS(S) .LT. 1.0D-8) CYCLE
 		IF (.NOT. CircuitApplies(L, InParticle)) CYCLE
-		IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE	!Patch 32
+		IF (.NOT. StableSideAvailable(L, S, InParticle)) CYCLE
 		OnUnstable = .FALSE. ; AllPresent = .TRUE.
 		DO I = 1, CircN(L)
 			IF (CircCoef(I,L)*S .LE. 0.) CYCLE
@@ -2065,7 +1977,7 @@ REAL*8 FUNCTION PowMemo (Slot, R, Base, Expo)
 	END IF
 END FUNCTION PowMemo
 
-!Patch C1: chemical-name tests of EquilibrateAqueousDissociationReaction depend only on the reaction.
+!Chemical-name tests of EquilibrateAqueousDissociationReaction; they depend only on the reaction.
 SUBROUTINE InitEqRxnNameFlags ()
 	USE Chemistry, ONLY : AqEquilibriaList, AqPhaseChemicalNames, AqAnionNames
 	IMPLICIT NONE
@@ -2216,11 +2128,11 @@ RECURSIVE SUBROUTINE NeutraliseExcessWaterIon (WhichEquilibriumRxn, InParticle, 
 		    InParticle%AqChems(HydroxyIndex) .GT. 0.) THEN			
 
 
-			StateChanged = .TRUE.	!Patch 24
+			StateChanged = .TRUE.
 			!! Make enough H+ to neutralize the OH-
 			dX = MIN (InParticle%AqChems(HydroxyIndex) / AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH),&
 					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))))
-			!Patch 32: never consume more water than the particle holds (a nearly dry particle)
+			!Never consume more water than the particle holds (a nearly dry particle)
 			IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH))
 		    !print *, 'dX1 (making enough H+) = ', dX
 			call flush(6)
@@ -2255,11 +2167,11 @@ RECURSIVE SUBROUTINE NeutraliseExcessWaterIon (WhichEquilibriumRxn, InParticle, 
 			InParticle%AqChems(ProtonIndex) .GT. InParticle%AqChems(HydroxyIndex)   .AND. &
 		    InParticle%AqChems(ProtonIndex) .GT. 0.) THEN
 
-			StateChanged = .TRUE.	!Patch 24
+			StateChanged = .TRUE.
 			!! Make enough H+ to neutralize the OH-
 			dX = MIN (InParticle%AqChems(ProtonIndex) / AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH),	&
 					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))))
-			!Patch 32: never consume more water than the particle holds (a nearly dry particle)
+			!Never consume more water than the particle holds (a nearly dry particle)
 			IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH))
 			!print *, 'dX2 (making enough H+) = ', dX
 			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))	&
@@ -2314,14 +2226,14 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!! Local Variables
 	INTEGER :: I, J
-	LOGICAL :: HaveEqRatio, Converged, StateChanged	!Patch N5, Patch 24
-	REAL*8  :: R1, R2, R3, R4, R5, R8, R9, R22, R23, R24, R25, HalfIter	!Patch 25
-	INTEGER :: IEl, ICatI, IAnI, IAn2I, IHydI	!Patch 25
-	LOGICAL :: NotInfDiss, LCO3, LLet, LAmm	!Patch 25
+	LOGICAL :: HaveEqRatio, Converged, StateChanged
+	REAL*8  :: R1, R2, R3, R4, R5, R8, R9, R22, R23, R24, R25, HalfIter
+	INTEGER :: IEl, ICatI, IAnI, IAn2I, IHydI
+	LOGICAL :: NotInfDiss, LCO3, LLet, LAmm
 	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                    ActivityCoefficients, ErrorTolerance, DRH, RH
 	LOGICAL :: WaterRxn
-	!Patch 28 (Newton single-reaction solve)
+	!Newton single-reaction solve (NewtonExtentSolve)
 	REAL*8  :: B0Cat, B0An, B0An2, B0Hyd, B0El, B0W, X, XLo, XHi, XN, DG
 	INTEGER :: NTry
 	LOGICAL :: SolidRxn, Bad
@@ -2329,9 +2241,9 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!! SCSCSCSCSC
 	LOGICAL :: Scaffolding = .false. 
 
-	!Patch C1: fill the per-reaction chemical-name flags once
+	!Fill the per-reaction chemical-name flags once
 	IF (.NOT. ALLOCATED(EqRxnAnionIsCO3)) CALL InitEqRxnNameFlags ()
-	FEECountEADR = FEECountEADR + 1	!Patch 29
+	FEECountEADR = FEECountEADR + 1
 
         !! If this is an empty section, we have no truck with it
 	!IF (InParticle%NumberOfParticles .EQ. 0 .OR. InParticle%Dry) RETURN
@@ -2373,7 +2285,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 
 	!!Matt Alvarado added this to check for solid electrolyte reactions that are already in
 	!!Equilibrium, as the solid conc = 0.0 and the solution is subsaturated
-	!Patch 24: this EqRatio is reused below (the particle is not modified until the neutralisation step)
+	!This EqRatio is reused below (the particle is not modified until the neutralisation step)
 	StateChanged = .FALSE.
 	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	! CMB: mod for floating-point inequality
@@ -2486,7 +2398,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 		
 	IF(SCAFFOLDING) WRITE(*,*) "Before Eq Ratio"
 	!! If equilibrium has been established, then it has been established...
-	!Patch 24: EqRatio from the entry check above is still valid (nothing modifies the particle in between)
+	!EqRatio from the entry check above is still valid (nothing modifies the particle in between)
 	IF(SCAFFOLDING) WRITE(*,*) "After Eq Ratio"
 
 	! CMB: mod for double precision
@@ -2571,12 +2483,11 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	! CMB: floating-point equality check
 	if (.not. (dabs(qnumer) .le. 1.0e-40 .and. dabs(qdenom) .le. 1.0e-40)) then
 	!IF (.NOT. (Qnumer .EQ. 0 .AND. Qdenom .EQ. 0)) THEN
-	!Patch N5: the convergence test evaluates EquilibriumConstantsRatio on the particle state;
-	!the previous iteration ended by evaluating the same function on the same (unmodified)
-	!state.  Reuse that EqRatio instead of recomputing it (not valid for the infinitely
-	!dissociating branch, which the test handles differently).
-	!Patch 25: the AqEquilibriaList entries and index arithmetic used in the iteration loop are constants of the reaction;
-	!read/convert them once instead of on every iteration (same values, same operations).
+	!The convergence test needs EquilibriumConstantsRatio of the current state; each iteration ends
+	!by evaluating it on that same state, so it is reused (HaveEqRatio) rather than recomputed (not
+	!for an infinitely dissociating reaction, whose test is different).
+	!The AqEquilibriaList entries and AqChems indices the iterations use are constants of the
+	!reaction, read once here.
 	R1 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)
 	R2 = AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)
 	R3 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION)
@@ -2598,7 +2509,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	LLet = EqRxnIsLetovicite(WhichEquilibriumRxn)
 	LAmm = EqRxnIsAmmSulfate(WhichEquilibriumRxn)
 	HalfIter = AqThermoNumbAllowedIterations/2.
-	!Patch 24: if neutralisation did not change the particle, the entry EqRatio is also the first iteration's ratio
+	!If neutralisation did not change the particle, the entry EqRatio is also the first iteration's ratio
 	HaveEqRatio = (.NOT. StateChanged) .AND. (NotInfDiss)
 	IF (AqInnerSolver .EQ. 1 .AND. NotInfDiss) THEN
 		CALL NewtonExtentSolve ()
@@ -2831,7 +2742,7 @@ CONTAINS
 
 		!! Store this EqRatio for testing against the next one, in the next loop
 		II = EqRatio
-		HaveEqRatio = (NotInfDiss)	!Patch N5
+		HaveEqRatio = (NotInfDiss)	!EqRatio is the ratio of the current state
 
 		!! Count the number of attempts before convergence
 		I = I+1
@@ -2847,7 +2758,7 @@ CONTAINS
 		END DO
 	END SUBROUTINE MassFluxIteration
 
-	!Patch 28: Newton single-reaction solve (AqInnerSolver = 1, the default).  The mass-flux iteration moves the
+	!Newton single-reaction solve (AqInnerSolver = 1, the default).  The mass-flux iteration moves the
 	!extent X by a halving step Z (bisection).  Here X is found by Newton's method on
 	!G(X) = ln(EqRatio), kept inside the same bracket [-Qnumer, Qdenom], with a bisection step
 	!whenever Newton would leave it.  Every state is base + stoichiometry * X, so mass and charge
@@ -2910,7 +2821,7 @@ CONTAINS
 				END IF
 				EXIT
 			END DO
-			IF (Bad) THEN		!Patch 32: the bracket collapsed without a valid trial state;
+			IF (Bad) THEN		!the bracket collapsed without a valid trial state;
 				XN = X		!restore the last valid state (X) and stop here
 				CALL SetAmountsAtExtent (XN)
 				RETURN
@@ -3174,7 +3085,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	END IF
 
 	EquilibriumConstantsRatio = EquilibriumConstantsRatioEval (WhichEquilibriumRxn, InParticle)
-	FEECountECREval = FEECountECREval + 1	!Patch 29
+	FEECountECREval = FEECountECREval + 1
 	ECRMemoKey(:,R) = Key
 	ECRMemoVal(R)   = EquilibriumConstantsRatio
 	ECRMemoOK(R)    = .TRUE.
@@ -3240,7 +3151,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatioEval (WhichEquilibriumRxn, InParticle)
 	!! If there is a water molecule in the equilibrium, then we
 	!! need to calculate the water activity.
 	IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0  ) THEN
-		!Patch N8: pow(x,1.0) is exactly x
+		!pow(x,1.0) is exactly x
 		IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0) THEN
 			AwPow = InParticle%WaterActivity
 		ELSE
@@ -3300,7 +3211,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatioEval (WhichEquilibriumRxn, InParticle)
 			WRITE(*,*) "Water Activity", AwPow
 			STOP
 		END IF
-		!Patch N3: Dum1 above is this same expression; do not call MeanActivity again.
+		!Dum1 above is this same expression
 		EquilibriumConstantsRatioEval = Dum1
 	END IF
 
@@ -3368,8 +3279,8 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	!! External Variables
 	INTEGER					:: WhichEquilibrium
 	TYPE(PARTICLE),POINTER	:: InParticle
-	REAL*8 :: CatM, AnM, LevM	!Patch N4: molalities evaluated once, not up to 4 times
-	REAL*8 :: E4, E5, PC, PA	!Patch N8
+	REAL*8 :: CatM, AnM, LevM	!molalities, evaluated once
+	REAL*8 :: E4, E5, PC, PA
 
 	!! If this is an empty section, we have no truck with it
         ! CMB (AER, Inc): Floating-point equality issue
@@ -3413,7 +3324,7 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 	!! where m is molality, nu is a stoicheometric function, and Gamma is	!!
 	!! the mean activity coefficient					!!
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	!Patch N8: pow(x,1.0) is exactly x; skip the pow call for unit stoichiometry
+	!pow(x,1.0) is exactly x; skip the pow call for unit stoichiometry
 	E4 = AqEquilibriaList(WhichEquilibrium, 4)
 	E5 = AqEquilibriaList(WhichEquilibrium, 5)
 	IF (E4 .EQ. 1.0) THEN
@@ -3481,7 +3392,7 @@ REAL*8 FUNCTION CalcQ (EqRxn, InParticle)
 	IMPLICIT NONE
 
 	INTEGER :: EqRxn
-	TYPE (Particle), INTENT(IN) :: InParticle	!Patch N10
+	TYPE (Particle), INTENT(IN) :: InParticle
 
 	IF (KMRef(EqRxn,6) .LE. HowManyAqChems) THEN
 		CalcQ = KMRef(EqRxn,6) * (1. + KMRef(EqRxn,7) *(InParticle%Temperature-ThermoTref) /	    &
@@ -3863,7 +3774,7 @@ END FUNCTION CalcLogGammaPure
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Patch N11.  The integral from 0 to I of EvalIdLogGamma depends only on the   !!
+!! The integral from 0 to I of EvalIdLogGamma depends only on the   !!
 !! reaction's (Q, Stoich, Charges), i.e. on reaction and temperature.  Instead  !!
 !! of an adaptive DGAUS8 integration on every call, tabulate the cumulative     !!
 !! integral in s = sqrt(I) (where the integrand is analytic), using 8-point     !!
@@ -4088,7 +3999,7 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 		END IF
 		
 		!! This routine is housed in DGAUS8.f.  It's an adaptive time step integrator, modified to pass dummy arguments to FUN.
-		!Patch N11: tabulated Gibbs-Duhem integral (falls back to DGAUS8 if the table is unusable)
+		!Tabulated Gibbs-Duhem integral (falls back to DGAUS8 if the table is unusable)
 	    IF (GDTableMode .EQ. 1) THEN
 	        CALL GibbsDuhemIntegralTabulated (K, Q, Stoich, Charges, IonicStrength, InorganicIntegral, IERR)
 	    ELSE

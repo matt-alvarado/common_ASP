@@ -71,17 +71,7 @@
 !!                                  the particle%surfacetension by calling 
 !!                                  SurfaceTension, and CurvatureCorrection
 !!                                  uses the particle%surfacetension
-!! 10/28  2026   Claude Sonnet 5.5 Commit 8cb0991: Phase 1.1: hoist OPAC     !!
-!!                                 tables to module PARAMETERs               !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 3717b42: Phase 1.2: hoist per-     !!
-!!                                 category refractive-index lookups         !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 7737090: Phase 1.3: MIEV0 for      !!
-!!                                 homogeneous-sphere Mie calls (adds        !!
-!!                                 MieSupport.f; link MIEV0.f +              !!
-!!                                 MieSupport.f)                             !!
-!! 11/17  2026   Claude Opus 5.5   Fast-TUV Mie table as PARAMETER MieLUT;  !!
-!!                                 module OPAC tables; volume and shell/core !!
-!!                                 index code shared with ShellRefIndAndRad  !!
+!! 2026                            Performance and solver revisions (git log)!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1504,7 +1494,7 @@ REAL*8 FUNCTION AqueousSolutionMass (InParticle)
 	RETURN
 END FUNCTION AqueousSolutionMass
 
-!! Patch 1.3: homogeneous-sphere Mie efficiencies via MIEV0 (Wiscombe) instead of DMiLay.
+!! Homogeneous-sphere Mie efficiencies from MIEV0 (Wiscombe).
 !! DMiLay with RindCo = RindSh is a homogeneous sphere of radius Rshell; MIEV0 computes that case
 !! directly (no core/shell layering).  Outputs map as QEXT, QSCA, GQSC (= g*Qsca), and
 !! QBS = |SBACK|**2 / (Pi*x**2) (DMiLay's definition of its backscatter output).
@@ -2270,7 +2260,7 @@ END SUBROUTINE AerosolOptProp
 !! instead of the full-spectrum Mie calculation in ShellRefIndAndRad and    !!
 !! AerosolOptProp. They are used by StepASP4SAM (SAM-ASP-TUV), which passes !!
 !! the 7-bin extinction, single scattering albedo and asymmetry to TUV.     !!
-!! Moved here from the ASP copy bundled in SAM-ASP-TUV, where they replaced !!
+!! They come from the ASP copy bundled in SAM-ASP-TUV, where they replace   !!
 !! ShellRefIndAndRad (file ParticleAttributes-Table-3.h there).             !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -378,9 +378,9 @@ MODULE Chemistry
 	!! The deck setting GasEvalLinked = 1 selects the linked-list evaluation.
 	LOGICAL, PRIVATE :: GasFlatBuilt = .FALSE., GasFlatUse = .TRUE.
 	INTEGER, PRIVATE :: GasFlatN = 0
-	INTEGER, ALLOCATABLE, PRIVATE :: GFOdeStart(:), GFTermRxn(:), GFTermChem(:), GFChemIdx(:)
-	INTEGER, ALLOCATABLE, PRIVATE :: GFJacColStart(:), GFJacRow(:), GFJacTerm(:)
-	REAL*8,  ALLOCATABLE, PRIVATE :: GFTermLF(:), GFChemSto(:)
+	INTEGER, ALLOCATABLE, PRIVATE :: FlatOdeTermStart(:), FlatTermReaction(:), FlatTermReactantStart(:), FlatReactantChem(:)
+	INTEGER, ALLOCATABLE, PRIVATE :: FlatJacColStart(:), FlatJacRow(:), FlatJacTermStart(:)
+	REAL*8,  ALLOCATABLE, PRIVATE :: FlatTermLeadingFactor(:), FlatReactantStoich(:)
 	TYPE (DiffEqList), ALLOCATABLE :: GasPhaseJacobian(:,:), &
                                            AqPhaseJacobian(:,:)
 	TYPE (DiffEqList), ALLOCATABLE :: GasPhaseSensitivityMatrix(:,:),  &
@@ -423,6 +423,16 @@ MODULE Chemistry
 		END SUBROUTINE AcidStateIface
 	END INTERFACE
 	PROCEDURE(AcidStateIface), POINTER :: AcidStateHook => NULL()
+
+	!! Epoxide kinds (the "kind" term of a flag-18 line; first index of KPart / FracOS above)
+	INTEGER, PARAMETER :: ACID_KIND_IEPOX_AERO6  = 1	!IEPOX; water, sulfate and nitrate nucleophiles (CMAQ AERO6, CRACMM)
+	INTEGER, PARAMETER :: ACID_KIND_IMAE         = 2	!IMAE (CMAQ AERO7i)
+	INTEGER, PARAMETER :: ACID_KIND_IEPOX_AERO7I = 3	!IEPOX; water and sulfate nucleophiles only (CMAQ AERO7i)
+	INTEGER, PARAMETER :: NUM_ACID_KINDS         = 3
+	!! Product channels (the "channel" term of a flag-18 line)
+	INTEGER, PARAMETER :: ACID_CHANNEL_ALL           = 0	!all products
+	INTEGER, PARAMETER :: ACID_CHANNEL_NONSULFATE    = 1	!tetrol, 2-MG etc.: fraction 1 - FracOS
+	INTEGER, PARAMETER :: ACID_CHANNEL_ORGANOSULFATE = 2	!organosulfate: fraction FracOS
 
 	!! Bulk fine-particle state for rate flags 19 (NTR2 hydrolysis) and 20 (N2O5 uptake): total organic
 	!! aerosol OA [ug/m3] and the NH4+, NO3-, SO4-- content [mol/m3, all forms] of the particles with
@@ -752,11 +762,13 @@ MODULE Chemistry
 	!!   scale    multiplies the rate (1 for IEPOX / IMAE; 2 for IPX, 0.5 for  !!
 	!!            INALD in CMAQ CRACMM)                                        !!
 	!!   MW       g/mol of the gas                                             !!
-	!!   kind     1 IEPOX with H2O / sulfate / nitrate nucleophiles (AERO6,    !!
-	!!            CRACMM), 2 IMAE (AERO7i), 3 IEPOX without nitrate (AERO7i)   !!
-	!!   channel  0 all products; 1 non-sulfate products (tetrol, 2-MG);       !!
-	!!            2 organosulfate.  Splitting one species over two lines with  !!
-	!!            channels 1 and 2 reproduces the CMAQ product split.          !!
+	!!   kind     ACID_KIND_*: 1 IEPOX with H2O / sulfate / nitrate            !!
+	!!            nucleophiles (AERO6, CRACMM), 2 IMAE (AERO7i), 3 IEPOX       !!
+	!!            without nitrate (AERO7i)                                     !!
+	!!   channel  ACID_CHANNEL_*: 0 all products; 1 non-sulfate products       !!
+	!!            (tetrol, 2-MG); 2 organosulfate.  Splitting one species      !!
+	!!            over two lines with channels 1 and 2 reproduces the CMAQ     !!
+	!!            product split.                                               !!
 	!!                                                                         !!
 	!! Per particle the acid-catalysed ring-opening rate kp = sum k [acid][nuc] !!
 	!! [1/s] comes from the particle's own H+, HSO4-, SO4--, NO3- and water     !!
@@ -781,12 +793,15 @@ MODULE Chemistry
 		LOGICAL, INTENT(in) :: FirstTime
 
 		REAL*8, PARAMETER :: InvAlpha = 1.0D0/0.02D0, DiffLiq = 1.0D-9, RgasLatm = 0.08206D0
-		REAL*8, PARAMETER :: HenryEff(3) = (/ 3.0D7, 1.2D5, 3.0D7 /)
+		!! Effective Henry's law constants [M/atm] by epoxide kind: IEPOX 3.0e7, IMAE 1.2e5, as in
+		!! CMAQ AERO6/AERO7i CALCISOPGAMMAS (the source of the ring-opening rate constants in
+		!! Condensation/ParticleAcidity.h: Eddingsaas et al. 2010; Piletic et al. 2013).
+		REAL*8, PARAMETER :: HenryEff(NUM_ACID_KINDS) = (/ 3.0D7, 1.2D5, 3.0D7 /)	!IEPOX_AERO6, IMAE, IEPOX_AERO7I
 		REAL*8, ALLOCATABLE :: KPart(:,:), FracOS(:,:)
 		REAL*8  :: Temp, MW, Dg, R, c_bar, Surf_Conc, Term, Total, q, x, Gam, Frac, Denom
 		INTEGER :: N, K
 
-		K = MAX(1, MIN(3, Kind))
+		K = MAX(ACID_KIND_IEPOX_AERO6, MIN(NUM_ACID_KINDS, Kind))
 		IF (.NOT. ASSOCIATED(AcidStateHook)) THEN
 			GasPhaseChemicalRates(L) = 0.0D0
 			RETURN
@@ -818,11 +833,11 @@ MODULE Chemistry
 			Denom = InvAlpha + c_bar*Radius(N)/(4.0D0*HenryEff(K)*RgasLatm*Temp*DiffLiq*x)
 			Gam = 1.0D0/Denom
 			SELECT CASE (Channel)
-				CASE (1)
+				CASE (ACID_CHANNEL_NONSULFATE)
 					Frac = 1.0D0 - FracOS(K,N)
-				CASE (2)
+				CASE (ACID_CHANNEL_ORGANOSULFATE)
 					Frac = FracOS(K,N)
-				CASE DEFAULT
+				CASE DEFAULT	!ACID_CHANNEL_ALL
 					Frac = 1.0D0
 			END SELECT
 			Surf_Conc = 4.0*pi*(Radius(N)**2)*(NumberConc(N)*1e6)	!1/m

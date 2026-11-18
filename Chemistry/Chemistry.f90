@@ -39,9 +39,7 @@
 !!                                 arbitrary points to ResetPhotoRates       !!
 !! 09/13  2016   Matt Alvarado     Added array GasPhaseEmisFactor to store   !!
 !!                                   fire emission factors in g/kg           !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
-!!                                 set/Jacobian setup by run mode            !!
-!!                                 (SetChemSetupLevel)                       !!
+!! 2026          Revisions: see git log
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -106,7 +104,7 @@ MODULE Chemistry
 			GasPhaseReactionRates,		&
 			GasPhaseReactionRateArraySize,  &	
 			SetChemistryParams,		&
-			SetChemSetupLevel,		&	! N13: how much ODE/Jacobian setup to do	! Subroutines
+			SetChemSetupLevel,		&	! how much ODE/Jacobian setup to do	! Subroutines
 			SetPhaseIfs,			&	!     "
 			ReadPhotolysisRates,		&
 			GasPhaseChemicalNames,		&	! Names for Error Checking and Messaging
@@ -398,7 +396,7 @@ MODULE Chemistry
 	!! LSODES Related Values
 	INTEGER :: LRW, GasLIW, YLEN
 
-	!! N13: how much gas/aqueous ODE-set and Jacobian setup SetChemistryParams does.
+	!! How much gas/aqueous ODE-set and Jacobian setup SetChemistryParams does.
 	!!  0 = full (default; all modes that integrate the chemistry)
 	!!  1 = ODE-set tables only: MakeODESet runs, but MakeJacobian, PrintJacobian, PrintODESet are skipped
 	!!  2 = no ODE set / Jacobian at all (modes that never integrate the chemistry)
@@ -519,7 +517,7 @@ MODULE Chemistry
 			!! Set the Gas Phase Chemistry ODE Set and Jacobian
             !            print *, 'CMB: setting gas phase ODE stuff'
                         !call flush(6)
-			!! N13: the sparse-Jacobian size is only set by MakeJacobian; keep it defined if that is skipped
+			!! The sparse-Jacobian size is only set by MakeJacobian; keep it defined if that is skipped
 			IF (ChemSetupLevel .GE. 1) HowManyNonZeroGasJacTerms = 0
 			IF (ChemSetupLevel .LE. 1) CALL SetGasPhaseODEandJacobian ()
 

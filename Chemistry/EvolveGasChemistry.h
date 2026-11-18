@@ -16,9 +16,7 @@
 !! 10/26  2006   Matt Alvarado     Forced LRW to be above 500000            !!
 !! 02/15  2012   Matt Alvarado     Removing Eulerian grids, making ASP      !!
 !!                                 a one-box model or subroutine.           !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 97e1d64: Patch 23: removed the   !!
-!!                                 duplicate zeroing of pdj in            !!
-!!                                 GasJacobianEvaluator                   !!
+!! 2026          Revisions: see git log
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -495,7 +493,7 @@ SUBROUTINE GasODEEvaluator (neq, t, y, ydot)
 	IF (IFGAS) THEN !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	   IF (.NOT. GasFlatBuilt) CALL BuildGasFlat()
 	   IF (GasFlatUse .AND. neq .EQ. GasFlatN) THEN
-	      !! Patch 38: the same terms, reactants and operations, in the same
+	      !! The same terms, reactants and operations, in the same
 	      !! order as the list walk in the ELSE branch, read from flat arrays
 	      DO I = 1, neq
 	         DO K = FlatOdeTermStart(I), FlatOdeTermStart(I+1)-1
@@ -601,16 +599,15 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 	GP(2) = y(HowManyGasChems+2)
 	GP(3) = y(HowManyGasChems+3)
 
-	!! Patch 23: pdj is NOT zeroed here.  DLSODES (DPRJS, and DPREP for MOSS=1) zeroes the array
-	!! before every call of this routine (LSODES contract), so zeroing it again here repeated
-	!! an O(neq) fill for each of the neq columns of every Jacobian.  Only DLSODES calls this routine.
+	!! pdj is not zeroed here: DLSODES (DPRJS, and DPREP for MOSS=1) zeroes it before every
+	!! call of this routine (LSODES contract), and only DLSODES calls this routine.
 
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	!! If Gas Phase Chemistry Occurs !!
 	IF (IFGAS) THEN !!!!!!!!!!!!!!!!!!!
 	   IF (.NOT. GasFlatBuilt) CALL BuildGasFlat()
 	   IF (GasFlatUse .AND. neq .EQ. GasFlatN) THEN
-	      !! Patch 38: only the rows of column I that have terms (the list walk
+	      !! Only the rows of column I that have terms (the list walk
 	      !! in the ELSE branch skips the others too); same operations and order
 	      DO E = FlatJacColStart(I), FlatJacColStart(I+1)-1
 	         RunningTotal = 0
@@ -686,7 +683,7 @@ SUBROUTINE GasJacobianEvaluator (neq, t, y, I, ia, ja, pdj)
 RETURN
 END SUBROUTINE GasJacobianEvaluator
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!! Patch 38: copy GasPhaseODESet and GasPhaseJacobian into flat arrays     !!
+!! BuildGasFlat: copy GasPhaseODESet and GasPhaseJacobian to flat arrays  !!
 !! (compressed-row layout, everything in linked-list order):                !!
 !!   term K:      FlatTermLeadingFactor(K), FlatTermReaction(K) (reaction   !!
 !!                number), reactants FlatTermReactantStart(K) ..            !!

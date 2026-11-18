@@ -31,14 +31,7 @@
 !! 01/25  2013   Matt Alvarado    Converted                                  !!
 !!                                 + RO2_T reactions to special first order  !!
 !! 01/25  2013   Matt Alvarado    Added reactions like HO2 + HO2 + H2O       !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit bc80201: N1-N5: remove redundant   !!
-!!                                 setup and equilibrium work (StripToken,   !!
-!!                                 MakeJacobian, MeanActivity, solver loop)  !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit a56950d: N6-N11: integrand caches, !!
-!!                                 EqCoeff cache, tabulated Gibbs-Duhem      !!
-!!                                 integral (N11 changes results ~2e-4)      !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 9d89945: N12: parse rate-type flag !!
-!!                                 once per reaction in MakeODESet           !!
+!! 2026          Revisions: see git log
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -107,7 +100,7 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	TYPE(ReactRate),  POINTER :: FirstRate,CurrentRate,NewRate
 
 	integer :: iter ! CMB add, debugging
-	integer :: RLen	!Patch N9
+	integer :: RLen	!length of the stripped rate field
 	
 	logical, parameter :: scaffolding = .false.	! cmb in
 	!LOGICAL, PARAMETER		  :: Scaffolding = .TRUE.	! cmb out
@@ -276,16 +269,14 @@ SUBROUTINE MakeODESet(InputDeck,ODEs,Size,ChemSize,Delimitor,Phase)
 	   !print *, 'CMB: prior to that if statement: '
 	   !print *, 'CMB: # products = ', NumbProducts
 	   !	   print *, 'CMB: len(trim(Rates)) = "', rates(1:len(trim(rates))), '".'
-	   !Patch N9: one StripToken/Len_Trim instead of three
+	   !! Drop a trailing ';' after the last rate term
 	   RLen = Len_Trim(StripToken(Rates))
 	   IF (Rates(RLen+1:RLen+1) == ';') &
 	    Rates(RLen+1:RLen+1) = ' '
-	   ! IF (Rates(Len(Trim(StripToken(Rates))) + 1:Len(Trim(StripToken(Rates)))+1) == ';') &
-	   ! 	Rates(Len(Trim(StripToken(Rates))) + 1:Len(Trim(StripToken(Rates)))+1) = ' '
 	   !print *, 'CMB: after that if statement'
 	   !print *, 'CMB: # products = ', NumbProducts
 	   !print *, 'CMB: len(trim(Rates)) = "', rates(1:len(trim(rates))), '".'
-	   !Patch N9: the characters beyond Len_Trim are blanks, so scanning them for ';' is wasted work
+	   !! J = number of rate terms (separators + 1); only up to Len_Trim, the rest is blanks
 	   DO I = 1, Len_Trim(Rates)
 	   	   !print *, '    CMB: i = ', i
 		IF (Rates(i:i) .EQ. ';') then
@@ -910,8 +901,8 @@ END SUBROUTINE MakeODESet
 		!! Local Variables
 		INTEGER					  :: allocation_error, I, J, K, NonZeroElements
 		TYPE(DiffEqTerm), POINTER :: Current, CurrentJac, DerivativeTerm
-		TYPE(ChemTerm),   POINTER :: ScanChem	!Patch N2
-		LOGICAL					  :: ChemFound	!Patch N2
+		TYPE(ChemTerm),   POINTER :: ScanChem
+		LOGICAL					  :: ChemFound
 
 		LOGICAL, PARAMETER		  :: Scaffolding = .TRUE.
 		TYPE(DiffEqTerm), POINTER :: TempTerm
@@ -934,7 +925,7 @@ END SUBROUTINE MakeODESet
 					!! Start a loop over all of the terms in the ODE string
 					!! Take the derivative of each term and attach it appropriately
 10					Continue
-					!Patch N2: DerivativeOfODEElement returns NULL when dChem is absent from the term,
+					!DerivativeOfODEElement returns NULL when dChem is absent from the term,
 					!but only after copying (malloc) the whole term.  Scan first and skip the copy.
 					ChemFound = .FALSE.
 					ScanChem => Current%DerefChem

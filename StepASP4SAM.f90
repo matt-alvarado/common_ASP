@@ -2,7 +2,12 @@
 !! Based on MELAM of H.D.Steele (c) 2000-2004
 !!
 !! File Description:
-!! StepASP.f90
+!! StepASP4SAM.f90
+!! The ASP interface used by SAM-ASP-TUV: photolysis rates from TUV
+!! (PhotolysisRates, sized by HowManyPhotoRxns from PhotoRates.in), 7-bin
+!! FastTUV aerosol optics (ShellRefIndAndRadFASTTUV, AerosolOptPropFASTTUV),
+!! M3_TO_CM3 = 1e6, and optional DeckDir/OutputDir in InitializeASP
+!! (SetMainDeckDirs).
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! UPDATE HISTORY						             !!
@@ -37,15 +42,7 @@
 !!                                  mixing flag
 !! 05/18  2016   Matt Alvarado     Made changes to allow aerosols to interface 
 !!                                  with STILT-Chem
-!! 11/07  2026   (SAM-ASP-TUV)     Replaced with the interface used by
-!!                                  SAM-ASP-TUV: photolysis rates from TUV
-!!                                  (PhotolysisRates), 7-bin FastTUV aerosol
-!!                                  optics (ShellRefIndAndRadFASTTUV,
-!!                                  AerosolOptPropFASTTUV), M3_TO_CM3 = 1e6,
-!!                                  and optional DeckDir/OutputDir in
-!!                                  InitializeASP (SetMainDeckDirs);
-!!                                  PhotolysisRates sized by
-!!                                  HowManyPhotoRxns (PhotoRates.in)
+!! 2026          Revisions: see git log
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

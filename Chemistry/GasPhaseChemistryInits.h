@@ -22,12 +22,7 @@
 !! 01/24  2013   Matt Alvarado   Added GasPhasePeroxy array to subroutine    !!
 !!                                 SetGasPhaseChemistry to read and store    !!
 !!                                 peroxy radical flag.                      !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 1a144fe: N13: skip ODE-            !!
-!!                                 set/Jacobian setup by run mode            !!
-!!                                 (SetChemSetupLevel)                       !!
-!! 10/28  2026   Claude Sonnet 5.5 Commit 1f14880: Fix: initialise OLDASP to !!
-!!                                 .FALSE. (changes initial gas              !!
-!!                                 concentrations for k=0 decks)             !!
+!! 2026          Revisions: see git log
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -133,7 +128,7 @@ SUBROUTINE SetGasPhaseChemistry ()
         ! 1 if they should be set to a negligible value, as in STILT mode, and 
         ! 2 if they should be read in from the emission factor slot (to have back-compatability with older input files)
         STILT = .FALSE.         
-        OLDASP = .FALSE.	!(Patch 09: was left uninitialised unless k == 2)
+        OLDASP = .FALSE.	!set to .TRUE. below only for k == 2
         CALL GetToken(CurrLine, ";", Token)
         k = STR2INT (Token)
 
@@ -454,7 +449,7 @@ SUBROUTINE SetGasPhaseODEandJacobian ()
 	IF (ChemSetupLevel .EQ. 0) CALL PrintJacobian (GasPhaseJacobian,HowManyEvolveGasChems,GasPhase,"GasPhaseJacobian.txt")
 	IF (Transcribe .AND. ChemSetupLevel .EQ. 0) CALL Transcript ("Printing Gas Phase Jacobian to (GasPhaseJacobian.txt)")
 
-	!! Patch 38: the flat copy used by the evaluators is rebuilt from these lists
+	!! The flat copy used by the evaluators (BuildGasFlat) is rebuilt from these lists
 	GasFlatBuilt = .FALSE.
 
 	RETURN

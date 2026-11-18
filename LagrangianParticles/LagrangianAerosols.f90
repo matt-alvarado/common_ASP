@@ -393,22 +393,50 @@ TYPE (ParticleArray) :: BoundaryParticles
 
 !
 
-	!Patch N7/N11 caches (see Thermodynamics.h).  NOT thread-safe: fill eagerly or make per-thread before OpenMP.
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	!! Caches of the electrolyte solver (Thermodynamics.h).  Each returns exactly  !!
+	!! the value a fresh evaluation would, so results do not depend on them.      !!
+	!!                                                                             !!
+	!! 1. EqCoeff cache (EqCoeffCacheT/V): K(T) of each aqueous reaction.  Key:    !!
+	!!    reaction and particle temperature (compared exactly).  Exact because     !!
+	!!    K depends only on the reaction's AqEquilibriaList entries, which are     !!
+	!!    fixed after setup, the PARAMETER EqCoeffTref and T.                      !!
+	!! 2. PowMemo (PowMemoBase/Exp/Val): the last x**y per (slot, reaction), for   !!
+	!!    the activity powers in MeanActivity and EquilibriumConstantsRatioEval.   !!
+	!!    Key: x and y compared exactly; only finite x > 0 are stored.  Exact      !!
+	!!    because ** is deterministic: a hit returns the value pow gave for the    !!
+	!!    same operands.                                                           !!
+	!! 3. EquilibriumConstantsRatio memo (ECRMemoKey/Val/OK): the last ratio per   !!
+	!!    reaction.  Key: the bit patterns (TRANSFER to INTEGER*8) of every input  !!
+	!!    the evaluation reads: the electrolyte, cation, anion and second-anion    !!
+	!!    amounts (ECRDepIdx), the water amount, number concentration, Dry flag,   !!
+	!!    temperature, water activity and the two activity coefficients.  Exact    !!
+	!!    because EquilibriumConstantsRatioEval is a pure function of these.       !!
+	!! 4. Deviation cache (local to FindElectrolyteEquilibriumCore, deck setting   !!
+	!!    AqDevCache): |1 - ratio| of each major reaction in the worst-first loop. !!
+	!!    Invalidated when the bit pattern of the water amount or of one of the    !!
+	!!    reaction's ECRDepIdx amounts changed since the previous pass (activity   !!
+	!!    coefficients, water activity and temperature are fixed in that loop), so !!
+	!!    a kept value equals what the memo or a fresh evaluation would return.    !!
+	!!                                                                             !!
+	!! Caches 1-3 are module (SAVE) state and NOT thread-safe: make them per-      !!
+	!! thread (or fill 1 eagerly) before running particles in parallel.  Cache 4   !!
+	!! is per call.  The Gibbs-Duhem table (GDTab*, GDTableMode) below is not a    !!
+	!! cache: it approximates the integral and changes results by about 2e-4.      !!
+	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	REAL*8, ALLOCATABLE, SAVE :: EqCoeffCacheT(:), EqCoeffCacheV(:)
-	!Patch C1: per-reaction name tests done once (string compares were ~6% of CondTest)
-	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLevitocite(:), EqRxnIsAmmSulfate(:)
-	!Patch C2: last-argument memo for x**y (see PowMemo in Thermodynamics.h)
 	REAL*8, ALLOCATABLE, SAVE :: PowMemoBase(:,:), PowMemoExp(:,:), PowMemoVal(:,:)
-	!Patch 26: by-value memo of EquilibriumConstantsRatio (see Thermodynamics.h)
 	INTEGER, PARAMETER :: ECRMemoKeyLen = 11
 	INTEGER*8, ALLOCATABLE, SAVE :: ECRMemoKey(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: ECRMemoVal(:)
 	LOGICAL, ALLOCATABLE, SAVE :: ECRMemoOK(:)
+	!Per-reaction chemical-name tests of EquilibrateAqueousDissociationReaction, set once (InitEqRxnNameFlags)
+	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLevitocite(:), EqRxnIsAmmSulfate(:)
 	!Solid circuits (InitSolidCircuits); the precipitation rule for their unstable sides is AqPairRuleOn
 	INTEGER, SAVE :: NCirc = 0
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
 	REAL*8, ALLOCATABLE, SAVE :: CircCoef(:,:)
-	!Amounts each reaction ratio reads (InitECRDepIdx)
+	!AqChems indices of the amounts each reaction ratio reads besides water (InitECRDepIdx)
 	INTEGER, ALLOCATABLE, SAVE :: ECRDepIdx(:,:)
 	!Electrolyte-solver statistics.  The model does not use them; the FEE replay test
 	!(Tests/FEEReplay.f90) resets them and reports them per replayed call.

@@ -617,7 +617,10 @@ REAL*8 FUNCTION DeliquesenceRH (WhichEquilibrium, InParticle)
 	InvTemperature = 1.0/InParticle%Temperature
 	InvRefTemp = 1.0/298.0 
 
-	DeliquesenceRH = AqEquilibriaList(WhichEquilibrium, 20)*exp(AqEquilibriaList(WhichEquilibrium, 12) &
+	!NOTE: the temperature coefficient read here is column EQ_DENSITY_1 (the first density
+	!parameter), not EQ_DRH_TDEP, which holds the DRH temperature dependence from the input deck.
+	!Kept as in the original code; changing it changes results.
+	DeliquesenceRH = AqEquilibriaList(WhichEquilibrium,EQ_DRH)*exp(AqEquilibriaList(WhichEquilibrium,EQ_DENSITY_1) &
 						*(InvTemperature-InvRefTemp))
 	!WRITE(*,*) "DRH :", WhichEquilibrium, DeliquesenceRH
 
@@ -1000,12 +1003,12 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 		!! Save the current molalities so we can
 		!! see if this turned out to be a minor
 		!! reaction in the overall system
-		ICat = HowManyAqChems + INT(AqEquilibriaList(WorstEqIndex,2))
-		IAn  = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(WorstEqIndex,3))
-		IAn2 = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(WorstEqIndex,22))
+		ICat = HowManyAqChems + INT(AqEquilibriaList(WorstEqIndex,EQ_CATION))
+		IAn  = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(WorstEqIndex,EQ_ANION))
+		IAn2 = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(WorstEqIndex,EQ_ANION_2))
 		II = InParticle%AqChems(ICat)
 		JJ = InParticle%AqChems(IAn)
-		IF (AqEquilibriaList(WorstEqIndex,22) .NE. 0.) LL = InParticle%AqChems(IAn2)
+		IF (AqEquilibriaList(WorstEqIndex,EQ_ANION_2) .NE. 0.) LL = InParticle%AqChems(IAn2)
 		!! Equilibrate that worst reaction
 		CALL EquilibrateAqueousDissociationReaction (WorstEqIndex, InParticle, &
 		        OptErrorTolerance =AqThermoEquilibriumError, ReturnType=J)
@@ -1013,7 +1016,7 @@ SUBROUTINE FindElectrolyteEquilibriumCore (InParticle, UpdateThermo, &
 		!! Now evaluate whether this equilibration changed anything enough
 		!! to continue working this as part of the major equilibrium problem.
 		!! IF NOT -- Then put it in reserve and equilibrate it once again at the end
-		IF (AqEquilibriaList(WorstEqIndex,22) .EQ. 0.) THEN
+		IF (AqEquilibriaList(WorstEqIndex,EQ_ANION_2) .EQ. 0.) THEN
 			!Normal Case
 			IF (MAX(ABS((II - InParticle%AqChems(ICat)) / CatTot),	&
 			        ABS((JJ - InParticle%AqChems(IAn)) / AnTot)) &
@@ -1151,11 +1154,11 @@ FUNCTION ReactionAmountIndices (R, NA) RESULT (Idx)
 	USE Chemistry, ONLY : AqEquilibriaList, HowManyAqChems, HowManyAqCations
 	IMPLICIT NONE
 	INTEGER :: R, NA, Idx(4), J(4)
-	J(1) = INT(AqEquilibriaList(R,1))
-	J(2) = HowManyAqChems + INT(AqEquilibriaList(R,2))
-	J(3) = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,3))
-	J(4) = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,22))
-	IF (AqEquilibriaList(R,22) .EQ. 0.) J(4) = -1
+	J(1) = INT(AqEquilibriaList(R,EQ_ELECTROLYTE))
+	J(2) = HowManyAqChems + INT(AqEquilibriaList(R,EQ_CATION))
+	J(3) = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,EQ_ANION))
+	J(4) = HowManyAqChems + HowManyAqCations + INT(AqEquilibriaList(R,EQ_ANION_2))
+	IF (AqEquilibriaList(R,EQ_ANION_2) .EQ. 0.) J(4) = -1
 	WHERE (J .GE. 1 .AND. J .LE. NA)
 		Idx = J
 	ELSEWHERE
@@ -1209,8 +1212,8 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	RH = GetRelativeHumidity ()
 	Idx = 0 ; Nu = 0. ; Qe = 0. ; NIdx = 0 ; Excl = .FALSE.
 	DO R = 1, NR
-		Solid(R) = (DABS(AqEquilibriaList(R,6) - 1.) .LT. 1.0D-5)
-		Movable(R) = (DABS(AqEquilibriaList(R,9) + 1.) .GE. 1.0D-6)
+		Solid(R) = (DABS(AqEquilibriaList(R,EQ_IS_SOLID) - 1.) .LT. 1.0D-5)
+		Movable(R) = (DABS(AqEquilibriaList(R,EQ_K298) + 1.) .GE. 1.0D-6)
 		DRHv(R) = 2.
 		IF (Solid(R)) THEN
 			DRHv(R) = DeliquesenceRH(R, InParticle)
@@ -1219,21 +1222,21 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 		!Patch 34: the water amount is held fixed in the coupled solve (it is set by the water
 		!equilibrium, and a nearly dry particle cannot supply the water a reaction consumes)
 		!CALL AddNu (R, 1, -AqEquilibriaList(R,8), 0.D0)
-		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
+		IF (AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
 			IF (Solid(R)) THEN
-				CALL AddNu (R, INT(AqEquilibriaList(R,1)), -1.D0, 0.D0)
+				CALL AddNu (R, INT(AqEquilibriaList(R,EQ_ELECTROLYTE)), -1.D0, 0.D0)
 			ELSE
-				CALL AddNu (R, INT(AqEquilibriaList(R,1)), -1.D0, -1.D0)
+				CALL AddNu (R, INT(AqEquilibriaList(R,EQ_ELECTROLYTE)), -1.D0, -1.D0)
 			END IF
 		END IF
-		CALL AddNu (R, HowManyAqChems+INT(AqEquilibriaList(R,2)), AqEquilibriaList(R,4), AqEquilibriaList(R,4))
-		CALL AddNu (R, HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,3)), &
-		            AqEquilibriaList(R,5), AqEquilibriaList(R,5))
-		IF (AqEquilibriaList(R,22) .GT. 0.) &
-			CALL AddNu (R, HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,22)), &
-			            AqEquilibriaList(R,23), AqEquilibriaList(R,23))
-		IF (DABS(AqEquilibriaList(R,24)) .GT. 1.0D-5) &
-			CALL AddNu (R, INT(AqEquilibriaList(R,24)), AqEquilibriaList(R,25), 0.D0)
+		CALL AddNu (R, HowManyAqChems+INT(AqEquilibriaList(R,EQ_CATION)), AqEquilibriaList(R,EQ_CATION_STOICH), AqEquilibriaList(R,EQ_CATION_STOICH))
+		CALL AddNu (R, HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION)), &
+		            AqEquilibriaList(R,EQ_ANION_STOICH), AqEquilibriaList(R,EQ_ANION_STOICH))
+		IF (AqEquilibriaList(R,EQ_ANION_2) .GT. 0.) &
+			CALL AddNu (R, HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION_2)), &
+			            AqEquilibriaList(R,EQ_ANION_2_STOICH), AqEquilibriaList(R,EQ_ANION_2_STOICH))
+		IF (DABS(AqEquilibriaList(R,EQ_HYDRATE)) .GT. 1.0D-5) &
+			CALL AddNu (R, INT(AqEquilibriaList(R,EQ_HYDRATE)), AqEquilibriaList(R,EQ_HYDRATE_STOICH), 0.D0)
 		QSum(R) = SUM(Qe(1:NIdx(R),R))
 	END DO
 
@@ -1272,7 +1275,9 @@ SUBROUTINE CoupledElectrolyteNewton (InParticle, Success)
 	IF (Save(1) .LT. 1.0D-3 * SUM(Save(2:))) THEN
 		CALL DrySolve (Ok)
 		IF (Ok) THEN
-			FEECountDry = FEECountDry + 1 ; Success = .TRUE. ; RETURN
+			FEECountDry = FEECountDry + 1
+			Success = .TRUE.
+			RETURN
 		END IF
 		InParticle%AqChems = Save
 	END IF
@@ -1306,7 +1311,7 @@ CONTAINS
 		END IF
 		NCand = 0
 		DO R = 1, NR		!every active solid: present, or absent and being precipitated
-			IF (Solid(R) .AND. LastActive(R) .AND. .NOT.Excl(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
+			IF (Solid(R) .AND. LastActive(R) .AND. .NOT.Excl(R) .AND. AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
 				NCand = NCand + 1 ; Cand(NCand) = R
 			END IF
 		END DO
@@ -1325,7 +1330,9 @@ CONTAINS
 			CALL DissolveAndExclude (R)
 			IF (NewtonSolve () .EQ. 0) THEN
 				IF (EquilibriumConstantsRatio(R, InParticle) .LE. 1. + Tol) THEN
-					Ok = .TRUE. ; FEECountNewtonDrop = FEECountNewtonDrop + 1 ; EXIT
+					Ok = .TRUE.
+					FEECountNewtonDrop = FEECountNewtonDrop + 1
+					EXIT
 				END IF
 			END IF
 			Excl(R) = .FALSE.
@@ -1344,7 +1351,8 @@ CONTAINS
 					IF (EquilibriumConstantsRatio(Cand(J), InParticle) .GT. 1. + Tol) Ok = .FALSE.
 				END DO
 				IF (Ok) THEN
-					FEECountNewtonDrop = FEECountNewtonDrop + 1 ; EXIT
+					FEECountNewtonDrop = FEECountNewtonDrop + 1
+					EXIT
 				END IF
 			END DO
 			IF (.NOT. Ok) THEN
@@ -1376,7 +1384,8 @@ CONTAINS
 						END DO
 					END IF
 					IF (Ok) THEN
-						FEECountNewtonDrop = FEECountNewtonDrop + 1 ; EXIT
+						FEECountNewtonDrop = FEECountNewtonDrop + 1
+						EXIT
 					END IF
 					DO I = 1, NCand
 						Excl(Cand(I)) = .FALSE.
@@ -1391,11 +1400,11 @@ CONTAINS
 	SUBROUTINE DissolveAndExclude (R)
 		INTEGER :: R, J
 		REAL*8  :: Amt
-		Amt = InParticle%AqChems(INT(AqEquilibriaList(R,1)))
+		Amt = InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE)))
 		DO J = 1, NIdx(R)
 			InParticle%AqChems(Idx(J,R)) = InParticle%AqChems(Idx(J,R)) + Nu(J,R) * Amt
 		END DO
-		InParticle%AqChems(INT(AqEquilibriaList(R,1))) = 0.
+		InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) = 0.
 		Excl(R) = .TRUE.
 	END SUBROUTINE DissolveAndExclude
 
@@ -1411,15 +1420,15 @@ CONTAINS
 		LOGICAL :: Small
 		DO Pass = 1, 3
 			DO R = 1, NR
-				IF (.NOT. Movable(R) .OR. Solid(R) .OR. AqEquilibriaList(R,1) .LE. 0.) CYCLE
-				El = InParticle%AqChems(INT(AqEquilibriaList(R,1)))
+				IF (.NOT. Movable(R) .OR. Solid(R) .OR. AqEquilibriaList(R,EQ_ELECTROLYTE) .LE. 0.) CYCLE
+				El = InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE)))
 				IF (.NOT. (El .GT. 0.)) CYCLE
 				Ratio = EquilibriumConstantsRatio (R, InParticle)
 				IF (.NOT. (Ratio .GT. 1. + Tol .AND. Ratio .LT. 1.0D300)) CYCLE
 				DEl = El * (Ratio - 1.)
 				Small = .TRUE.
 				DO K = 1, NIdx(R)
-					IF (Idx(K,R) .EQ. INT(AqEquilibriaList(R,1)) .OR. Idx(K,R) .EQ. 1) CYCLE
+					IF (Idx(K,R) .EQ. INT(AqEquilibriaList(R,EQ_ELECTROLYTE)) .OR. Idx(K,R) .EQ. 1) CYCLE
 					IF (Nu(K,R) .GT. 0. .AND. Nu(K,R) * DEl .GT. 1.0D-3 * InParticle%AqChems(Idx(K,R))) Small = .FALSE.
 				END DO
 				IF (.NOT. Small) CYCLE
@@ -1451,8 +1460,8 @@ CONTAINS
 		!cost per mole of each species
 		Cost = PenaltyCost ; Cost(1) = 0.
 		DO R = 1, NR
-			IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0. .AND. DABS(AqEquilibriaList(R,9) + 1.) .GE. 1.0D-6) THEN
-				IF (RH .LT. DRHv(R)) Cost(INT(AqEquilibriaList(R,1))) = LOG(EqCoeff(R, InParticle, 1))
+			IF (Solid(R) .AND. AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0. .AND. DABS(AqEquilibriaList(R,EQ_K298) + 1.) .GE. 1.0D-6) THEN
+				IF (RH .LT. DRHv(R)) Cost(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) = LOG(EqCoeff(R, InParticle, 1))
 			END IF
 		END DO
 		!rows: species touched by any reaction (water excluded: its amount is held fixed)
@@ -1495,7 +1504,8 @@ CONTAINS
 			Piv = 0
 			DO J = 1, NC				!Bland's rule: first improving column
 				IF (Tab(NM+1,J) .LT. -Eps) THEN
-					Piv = J ; EXIT
+					Piv = J
+					EXIT
 				END IF
 			END DO
 			IF (Piv .EQ. 0) EXIT			!optimal
@@ -1556,8 +1566,8 @@ CONTAINS
 				Ratio = EquilibriumConstantsRatio (R, InParticle)
 				IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D300)) CYCLE	!Patch 36: was 1e11 (far-off dissolved electrolytes were left out)
 				IF (AnyZeroInQ(R)) CYCLE
-				IF (AqEquilibriaList(R,1) .GT. 0.) THEN
-					IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 0.) THEN
+				IF (AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
+					IF (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .LE. 0.) THEN
 						IF (Ratio .LE. 1.) CYCLE							!nothing to dissolve
 						IF (Solid(R)) THEN
 							IF (CompletesUnstableSet(R, InParticle, Pend)) CYCLE	!would complete an unstable solid set
@@ -1573,7 +1583,8 @@ CONTAINS
 				LastActive(Act(I)) = .TRUE.
 			END DO
 			IF (FMax .LE. Tol) THEN
-				NewtonSolve = 0 ; RETURN
+				NewtonSolve = 0
+				RETURN
 			END IF
 			DO I = 1, M
 				R = Act(I)
@@ -1596,7 +1607,8 @@ CONTAINS
 			END DO
 			CALL SmallGauss (Jac, Dxi, M, NR, Singular)
 			IF (Singular) THEN
-				NewtonSolve = 1 ; RETURN
+				NewtonSolve = 1
+				RETURN
 			END IF
 			Dn = 0.
 			DO I = 1, M
@@ -1610,8 +1622,8 @@ CONTAINS
 			Retry = .FALSE.
 			DO I = 1, M
 				R = Act(I)
-				IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
-					J = INT(AqEquilibriaList(R,1))
+				IF (Solid(R) .AND. AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
+					J = INT(AqEquilibriaList(R,EQ_ELECTROLYTE))
 					IF (Dn(J) .LT. 0. .AND. InParticle%AqChems(J) .LE. 0.) THEN
 						Blocked(R) = .TRUE. ; Retry = .TRUE.
 					END IF
@@ -1621,8 +1633,8 @@ CONTAINS
 			Alpha = 1. ; Hit = 0
 			DO I = 1, M
 				R = Act(I)
-				IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0.) THEN
-					J = INT(AqEquilibriaList(R,1))
+				IF (Solid(R) .AND. AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
+					J = INT(AqEquilibriaList(R,EQ_ELECTROLYTE))
 					IF (Dn(J) .LT. 0.) THEN
 						Lim = InParticle%AqChems(J) / (-Dn(J))
 						IF (Lim .LT. Alpha) THEN
@@ -1641,24 +1653,26 @@ CONTAINS
 				END IF
 			END DO
 			IF (.NOT. (Alpha .GT. 0.)) THEN
-				NewtonSolve = 3 ; RETURN
+				NewtonSolve = 3
+				RETURN
 			END IF
 			DO R = 1, NR
 				WasAbsent(R) = .FALSE.
-				IF (Solid(R) .AND. AqEquilibriaList(R,1) .GT. 0.) WasAbsent(R) = (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28)
+				IF (Solid(R) .AND. AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) WasAbsent(R) = (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .LE. 1.0D-28)
 			END DO
 			InParticle%AqChems = InParticle%AqChems + Alpha * Dn
 			IF (Hit .GT. 0) InParticle%AqChems(Hit) = 0.
 			!two absent solids on the same unstable side can be activated in one step: undo that at once
 			Appeared = .FALSE.
 			DO R = 1, NR
-				IF (WasAbsent(R)) Appeared = Appeared .OR. (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .GT. 1.0D-28)
+				IF (WasAbsent(R)) Appeared = Appeared .OR. (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .GT. 1.0D-28)
 			END DO
 			IF (Appeared) THEN
 				IF (ResolveUnstableSets(InParticle) .GT. 0) FEECountResolved = FEECountResolved + 1
 			END IF
 			IF (InParticle%AqChems(1) .LE. 0.) THEN
-				NewtonSolve = 3 ; RETURN
+				NewtonSolve = 3
+				RETURN
 			END IF
 		END DO
 		NewtonSolve = 2
@@ -1671,7 +1685,9 @@ CONTAINS
 		IF (V .EQ. 0. .AND. Q .EQ. 0.) RETURN
 		DO K = 1, NIdx(R)
 			IF (Idx(K,R) .EQ. I) THEN
-				Nu(K,R) = Nu(K,R) + V ; Qe(K,R) = Qe(K,R) + Q ; RETURN
+				Nu(K,R) = Nu(K,R) + V
+				Qe(K,R) = Qe(K,R) + Q
+				RETURN
 			END IF
 		END DO
 		NIdx(R) = NIdx(R) + 1
@@ -1690,7 +1706,7 @@ CONTAINS
 		INTEGER :: J, K
 		IsSolidAmount = .FALSE.
 		DO K = 1, NR
-			IF (Solid(K) .AND. INT(AqEquilibriaList(K,1)) .EQ. J) IsSolidAmount = .TRUE.
+			IF (Solid(K) .AND. INT(AqEquilibriaList(K,EQ_ELECTROLYTE)) .EQ. J) IsSolidAmount = .TRUE.
 		END DO
 	END FUNCTION IsSolidAmount
 
@@ -1702,7 +1718,8 @@ CONTAINS
 		DO I = 1, N			!row scaling: amounts span many orders of magnitude
 			T = MAXVAL(ABS(A(I,1:N)))
 			IF (.NOT. (T .GT. 0.)) THEN
-				Singular = .TRUE. ; RETURN
+				Singular = .TRUE.
+				RETURN
 			END IF
 			A(I,1:N) = A(I,1:N) / T ; B(I) = B(I) / T
 		END DO
@@ -1712,7 +1729,8 @@ CONTAINS
 				IF (ABS(A(J,I)) .GT. ABS(A(P,I))) P = J
 			END DO
 			IF (.NOT. (ABS(A(P,I)) .GT. 1.0D-12)) THEN
-				Singular = .TRUE. ; RETURN
+				Singular = .TRUE.
+				RETURN
 			END IF
 			IF (P .NE. I) THEN
 				Row(1:N) = A(I,1:N) ; A(I,1:N) = A(P,1:N) ; A(P,1:N) = Row(1:N)
@@ -1727,7 +1745,8 @@ CONTAINS
 		DO I = N, 1, -1
 			B(I) = (B(I) - SUM(A(I,I+1:N) * B(I+1:N))) / A(I,I)
 			IF (.NOT. (ABS(B(I)) .LT. 1.0D300)) THEN
-				Singular = .TRUE. ; RETURN
+				Singular = .TRUE.
+				RETURN
 			END IF
 		END DO
 	END SUBROUTINE SmallGauss
@@ -1750,16 +1769,16 @@ SUBROUTINE InitSolidCircuits (NA)
 	REAL*8  :: TmpCoef(4,2000)
 	NS = 0 ; V = 0.
 	DO R = 1, HowManyAqEqReactions
-		IF (DABS(AqEquilibriaList(R,6) - 1.) .GE. 1.0D-5) CYCLE
-		IF (AqEquilibriaList(R,1) .LE. 0.) CYCLE
-		IF (DABS(AqEquilibriaList(R,9) + 1.) .LT. 1.0D-6) CYCLE
+		IF (DABS(AqEquilibriaList(R,EQ_IS_SOLID) - 1.) .GE. 1.0D-5) CYCLE
+		IF (AqEquilibriaList(R,EQ_ELECTROLYTE) .LE. 0.) CYCLE
+		IF (DABS(AqEquilibriaList(R,EQ_K298) + 1.) .LT. 1.0D-6) CYCLE
 		NS = NS + 1 ; SolidR(NS) = R
-		CALL AddV (HowManyAqChems+INT(AqEquilibriaList(R,2)), AqEquilibriaList(R,4))
-		CALL AddV (HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,3)), AqEquilibriaList(R,5))
-		IF (AqEquilibriaList(R,22) .GT. 0.) &
-			CALL AddV (HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,22)), AqEquilibriaList(R,23))
-		IF (DABS(AqEquilibriaList(R,24)) .GT. 1.0D-5) CALL AddV (INT(AqEquilibriaList(R,24)), AqEquilibriaList(R,25))
-		CALL AddV (1, -AqEquilibriaList(R,8))
+		CALL AddV (HowManyAqChems+INT(AqEquilibriaList(R,EQ_CATION)), AqEquilibriaList(R,EQ_CATION_STOICH))
+		CALL AddV (HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION)), AqEquilibriaList(R,EQ_ANION_STOICH))
+		IF (AqEquilibriaList(R,EQ_ANION_2) .GT. 0.) &
+			CALL AddV (HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION_2)), AqEquilibriaList(R,EQ_ANION_2_STOICH))
+		IF (DABS(AqEquilibriaList(R,EQ_HYDRATE)) .GT. 1.0D-5) CALL AddV (INT(AqEquilibriaList(R,EQ_HYDRATE)), AqEquilibriaList(R,EQ_HYDRATE_STOICH))
+		CALL AddV (1, -AqEquilibriaList(R,EQ_WATER_STOICH))
 	END DO
 	NC = 0
 	DO Sz = 2, 4
@@ -1856,9 +1875,10 @@ LOGICAL FUNCTION StableSideAvailable (L, S, InParticle)
 	DO I = 1, CircN(L)
 		IF (CircCoef(I,L)*S .GE. 0.) CYCLE
 		R = CircRxn(I,L)
-		IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .GT. 1.0D-28) CYCLE
+		IF (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .GT. 1.0D-28) CYCLE
 		IF (EquilibriumConstantsRatio(R, InParticle) .GE. 1.) CYCLE
-		StableSideAvailable = .FALSE. ; RETURN
+		StableSideAvailable = .FALSE.
+		RETURN
 	END DO
 END FUNCTION StableSideAvailable
 
@@ -1903,7 +1923,7 @@ INTEGER FUNCTION ResolveUnstableSets (InParticle)
 			DO I = 1, CircN(L)
 				IF (CircCoef(I,L)*S .LE. 0.) CYCLE
 				R = CircRxn(I,L)
-				IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) THEN
+				IF (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .LE. 1.0D-28) THEN
 					AllPresent = .FALSE.
 				ELSE IF (DeliquesenceRH(R, InParticle) .LT. Best) THEN
 					Best = DeliquesenceRH(R, InParticle) ; Pick = R
@@ -1911,19 +1931,19 @@ INTEGER FUNCTION ResolveUnstableSets (InParticle)
 			END DO
 			IF (.NOT. AllPresent .OR. Pick .EQ. 0) CYCLE
 			R = Pick
-			Amt = InParticle%AqChems(INT(AqEquilibriaList(R,1)))
-			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(R,2))) = &
-				InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(R,2))) + Amt*AqEquilibriaList(R,4)
-			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,3))) = &
-				InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,3))) + Amt*AqEquilibriaList(R,5)
-			IF (AqEquilibriaList(R,22) .GT. 0.) &
-				InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,22))) = &
-				InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,22))) + Amt*AqEquilibriaList(R,23)
-			IF (DABS(AqEquilibriaList(R,24)) .GT. 1.0D-5) &
-				InParticle%AqChems(INT(AqEquilibriaList(R,24))) = &
-				InParticle%AqChems(INT(AqEquilibriaList(R,24))) + Amt*AqEquilibriaList(R,25)
-			InParticle%AqChems(1) = InParticle%AqChems(1) - Amt*AqEquilibriaList(R,8)
-			InParticle%AqChems(INT(AqEquilibriaList(R,1))) = 0.
+			Amt = InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE)))
+			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(R,EQ_CATION))) = &
+				InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(R,EQ_CATION))) + Amt*AqEquilibriaList(R,EQ_CATION_STOICH)
+			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION))) = &
+				InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION))) + Amt*AqEquilibriaList(R,EQ_ANION_STOICH)
+			IF (AqEquilibriaList(R,EQ_ANION_2) .GT. 0.) &
+				InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION_2))) = &
+				InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(R,EQ_ANION_2))) + Amt*AqEquilibriaList(R,EQ_ANION_2_STOICH)
+			IF (DABS(AqEquilibriaList(R,EQ_HYDRATE)) .GT. 1.0D-5) &
+				InParticle%AqChems(INT(AqEquilibriaList(R,EQ_HYDRATE))) = &
+				InParticle%AqChems(INT(AqEquilibriaList(R,EQ_HYDRATE))) + Amt*AqEquilibriaList(R,EQ_HYDRATE_STOICH)
+			InParticle%AqChems(1) = InParticle%AqChems(1) - Amt*AqEquilibriaList(R,EQ_WATER_STOICH)
+			InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) = 0.
 			ResolveUnstableSets = ResolveUnstableSets + 1
 			Again = .TRUE.
 		END DO
@@ -1957,14 +1977,15 @@ LOGICAL FUNCTION CompletesUnstableSet (R, InParticle, Pending)
 			IF (CircCoef(I,L)*S .LE. 0.) CYCLE
 			IF (CircRxn(I,L) .EQ. R) THEN
 				OnUnstable = .TRUE.
-			ELSE IF (InParticle%AqChems(INT(AqEquilibriaList(CircRxn(I,L),1))) .LE. 1.0D-28) THEN
+			ELSE IF (InParticle%AqChems(INT(AqEquilibriaList(CircRxn(I,L),EQ_ELECTROLYTE))) .LE. 1.0D-28) THEN
 				Pend = .FALSE.
 				IF (PRESENT(Pending)) Pend = Pending(CircRxn(I,L))
 				IF (.NOT. Pend) AllPresent = .FALSE.
 			END IF
 		END DO
 		IF (OnUnstable .AND. AllPresent) THEN
-			CompletesUnstableSet = .TRUE. ; RETURN
+			CompletesUnstableSet = .TRUE.
+			RETURN
 		END IF
 	END DO
 END FUNCTION CompletesUnstableSet
@@ -1985,21 +2006,21 @@ REAL*8 FUNCTION EqViolation (InParticle)
 	EqViolation = 0. ; RH = GetRelativeHumidity ()
 	DO R = 1, HowManyAqEqReactions
 		IF (R .EQ. WaterEquilibriumIndex) CYCLE	!water: the solvers leave it once OH- or H+ is negligible
-		IF (DABS(AqEquilibriaList(R,9) + 1.) .LT. 1.0D-6) CYCLE
-		Solid = (DABS(AqEquilibriaList(R,6) - 1.) .LT. 1.0D-5)
+		IF (DABS(AqEquilibriaList(R,EQ_K298) + 1.) .LT. 1.0D-6) CYCLE
+		Solid = (DABS(AqEquilibriaList(R,EQ_IS_SOLID) - 1.) .LT. 1.0D-5)
 		IF (Solid) THEN
 			IF (RH .GE. DeliquesenceRH(R, InParticle)) CYCLE
 		END IF
 		Ratio = EquilibriumConstantsRatio (R, InParticle)
 		IF (.NOT. (Ratio .GT. 0. .AND. Ratio .LT. 1.0D11)) CYCLE
 		V = ABS(1. - Ratio)
-		IF (AqEquilibriaList(R,1) .GT. 0.) THEN
-			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) V = MAX(0.D0, Ratio - 1.)
+		IF (AqEquilibriaList(R,EQ_ELECTROLYTE) .GT. 0.) THEN
+			IF (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .LE. 1.0D-28) V = MAX(0.D0, Ratio - 1.)
 		END IF
 		!an absent solid that would complete the unstable side of a solid circuit must not precipitate
 		!(with consistent activities it would be undersaturated); not a violation
 		IF (Solid .AND. V .GT. 0. .AND. Ratio .GT. 1.) THEN
-			IF (InParticle%AqChems(INT(AqEquilibriaList(R,1))) .LE. 1.0D-28) THEN
+			IF (InParticle%AqChems(INT(AqEquilibriaList(R,EQ_ELECTROLYTE))) .LE. 1.0D-28) THEN
 				IF (CompletesUnstableSet(R, InParticle)) V = 0.
 			END IF
 		END IF
@@ -2049,13 +2070,13 @@ SUBROUTINE InitEqRxnNameFlags ()
 	USE Chemistry, ONLY : AqEquilibriaList, AqPhaseChemicalNames, AqAnionNames
 	IMPLICIT NONE
 	INTEGER :: R, I1, I3
-	ALLOCATE (EqRxnAnionIsCO3(SIZE(AqEquilibriaList,1)), EqRxnIsLevitocite(SIZE(AqEquilibriaList,1)), &
+	ALLOCATE (EqRxnAnionIsCO3(SIZE(AqEquilibriaList,1)), EqRxnIsLetovicite(SIZE(AqEquilibriaList,1)), &
 	          EqRxnIsAmmSulfate(SIZE(AqEquilibriaList,1)))
-	EqRxnAnionIsCO3 = .FALSE. ; EqRxnIsLevitocite = .FALSE. ; EqRxnIsAmmSulfate = .FALSE.
+	EqRxnAnionIsCO3 = .FALSE. ; EqRxnIsLetovicite = .FALSE. ; EqRxnIsAmmSulfate = .FALSE.
 	DO R = 1, SIZE(AqEquilibriaList,1)
-		I1 = INT(AqEquilibriaList(R,1)) ; I3 = INT(AqEquilibriaList(R,3))
+		I1 = INT(AqEquilibriaList(R,EQ_ELECTROLYTE)) ; I3 = INT(AqEquilibriaList(R,EQ_ANION))
 		IF (I1 .GE. 1 .AND. I1 .LE. SIZE(AqPhaseChemicalNames)) THEN
-			EqRxnIsLevitocite(R) = (AqPhaseChemicalNames(I1) .EQ. "(NH4)3H(SO4)2")
+			EqRxnIsLetovicite(R) = (AqPhaseChemicalNames(I1) .EQ. "(NH4)3H(SO4)2")
 			EqRxnIsAmmSulfate(R) = (AqPhaseChemicalNames(I1) .EQ. "(NH4)2SO4")
 		END IF
 		IF (I3 .GE. 1 .AND. I3 .LE. SIZE(AqAnionNames)) EqRxnAnionIsCO3(R) = (AqAnionNames(I3) .EQ. "CO3--")
@@ -2077,8 +2098,8 @@ SUBROUTINE DissociateElectrolyteFully (WhichEquilibriumRxn, InParticle, RH, Retu
 !				aqequilibrialist(whichequilibriumrxn, 6) .lt. 1.00000001) return
 !		if (inparticle%aqchems(int(aqequilibrialist(whichequilibriumrxn,1))) .le. 1.0e-40) &
 !			return
-	if (dabs(AqEquilibriaList(WhichEquilibriumRxn, 1) + 1.) .lt. 0.000001) return
-	if (dabs(InParticle%AqChems(int(AqEquilibriaList(WhichEquilibriumRxn, 1)))) .le. 1.0e-40) &
+	if (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) + 1.) .lt. 0.000001) return
+	if (dabs(InParticle%AqChems(int(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)))) .le. 1.0e-40) &
 		return
 !		IF (AqEquilibriaList(WhichEquilibriumRxn,1) .EQ. -1.) RETURN
 !		IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .EQ. 0.) RETURN
@@ -2093,11 +2114,11 @@ SUBROUTINE DissociateElectrolyteFully (WhichEquilibriumRxn, InParticle, RH, Retu
 !			II = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))),	& ! water limited, or
 !			         InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))	  ! electrolyte limited?
 !		END IF
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8)) .lt. 0.00001) THEN
-		II = InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))
+	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH)) .lt. 0.00001) THEN
+		II = InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)))
 	ELSE
-		II = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))),	& ! water limited, or
-				 InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))	  ! electrolyte limited?
+		II = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))),	& ! water limited, or
+				 InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH))	  ! electrolyte limited?
 	END IF
 			
 	!If it is already dissociated, it was already in equilibrium
@@ -2112,31 +2133,31 @@ SUBROUTINE DissociateElectrolyteFully (WhichEquilibriumRxn, InParticle, RH, Retu
 	
 	!! Add to ions:
 	!! CATION:
-	InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))	=&
-	InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2))) +&
-	II * AqEquilibriaList(WhichEquilibriumRxn,4)
+	InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))	=&
+	InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION))) +&
+	II * AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH)
 
 	!! ANION:
-	InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) =&
-	InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) +&
-	II * AqEquilibriaList(WhichEquilibriumRxn,5)
+	InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) =&
+	InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) +&
+	II * AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH)
 
-	!! Second Anion for levitocite:
+	!! Second Anion for letovicite:
 	! cmb
-	if (dabs(AqEquilibriaList(WhichEquilibriumRxn,22)) .gt. 0.00001) then
+	if (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2)) .gt. 0.00001) then
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,22) .NE. 0.) THEN
-		InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) =&
-		InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) +&
-		II * AqEquilibriaList(WhichEquilibriumRxn,23)	
+		InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2))) =&
+		InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2))) +&
+		II * AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2_STOICH)	
 	END IF
 
 	!! Hydrates: Water equilibrium
 	! cmb
-	if (dabs(AqEquilibriaList(WhichEquilibriumRxn, 24)) .gt. 0.00001) then
+	if (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_HYDRATE)) .gt. 0.00001) then
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,24) .NE. 0.) THEN
-		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,24))) =&
-		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,24))) +&
-		II * AqEquilibriaList(WhichEquilibriumRxn,25)	
+		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_HYDRATE))) =&
+		InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_HYDRATE))) +&
+		II * AqEquilibriaList(WhichEquilibriumRxn,EQ_HYDRATE_STOICH)	
 	END IF
 	
 	!! And Adjust WATER CONTENT appropriately (for rxns that ionize water)
@@ -2144,7 +2165,7 @@ SUBROUTINE DissociateElectrolyteFully (WhichEquilibriumRxn, InParticle, RH, Retu
 	if (inparticle%aqchems(1) .lt. 0.0) then
 		call warn("InParticle%AqChems(1) < 0.0 in EquilibrateAqueousDissociationReaction")
 	endif ! end cb
-	InParticle%AqChems(1) = InParticle%AqChems(1) - II * AqEquilibriaList(WhichEquilibriumRxn,8)
+	InParticle%AqChems(1) = InParticle%AqChems(1) - II * AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH)
 	! CMB (AER, Inc): Put in 0 check
 	!if (inparticle%aqchems(1) .lt. 0) inparticle%aqchems(1) = 0.0
 	if (inparticle%aqchems(1) .lt. 0.0) then
@@ -2152,9 +2173,9 @@ SUBROUTINE DissociateElectrolyteFully (WhichEquilibriumRxn, InParticle, RH, Retu
 	endif ! end cb
 			
 	!! -- Then the Electrolyte
-	IF (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0.) &
-	InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))	= &
-				InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) - II
+	IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) .GT. 0.) &
+	InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)))	= &
+				InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) - II
 	! CMB (AER, Inc): Put in 0 check
 	!if (inparticle%aqchems(1) .lt. 0) inparticle%aqchems(1) = 0.0
 	
@@ -2188,8 +2209,8 @@ RECURSIVE SUBROUTINE NeutraliseExcessWaterIon (WhichEquilibriumRxn, InParticle, 
 	REAL*8  :: dX
 
 	IF (WaterEquilibriumIndex .GT. 0 .AND. WhichEquilibriumRxn .NE. WaterEquilibriumIndex) THEN
-		IF (AqEquilibriaList(WhichEquilibriumRxn,2) .EQ. ProtonIndex-HowManyAqChems .AND. & !If the cation is a proton
-			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) &
+		IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION) .EQ. ProtonIndex-HowManyAqChems .AND. & !If the cation is a proton
+			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) &
                             .GT. InParticle%AqChems(HydroxyIndex)   .AND. &
 			InParticle%AqChems(HydroxyIndex) .GT. InParticle%AqChems(ProtonIndex) .AND. &
 		    InParticle%AqChems(HydroxyIndex) .GT. 0.) THEN			
@@ -2197,28 +2218,28 @@ RECURSIVE SUBROUTINE NeutraliseExcessWaterIon (WhichEquilibriumRxn, InParticle, 
 
 			StateChanged = .TRUE.	!Patch 24
 			!! Make enough H+ to neutralize the OH-
-			dX = MIN (InParticle%AqChems(HydroxyIndex) / AqEquilibriaList(WhichEquilibriumRxn,4),&
-					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))))
+			dX = MIN (InParticle%AqChems(HydroxyIndex) / AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH),&
+					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))))
 			!Patch 32: never consume more water than the particle holds (a nearly dry particle)
-			IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))
+			IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH))
 		    !print *, 'dX1 (making enough H+) = ', dX
 			call flush(6)
-			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))	&
-					 = InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))&
-					   + dX * AqEquilibriaList(WhichEquilibriumRxn,4)
+			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))	&
+					 = InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))&
+					   + dX * AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH)
 	    	!print *, 'first one = ', InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))
-			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) = &
-                            InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) &
-					   + dX * AqEquilibriaList(WhichEquilibriumRxn,5)
+			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) = &
+                            InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) &
+					   + dX * AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH)
 	    	!print *, 'second one = ', InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3)))
 			!! -- Then the Electrolyte
-			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) = &
-					InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) - dX
+			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) = &
+					InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) - dX
 			!print *, 'third one = ', InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))
 			!! -- Then the Water Content
 			!write(*,*) 'electrolyte after dX = ', inparticle%aqchems(int(aqequilibrialist(&
 	     	!		whichequilibriumrxn,1)))
-			InParticle%AqChems(1) = InParticle%AqChems(1) - dX * AqEquilibriaList(WhichEquilibriumRxn,8)
+			InParticle%AqChems(1) = InParticle%AqChems(1) - dX * AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH)
 			!write(*,*) 'water content = ', inparticle%aqchems(1)
 			
 			!! -- Then call the water equilibrium			
@@ -2228,33 +2249,33 @@ RECURSIVE SUBROUTINE NeutraliseExcessWaterIon (WhichEquilibriumRxn, InParticle, 
 
 		END IF
 
-		IF (AqEquilibriaList(WhichEquilibriumRxn,3) .EQ. HydroxyIndex-HowManyAqChems-HowManyAqCations  .AND.	&
-			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .GT. &
+		IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION) .EQ. HydroxyIndex-HowManyAqChems-HowManyAqCations  .AND.	&
+			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) .GT. &
                             InParticle%AqChems(ProtonIndex) .AND. &
 			InParticle%AqChems(ProtonIndex) .GT. InParticle%AqChems(HydroxyIndex)   .AND. &
 		    InParticle%AqChems(ProtonIndex) .GT. 0.) THEN
 
 			StateChanged = .TRUE.	!Patch 24
 			!! Make enough H+ to neutralize the OH-
-			dX = MIN (InParticle%AqChems(ProtonIndex) / AqEquilibriaList(WhichEquilibriumRxn,5),	&
-					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))))
+			dX = MIN (InParticle%AqChems(ProtonIndex) / AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH),	&
+					  InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))))
 			!Patch 32: never consume more water than the particle holds (a nearly dry particle)
-			IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))
+			IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH) .GT. 0.) dX = MIN(dX, 0.99*InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH))
 			!print *, 'dX2 (making enough H+) = ', dX
-			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))	&
-					 = InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2))) &
-					   + dX * AqEquilibriaList(WhichEquilibriumRxn,4)
+			InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))	&
+					 = InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION))) &
+					   + dX * AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH)
 
-			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) = &
-                            InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) &
-					   + dX * AqEquilibriaList(WhichEquilibriumRxn,5)
+			InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) = &
+                            InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) &
+					   + dX * AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH)
 
 			!! -- Then the Electrolyte
-			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) = &
-					InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) - dX
+			InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) = &
+					InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) - dX
 
 			!! -- Then the Water Content
-			InParticle%AqChems(1) = InParticle%AqChems(1) - dX * AqEquilibriaList(WhichEquilibriumRxn,8)
+			InParticle%AqChems(1) = InParticle%AqChems(1) - dX * AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH)
 
 			!! -- Then call the water equilibrium
 			CALL EquilibrateAqueousDissociationReaction (WaterEquilibriumIndex, &
@@ -2296,7 +2317,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	LOGICAL :: HaveEqRatio, Converged, StateChanged	!Patch N5, Patch 24
 	REAL*8  :: R1, R2, R3, R4, R5, R8, R9, R22, R23, R24, R25, HalfIter	!Patch 25
 	INTEGER :: IEl, ICatI, IAnI, IAn2I, IHydI	!Patch 25
-	LOGICAL :: NotInfDiss, LCO3, LLev, LAmm	!Patch 25
+	LOGICAL :: NotInfDiss, LCO3, LLet, LAmm	!Patch 25
 	REAL*8  :: II, Qdenom, Qnumer, Z, dX, EqRatio, &
                    ActivityCoefficients, ErrorTolerance, DRH, RH
 	LOGICAL :: WaterRxn
@@ -2340,8 +2361,8 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 !    		((aqequilibrialist(whichequilibriumrxn, 6) .gt. 0.99999999 .and. &
 !    				aqequilibrialist(whichequilibriumrxn, 6) .lt. 1.00000001) .and. &
 !    				RH .ge. DRH)) then
-	if ((dabs(AqEquilibriaList(WhichEquilibriumRxn, 9) + 1.) .lt. 0.000001) .or. &
-			((dabs(AqEquilibriaList(WhichEquilibriumRxn, 6) - 1.) .lt. 0.000001) .and. &
+	if ((dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_K298) + 1.) .lt. 0.000001) .or. &
+			((dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_IS_SOLID) - 1.) .lt. 0.000001) .and. &
 					RH .ge. DRH)) then					
 !	IF (AqEquilibriaList(WhichEquilibriumRxn,9) .EQ. -1. .OR. &
 !		(AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0 .AND. RH .GE. DRH)) THEN 
@@ -2356,7 +2377,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	StateChanged = .FALSE.
 	EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	! CMB: mod for floating-point inequality
-        if (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) &
+        if (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_IS_SOLID) - 1.0) &
                 .lt. 0.00001) then
             if (EqRatio .lt. 1.0) then
                 if (InParticle%AqChems(nint(aqequilibrialist(&
@@ -2375,33 +2396,33 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!!Matt Alvarado added this to skip carbonate equilibrium 
 	!!when CO3-- concentration approaches 0.
 	! cmb
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,8) - 1.0) .lt. 0.00001 & !A hydrate reaction
+	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH) - 1.0) .lt. 0.00001 & !A hydrate reaction
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,8) .EQ. 1.0 & !A hydrate reaction
 		.AND. EqRxnAnionIsCO3(WhichEquilibriumRxn) & !CO2 equilibrium only
 	    .AND. EqRatio .GT. 1.0 & !The solution is super-saturated
-		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,3))) &
+		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) &
                     .LT. 1e-30) THEN !There is no anion left
 		!WRITE(*,*) EqRatio, WhichEquilibriumRxn, AqAnionNames(AqEquilibriaList(WhichEquilibriumRxn,3))
 		RETURN
 	END IF
 
-	!For levitocite equilibrium as SO4-- approaches 0 (acidic aerosol)
-	IF(AqEquilibriaList(WhichEquilibriumRxn,22) .GT. 0. & !levitocite
+	!For letovicite equilibrium as SO4-- approaches 0 (acidic aerosol)
+	IF(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2) .GT. 0. & !letovicite
 		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
-		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,22))) &
+		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2))) &
                     .LT. 1e-28) THEN !Not enough SO4--
-		IF(EqRxnIsLevitocite(WhichEquilibriumRxn)) THEN
+		IF(EqRxnIsLetovicite(WhichEquilibriumRxn)) THEN
 			RETURN
 		END IF
 	END IF
 
 	!For (NH4)2SO4 equilibrium as SO4-- approaches 0 (acidic aerosol)
 	! cmb
-	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .lt. 0.00001) THEN !A solid electrolyte
+	IF (dabs(AqEquilibriaList(WhichEquilibriumRxn,EQ_IS_SOLID) - 1.0) .lt. 0.00001) THEN !A solid electrolyte
 	!IF (AqEquilibriaList(WhichEquilibriumRxn,6) .EQ. 1.0) THEN !A solid electrolyte
 		IF(EqRatio .GT. 1.0 & !The solution is supersaturated
 			.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
-                            INT(AqEquilibriaList(WhichEquilibriumRxn,3))) .LT. 1e-28) THEN !Not enough SO4--
+                            INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION))) .LT. 1e-28) THEN !Not enough SO4--
 			IF(EqRxnIsAmmSulfate(WhichEquilibriumRxn)) THEN
 				RETURN
 			END IF
@@ -2409,7 +2430,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	END IF
 		
 	!For water equilibrium as OH- approaches 0. (very high pH)
-	IF(AqEquilibriaList(WhichEquilibriumRxn,1) .LT. 0.0 & !water (index is -1.0)
+	IF(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) .LT. 0.0 & !water (index is -1.0)
 		.AND. EqRatio .GT. 1.0 & !The solution is supersaturated
 		.AND. InParticle%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(&
                             WhichEquilibriumRxn,3))) .LT. 1e-40) THEN !Not enough OH-
@@ -2423,9 +2444,9 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!Do not precipitate a solid that would complete the unstable side of a solid circuit
 	!(AqPairRuleOn); see InitSolidCircuits
 	IF (AqPairRuleOn() .AND. EqRatio .GT. 1.0) THEN
-		IF (DABS(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .LT. 0.00001 .AND. &
-		    AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0.) THEN
-			IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))) .LE. 1.0D-28) THEN
+		IF (DABS(AqEquilibriaList(WhichEquilibriumRxn,EQ_IS_SOLID) - 1.0) .LT. 0.00001 .AND. &
+		    AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) .GT. 0.) THEN
+			IF (InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))) .LE. 1.0D-28) THEN
 				IF (CompletesUnstableSet(WhichEquilibriumRxn, InParticle)) THEN
 					FEECountPairRefuse = FEECountPairRefuse + 1
 					RETURN
@@ -2445,10 +2466,10 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
     !		(CationMolality (INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle) .EQ. 0.  .OR.     &
 	!	 AnionMolality  (INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle) .EQ. 0.) )RETURN
 	!END IF
-	IF  (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
-		IF ((dabs(Molality(INT(AqEquilibriaList(WhichEquilibriumRxn,1)), InParticle)) .le. 1.0e-40) .AND.	 &
-				(dabs(CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,2)), InParticle)) .le. 1.0e-40  .OR.     &
-				 dabs(AnionMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,3)), InParticle)) &
+	IF  (AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) .GT. 0) THEN
+		IF ((dabs(Molality(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)), InParticle)) .le. 1.0e-40) .AND.	 &
+				(dabs(CationMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)), InParticle)) .le. 1.0e-40  .OR.     &
+				 dabs(AnionMolality(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION)), InParticle)) &
 				 .le. 1.0e-40)) then
 			 !write(*,*) 'All Molalities are <= 1.0e-40; equilibrium has been established'
 			!call flush(6) 
@@ -2504,36 +2525,36 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 !!         stoicheometric coefficient                                        !!
 !! (cf., Jacobson 1999, p.497)						     !!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	IF (AqEquilibriaList(WhichEquilibriumRxn,22) .GT. 0) THEN
-		!Levitocite
-		IF(.NOT. EqRxnIsLevitocite(WhichEquilibriumRxn)) THEN
-			CALL ERROR("Non-levitocite complex salt detected in EquilibrateAqueousDissociationReaction."//&
+	IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2) .GT. 0) THEN
+		!Letovicite
+		IF(.NOT. EqRxnIsLetovicite(WhichEquilibriumRxn)) THEN
+			CALL ERROR("Non-letovicite complex salt detected in EquilibrateAqueousDissociationReaction."//&
                                " This is not allowed.")
 		END IF
-		Qnumer = MIN( InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))/	&
-				  AqEquilibriaList(WhichEquilibriumRxn,4),														&
+		Qnumer = MIN( InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))/	&
+				  AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH),														&
 				  InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
-                                      INT(AqEquilibriaList(WhichEquilibriumRxn,3)))/&
-				  AqEquilibriaList(WhichEquilibriumRxn,5),														&
+                                      INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION)))/&
+				  AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH),														&
 				  InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
-                                      INT(AqEquilibriaList(WhichEquilibriumRxn,22)))/&
-				  AqEquilibriaList(WhichEquilibriumRxn,23))
+                                      INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2)))/&
+				  AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2_STOICH))
 
 	ELSE
-		Qnumer = MIN( InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,2)))&
-				  /AqEquilibriaList(WhichEquilibriumRxn,4),														&
+		Qnumer = MIN( InParticle%AqChems(HowManyAqChems+INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)))&
+				  /AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH),														&
 				  InParticle%AqChems(HowManyAqChems+HowManyAqCations+&
-                                      INT(AqEquilibriaList(WhichEquilibriumRxn,3)))&
-				  /AqEquilibriaList(WhichEquilibriumRxn,5))
+                                      INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION)))&
+				  /AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH))
 	END IF
 	
 	!! If there is a non-water electrolyte, then water or the electrolyte may limit the reaction
-	IF (AqEquilibriaList(WhichEquilibriumRxn,1) .GT. 0) THEN
-		IF (AqEquilibriaList(WhichEquilibriumRxn,8) .GT. 0) THEN
-			Qdenom = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1))),	&
-				InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,8))
+	IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) .GT. 0) THEN
+		IF (AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH) .GT. 0) THEN
+			Qdenom = MIN(InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE))),	&
+				InParticle%AqChems(1)/AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH))
 		ELSE
-			Qdenom = InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,1)))
+			Qdenom = InParticle%AqChems(INT(AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)))
 		END IF
 		WaterRxn = .FALSE.
 	ELSE
@@ -2556,17 +2577,17 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	!dissociating branch, which the test handles differently).
 	!Patch 25: the AqEquilibriaList entries and index arithmetic used in the iteration loop are constants of the reaction;
 	!read/convert them once instead of on every iteration (same values, same operations).
-	R1 = AqEquilibriaList(WhichEquilibriumRxn,1)
-	R2 = AqEquilibriaList(WhichEquilibriumRxn,2)
-	R3 = AqEquilibriaList(WhichEquilibriumRxn,3)
-	R4 = AqEquilibriaList(WhichEquilibriumRxn,4)
-	R5 = AqEquilibriaList(WhichEquilibriumRxn,5)
-	R8 = AqEquilibriaList(WhichEquilibriumRxn,8)
-	R9 = AqEquilibriaList(WhichEquilibriumRxn,9)
-	R22 = AqEquilibriaList(WhichEquilibriumRxn,22)
-	R23 = AqEquilibriaList(WhichEquilibriumRxn,23)
-	R24 = AqEquilibriaList(WhichEquilibriumRxn,24)
-	R25 = AqEquilibriaList(WhichEquilibriumRxn,25)
+	R1 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)
+	R2 = AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION)
+	R3 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION)
+	R4 = AqEquilibriaList(WhichEquilibriumRxn,EQ_CATION_STOICH)
+	R5 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_STOICH)
+	R8 = AqEquilibriaList(WhichEquilibriumRxn,EQ_WATER_STOICH)
+	R9 = AqEquilibriaList(WhichEquilibriumRxn,EQ_K298)
+	R22 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2)
+	R23 = AqEquilibriaList(WhichEquilibriumRxn,EQ_ANION_2_STOICH)
+	R24 = AqEquilibriaList(WhichEquilibriumRxn,EQ_HYDRATE)
+	R25 = AqEquilibriaList(WhichEquilibriumRxn,EQ_HYDRATE_STOICH)
 	IEl   = INT(R1)
 	ICatI = HowManyAqChems+INT(R2)
 	IAnI  = HowManyAqChems+HowManyAqCations+INT(R3)
@@ -2574,7 +2595,7 @@ RECURSIVE SUBROUTINE EquilibrateAqueousDissociationReaction &
 	IHydI = INT(R24)
 	NotInfDiss = (DABS(R9 - 1) .GT. 1.0e-40)
 	LCO3 = EqRxnAnionIsCO3(WhichEquilibriumRxn)
-	LLev = EqRxnIsLevitocite(WhichEquilibriumRxn)
+	LLet = EqRxnIsLetovicite(WhichEquilibriumRxn)
 	LAmm = EqRxnIsAmmSulfate(WhichEquilibriumRxn)
 	HalfIter = AqThermoNumbAllowedIterations/2.
 	!Patch 24: if neutralisation did not change the particle, the entry EqRatio is also the first iteration's ratio
@@ -2621,7 +2642,7 @@ CONTAINS
 		!WRITE(*,*) InParticle%AqChems(HowManyAqChems+HowManyAqCations+AqEquilibriaList(WhichEquilibriumRxn,3)), AqAnionNames(AqEquilibriaList(WhichEquilibriumRxn,3))
 	
 		IF (R22 .GT. 0) THEN
-			!Levitocite
+			!Letovicite
 			InParticle%AqChems(IAn2I)				&
 					= InParticle%AqChems(IAn2I)	&
 					+ dX * R23
@@ -2675,8 +2696,8 @@ CONTAINS
 				WRITE(*,*) "Qdenom = ", Qdenom
 				WRITE(*,*) "Qnumer = ", Qnumer
 				WRITE(*,*) "Iteration Number: ", I
-				write(*,*) 'AqEquilibriaList(WhichEquilibriumRxn, 1) = ', &
-					AqEquilibriaList(WhichEquilibriumRxn, 1)
+				write(*,*) 'AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE) = ', &
+					AqEquilibriaList(WhichEquilibriumRxn,EQ_ELECTROLYTE)
 			
 				! CMB: let's fake this too
 				! update: maybe not?
@@ -2708,7 +2729,8 @@ CONTAINS
 				CALL ERROR ("We achieved a negative water content while equilibrating an electrolyte in "// &
 							"EquilibrateAqueousDissociationReaction(), which probably means that there was "// &
 							"no way for ionic protons to form in the particle dumped to ")
-		END IF ; END IF
+			END IF
+		END IF
 
 		!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		!! STEP 4: Recalculate Z and dX for a new iteration !!
@@ -2786,8 +2808,8 @@ CONTAINS
 				RETURN
 			END IF
 		
-			!For levitocite equilibrium as SO4-- approaches 0
-			IF(LLev & !levitocite
+			!For letovicite equilibrium as SO4-- approaches 0
+			IF(LLet & !letovicite
 			    .AND. InParticle%AqChems(IAn2I) .LT. 1e-28) THEN
 				RETURN
 			END IF
@@ -2832,11 +2854,14 @@ CONTAINS
 	!are conserved exactly, as in the mass-flux iteration.  The activity coefficients and the
 	!water activity are held fixed, as above.  Convergence test and early returns are the same.
 	SUBROUTINE NewtonExtentSolve ()
-		SolidRxn = (DABS(AqEquilibriaList(WhichEquilibriumRxn,6) - 1.0) .LT. 0.00001)
+		SolidRxn = (DABS(AqEquilibriaList(WhichEquilibriumRxn,EQ_IS_SOLID) - 1.0) .LT. 0.00001)
 		B0Cat = InParticle%AqChems(ICatI) ; B0An = InParticle%AqChems(IAnI)
-		B0An2 = 0. ; IF (R22 .GT. 0) B0An2 = InParticle%AqChems(IAn2I)
-		B0Hyd = 0. ; IF (DABS(R24) .GT. 1.0e-40) B0Hyd = InParticle%AqChems(IHydI)
-		B0El  = 0. ; IF (R1 .GT. 0) B0El = InParticle%AqChems(IEl)
+		B0An2 = 0.
+		IF (R22 .GT. 0) B0An2 = InParticle%AqChems(IAn2I)
+		B0Hyd = 0.
+		IF (DABS(R24) .GT. 1.0e-40) B0Hyd = InParticle%AqChems(IHydI)
+		B0El  = 0.
+		IF (R1 .GT. 0) B0El = InParticle%AqChems(IEl)
 		B0W   = InParticle%AqChems(1)
 		XLo = -Qnumer ; XHi = Qdenom ; X = 0.
 		IF (.NOT. HaveEqRatio) EqRatio = EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
@@ -2871,13 +2896,17 @@ CONTAINS
 				Bad = (InParticle%AqChems(ICatI) .LT. 0. .OR. InParticle%AqChems(IAnI) .LT. 0.)
 				IF (R22 .GT. 0) Bad = Bad .OR. (InParticle%AqChems(IAn2I) .LT. 0.)
 				IF (Bad) THEN
-					XLo = XN ; XN = 0.5*(XLo + XHi) ; CYCLE
+					XLo = XN
+					XN = 0.5*(XLo + XHi)
+					CYCLE
 				END IF
 				Bad = .FALSE.
 				IF (R1 .GT. 0) Bad = (InParticle%AqChems(IEl) .LT. 0.)
 				Bad = Bad .OR. (InParticle%AqChems(1) .LE. 0.)
 				IF (Bad) THEN
-					XHi = XN ; XN = 0.5*(XLo + XHi) ; CYCLE
+					XHi = XN
+					XN = 0.5*(XLo + XHi)
+					CYCLE
 				END IF
 				EXIT
 			END DO
@@ -2898,7 +2927,7 @@ CONTAINS
 			IF (R1 .GT. 0) THEN
 				IF (InParticle%AqChems(IEl) .LT. 1.0e-28) RETURN !Much less than a molecule per particle
 				IF (R8 .EQ. 1.0 .AND. LCO3 .AND. InParticle%AqChems(INT(R3)) .LT. 1e-28) RETURN
-				IF (LLev .AND. InParticle%AqChems(IAn2I) .LT. 1e-28) RETURN
+				IF (LLet .AND. InParticle%AqChems(IAn2I) .LT. 1e-28) RETURN
 				IF (LAmm .AND. InParticle%AqChems(IAnI) .LT. 1e-28) RETURN
 			END IF
 			IF (R1 .LT. 0. .AND. InParticle%AqChems(IAnI) .LT. 1e-40 .AND. I .GT. HalfIter) RETURN
@@ -3032,7 +3061,7 @@ SUBROUTINE ReformElectrolyte(WhichRxn, InParticle)
 									InParticle%AqChems(INT(AqEquilibriaList(WhichRxn,3))+HowManyAqChems+HowManyAqCations)		&
 									- dX * AqEquilibriaList(WhichRxn,5)
 	
-	!Levitocite case - second anion
+	!Letovicite case - second anion
 	IF(AqEquilibriaList(WhichRxn,22) .NE. 0) THEN
 		InParticle%AqChems(INT(AqEquilibriaList(WhichRxn,22))+HowManyAqChems+HowManyAqCations) =										&
 									InParticle%AqChems(INT(AqEquilibriaList(WhichRxn,22))+HowManyAqChems+HowManyAqCations)		&
@@ -3134,7 +3163,7 @@ REAL*8 FUNCTION EquilibriumConstantsRatio (WhichEquilibriumRxn, InParticle)
 	Key(8) = TRANSFER(InParticle%Temperature, 0_8)
 	Key(9) = TRANSFER(InParticle%WaterActivity, 0_8)
 	Key(10) = TRANSFER(InParticle%GammaMixed(R), 0_8)
-	G2 = FLOOR(AqEquilibriaList(R,16))
+	G2 = FLOOR(AqEquilibriaList(R,EQ_ACT_NUMER))
 	IF (G2 .GE. 1 .AND. G2 .LE. SIZE(InParticle%GammaMixed)) Key(11) = TRANSFER(InParticle%GammaMixed(G2), 0_8)
 
 	IF (ECRMemoOK(R)) THEN
@@ -3405,7 +3434,7 @@ REAL*8 FUNCTION MeanActivity (WhichEquilibrium, InParticle)
 				   + AqEquilibriaList(WhichEquilibrium, 5))
 	END IF
 
-	!Correction for Levitocite
+	!Correction for Letovicite
 	IF (AqEquilibriaList(WhichEquilibrium,22) .NE. 0.) THEN
 		MeanActivity = PC * &
 				   PA * &
@@ -3753,7 +3782,7 @@ SUBROUTINE KusikMeissner (InParticle)
 	DO K = 1, HowManyAqEqReactions
 	  IF (AqEquilibriaList(K,19) .GT. 0) THEN
 		IF (AqEquilibriaList(K,22) .GT. 0) THEN 
-			!Levitocite	
+			!Letovicite	
 			InParticle%GammaMixed(K) = ( (InParticle%GammaMixed(INT(AqEquilibriaList(K,16)))**3.0) * InParticle%GammaMixed(INT(AqEquilibriaList(K,17))) ) **(1.0/4.0)	
 		ELSE
 			!Bisulfate
@@ -3999,7 +4028,7 @@ SUBROUTINE UpdateWaterActivity (InParticle)
 	DO K = 1, HowManyAqEqReactions
 
 		IF(AqEquilibriaList(K,22) .NE. 0) THEN
-			!Skip Levitocite
+			!Skip Letovicite
 			CYCLE
 		END IF
 		

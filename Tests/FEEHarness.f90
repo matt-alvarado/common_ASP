@@ -95,7 +95,9 @@ SUBROUTINE WriteFEEState (P, UpdateThermo, FirstEquilibration, ReturnType, Pre)
 	INTEGER :: ReturnType, IU, IF1
 	IU = DumpUnit
 	IF (Pre) THEN
-		IF1 = 0 ; IF (UpdateThermo) IF1 = IF1 + 1 ; IF (FirstEquilibration) IF1 = IF1 + 2
+		IF1 = 0
+		IF (UpdateThermo) IF1 = IF1 + 1
+		IF (FirstEquilibration) IF1 = IF1 + 2
 		WRITE (IU) 1, IF1, ReturnType, GetTemp(), GetPress(), GetGridCellChemBurden(1)
 	ELSE
 		WRITE (IU) 2, 0, ReturnType
@@ -287,8 +289,11 @@ SUBROUTINE ReplayFEE (DumpFile, ResultFile, VDiag, NRep)
 		CALL FindElectrolyteEquilibriumCore (P, MOD(Flags,2) .EQ. 1, Flags .GE. 2, RT)
 		CALL CPU_TIME (C1)
 		TSolve = TSolve + (C1 - C0)
-		KB = 1 ; IF (FEECountOuter-K0 .GT. 10) KB = 2 ; IF (FEECountOuter-K0 .GT. 30) KB = 3
-		IF (FEECountOuter-K0 .GT. 60) KB = 4 ; IF (FEECountOuter-K0 .GT. 100) KB = 5
+		KB = 1
+		IF (FEECountOuter-K0 .GT. 10) KB = 2
+		IF (FEECountOuter-K0 .GT. 30) KB = 3
+		IF (FEECountOuter-K0 .GT. 60) KB = 4
+		IF (FEECountOuter-K0 .GT. 100) KB = 5
 		KHist(KB) = KHist(KB) + 1
 		Out = P%AqChems
 		IF (LEN_TRIM(ResultFile) .GT. 0 .AND. IRep .EQ. 1) WRITE (RU) Out, RT

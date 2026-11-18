@@ -817,7 +817,7 @@ FUNCTION GetPatwardhandAndKumarWeightings (InParticle)
 		GetPatwardhandAndKumarWeightings(K,3) = REAL(AnIndex)
 
 		
-		!Exclude Levitocite reaction from this calculation
+		!Exclude Letovicite reaction from this calculation
 		! cmb
 		if (dabs(AqEquilibriaList(K, 22)) .gt. 1e-40) then
 		!IF(AqEquilibriaList(K,22) .NE. 0) THEN
@@ -1006,7 +1006,7 @@ FUNCTION HypotheticalElectrolyteConcentrations (InParticle)
 		
 
 			ELSE
-				!Levitocite case: Skip this
+				!Letovicite case: Skip this
 				!write(*,*) 'line 830 in particleattributes.h'
 				CYCLE						
 			END IF

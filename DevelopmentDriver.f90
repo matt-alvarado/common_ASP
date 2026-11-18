@@ -169,6 +169,9 @@ PROGRAM ASP
                    NH4Cli, NO2i, ETHEi, HCHOi, Aceti, NOi, Gas_Index
 
 	REAL*8  :: ThermoRHStep
+	!ThermoTest RH scan range and step
+	REAL*8, PARAMETER :: ThermoRHHigh = 0.90, ThermoRHLow = 0.20, ThermoRHStepSize = 0.02
+	INTEGER :: ThermoRHCount
 	REAL*8  :: ii, T_mix, Tau_Dep, slope, b, ChemTimestep, MixTimestep, &
 		   CoagTimeStep, CondTimeStep, t, Mgas, Temp, &
                    NewRH, HNO3Conc, NH3Conc, ut, &
@@ -1193,13 +1196,18 @@ PROGRAM ASP
            !WRITE(*,*) "After Spill Beans"
                 
 
-           !RH scan: downward 0.90 -> 0.20 by default; deck setting ThermoScanUp = 1 scans upward
-           !0.20 -> 0.90 (the deliquescence branch; start from a dry deck, initial RH 0.20).
-           ThermoRHStep = -0.02 ; NewRH = 0.92
+           !RH scan: downward ThermoRHHigh -> ThermoRHLow by default; deck setting ThermoScanUp = 1 scans
+           !upward (the deliquescence branch; start from a dry deck, initial RH 0.20).  NewRH starts one
+           !step outside the range and the step is added before each equilibration.  The start values are
+           !written out because 0.20 - 0.02 is not exactly 0.18 in binary.
+           ThermoRHCount = NINT((ThermoRHHigh - ThermoRHLow) / ThermoRHStepSize) + 1
+           ThermoRHStep = -ThermoRHStepSize
+           NewRH = 0.92
            IF (ThermoScanUp .EQ. 1) THEN
-              ThermoRHStep = 0.02 ; NewRH = 0.18
+              ThermoRHStep = ThermoRHStepSize
+              NewRH = 0.18
            END IF
-           DO J = 1, 36
+           DO J = 1, ThermoRHCount
               NewRH = NewRH + ThermoRHStep
               CALL SetRelativeHumidity (NewRH)
               

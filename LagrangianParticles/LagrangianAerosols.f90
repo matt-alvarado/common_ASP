@@ -85,6 +85,10 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 MODULE Aerosols
 
+USE ModelParameters, ONLY : EQ_ELECTROLYTE, EQ_CATION, EQ_ANION, EQ_CATION_STOICH, EQ_ANION_STOICH, &
+                            EQ_IS_SOLID, EQ_WATER_STOICH, EQ_K298, EQ_DENSITY_1, EQ_ACT_NUMER, EQ_DRH, &
+                            EQ_ANION_2, EQ_ANION_2_STOICH, EQ_HYDRATE, EQ_HYDRATE_STOICH
+
 IMPLICIT NONE
 
 PRIVATE
@@ -431,7 +435,7 @@ TYPE (ParticleArray) :: BoundaryParticles
 	REAL*8, ALLOCATABLE, SAVE :: ECRMemoVal(:)
 	LOGICAL, ALLOCATABLE, SAVE :: ECRMemoOK(:)
 	!Per-reaction chemical-name tests of EquilibrateAqueousDissociationReaction, set once (InitEqRxnNameFlags)
-	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLevitocite(:), EqRxnIsAmmSulfate(:)
+	LOGICAL, ALLOCATABLE, SAVE :: EqRxnAnionIsCO3(:), EqRxnIsLetovicite(:), EqRxnIsAmmSulfate(:)
 	!Solid circuits (InitSolidCircuits); the precipitation rule for their unstable sides is AqPairRuleOn
 	INTEGER, SAVE :: NCirc = 0
 	INTEGER, ALLOCATABLE, SAVE :: CircN(:), CircRxn(:,:)
@@ -809,44 +813,44 @@ SUBROUTINE DissociateAllElectrolytes()
 	Current => Particles%First
 	IF (ASSOCIATED(Current)) THEN
 20		DO I = 1, HowManyAqEqReactions
-			IF (AqEquilibriaList(I,6) .EQ. 1.0 ) THEN 
+			IF (AqEquilibriaList(I,EQ_IS_SOLID) .EQ. 1.0 ) THEN 
                         !!Is a solid Eq. Rxn. 
 		
 			!! The change amount, two cases: 
                         !! equations with and without water
-				IF (AqEquilibriaList(I,8) .EQ. 0) THEN
-				  II = Current%AqChems(INT(AqEquilibriaList(I,1)))
+				IF (AqEquilibriaList(I,EQ_WATER_STOICH) .EQ. 0) THEN
+				  II = Current%AqChems(INT(AqEquilibriaList(I,EQ_ELECTROLYTE)))
 				ELSE
-				  II = MIN(Current%AqChems(INT(AqEquilibriaList(I,1))),	& ! water limited, or
-					Current%AqChems(1)/AqEquilibriaList(I,8))	  ! electrolyte limited?
+				  II = MIN(Current%AqChems(INT(AqEquilibriaList(I,EQ_ELECTROLYTE))),	& ! water limited, or
+					Current%AqChems(1)/AqEquilibriaList(I,EQ_WATER_STOICH))	  ! electrolyte limited?
 				END IF		
 				
 				!! Add to ions:
 				!! CATION:
-				Current%AqChems(HowManyAqChems+INT(AqEquilibriaList(I,2)))	=	&
-				Current%AqChems(HowManyAqChems+INT(AqEquilibriaList(I,2))) +	&				
-				II * AqEquilibriaList(I,4)
+				Current%AqChems(HowManyAqChems+INT(AqEquilibriaList(I,EQ_CATION)))	=	&
+				Current%AqChems(HowManyAqChems+INT(AqEquilibriaList(I,EQ_CATION))) +	&				
+				II * AqEquilibriaList(I,EQ_CATION_STOICH)
 
 				!! ANION:
-				Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,3))) =	&
-				Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,3))) +	&
-				II * AqEquilibriaList(I,5)
+				Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,EQ_ANION))) =	&
+				Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,EQ_ANION))) +	&
+				II * AqEquilibriaList(I,EQ_ANION_STOICH)
 
-				IF(AqEquilibriaList(I,22) .NE. 0) THEN
-					!!Levitocite case, extra anion
-					Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,22))) =	&
-					Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,22))) +	&
-					II * AqEquilibriaList(I,23)
+				IF(AqEquilibriaList(I,EQ_ANION_2) .NE. 0) THEN
+					!!Letovicite case, extra anion
+					Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,EQ_ANION_2))) =	&
+					Current%AqChems(HowManyAqChems+HowManyAqCations+INT(AqEquilibriaList(I,EQ_ANION_2))) +	&
+					II * AqEquilibriaList(I,EQ_ANION_2_STOICH)
 				END IF
 				
 
 				! And Adjust WATER CONTENT appropriately
-				Current%AqChems(1) = Current%AqChems(1) - II * AqEquilibriaList(I,8)
+				Current%AqChems(1) = Current%AqChems(1) - II * AqEquilibriaList(I,EQ_WATER_STOICH)
 
 				!! -- Then the Electrolyte
 				!IF (AqEquilibriaList(I,1) .GT. 0.) THEN					
-				Current%AqChems(INT(AqEquilibriaList(I,1)))	= &
-				Current%AqChems(INT(AqEquilibriaList(I,1))) - II
+				Current%AqChems(INT(AqEquilibriaList(I,EQ_ELECTROLYTE)))	= &
+				Current%AqChems(INT(AqEquilibriaList(I,EQ_ELECTROLYTE))) - II
 
 			END IF
 		END DO !!Solid Dissociation loop

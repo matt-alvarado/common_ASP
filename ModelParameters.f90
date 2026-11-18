@@ -254,6 +254,31 @@ MODULE ModelParameters
 								!! to convergence to return.  It's in a Kcalc / Ksupplied value.	 If 
 								!! it's too small, then no aq equilibrium reactions will be demoted and
 								!! conflicts may occur.
+	!! Columns of AqEquilibriaList(reaction, column) (Chemistry module; filled in AqPhaseChemistryInits.h)
+	INTEGER, PARAMETER :: EQ_ELECTROLYTE    = 1   !! AqChems index of the electrolyte; -1 if water is the only dissociator
+	INTEGER, PARAMETER :: EQ_CATION         = 2   !! Cation index (add HowManyAqChems for its AqChems index)
+	INTEGER, PARAMETER :: EQ_ANION          = 3   !! Anion index (add HowManyAqChems+HowManyAqCations)
+	INTEGER, PARAMETER :: EQ_CATION_STOICH  = 4   !! Cation stoichiometric coefficient
+	INTEGER, PARAMETER :: EQ_ANION_STOICH   = 5   !! Anion stoichiometric coefficient
+	INTEGER, PARAMETER :: EQ_IS_SOLID       = 6   !! 1 for a solid electrolyte, 0 otherwise
+	INTEGER, PARAMETER :: EQ_WATER_STOICH   = 8   !! H2O molecules on the left-hand side
+	INTEGER, PARAMETER :: EQ_K298           = 9   !! Equilibrium coefficient at 298 K; -1 if infinitely dissociating
+	INTEGER, PARAMETER :: EQ_K_DH           = 10  !! -Delta H0 / R T0 (temperature dependence of K)
+	INTEGER, PARAMETER :: EQ_K_DCP          = 11  !! -Delta Cp0 / R (temperature dependence of K)
+	INTEGER, PARAMETER :: EQ_DENSITY_1      = 12  !! First density parameter of the ion solution
+	INTEGER, PARAMETER :: EQ_DENSITY_2      = 13  !! Second density parameter of the ion solution
+	INTEGER, PARAMETER :: EQ_SURF_EXCESS    = 14  !! Surface excess at saturation (surface tension)
+	INTEGER, PARAMETER :: EQ_SURF_ADSORB    = 15  !! Adsorption coefficient (surface tension)
+	INTEGER, PARAMETER :: EQ_ACT_NUMER      = 16  !! Numerator activity: reaction + exponent/10000 (see Chemistry.f90)
+	INTEGER, PARAMETER :: EQ_ACT_DENOM      = 17  !! Denominator activity, same encoding
+	INTEGER, PARAMETER :: EQ_ACT_NUMER_2    = 18  !! Second numerator activity, same encoding
+	INTEGER, PARAMETER :: EQ_MIXED_FROM     = 19  !! > 0: takes the mixed activity coefficient of another reaction
+	INTEGER, PARAMETER :: EQ_DRH            = 20  !! Deliquescence RH at 298 K
+	INTEGER, PARAMETER :: EQ_DRH_TDEP       = 21  !! Temperature dependence of the DRH
+	INTEGER, PARAMETER :: EQ_ANION_2        = 22  !! Second anion index (letovicite); 0 if none
+	INTEGER, PARAMETER :: EQ_ANION_2_STOICH = 23  !! Second anion stoichiometric coefficient
+	INTEGER, PARAMETER :: EQ_HYDRATE        = 24  !! AqChems index of the hydrate water species; 0 if none
+	INTEGER, PARAMETER :: EQ_HYDRATE_STOICH = 25  !! Its stoichiometric coefficient
 	INTEGER, PARAMETER :: AqThermoNumbAllowedIterations = 100
 	INTEGER, PARAMETER :: AqThermoNumbAllowedIterationsForHypLoop = 20
 	REAL*8, PARAMETER  :: AerosolWaterEquilibriumRHThreshold = 0.98 !! If RH is above this value, simply don't equilibrate the 
